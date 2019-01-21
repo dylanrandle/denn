@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from torch.autograd import grad
 
-class PDE_NN(torch.nn.Module):
+class Chanflow(torch.nn.Module):
     def __init__(self, in_dim=2, out_dim=2, num_units=10, num_layers=5):
         super().__init__()
         self.layers=torch.nn.ModuleList()
@@ -19,7 +19,7 @@ class PDE_NN(torch.nn.Module):
             x = torch.tanh(self.layers[i](x))
         return self.layers[-1](x) # last layer is just linear (regression)
 
-    def train(self, y_space, batch_size=100, epochs=500, lr=0.001):
+    def train(self, y_space, reynolds_stress_fn, kinematic_viscosity=1.0, pressure_gradient=1.0, batch_size=100, epochs=500, lr=0.001):
         optimizer=torch.optim.Adam(self.parameters(), lr=lr)
         n = y_space.shape[0]
         num_batches = n//batch_size
@@ -49,8 +49,8 @@ class PDE_NN(torch.nn.Module):
                                 grad_outputs=du_dy.data.new(du_dy.shape).fill_(1),
                                 create_graph=True)
 
-                # compute d<uv>/dy, then zero grad
-                re = reynolds_stress(y_batch, du_dy)
+                # compute d<uv>/dy
+                re = reynolds_stress_fn(y_batch, du_dy)
                 dre_dy, = grad(re, y_space,
                                grad_outputs=re.data.new(re.shape).fill_(1),
                                create_graph=True)
@@ -88,8 +88,10 @@ if __name__ == '__main__':
     # initialize the PDE net
     num_units=100
     num_layers=7
-    pde_nn_chanflow = PDE_NN(in_dim=1, out_dim=1, num_units=num_units, num_layers=num_layers)
-    num_epochs=50
+    pde_nn_chanflow = Chanflow(in_dim=1, out_dim=1, num_units=num_units, num_layers=num_layers)
+    num_epochs=100
     batch_size=1000
     lr=0.001
-    losses, curves = pde_nn_chanflow.train(y_space, batch_size=batch_size, epochs=num_epochs, lr=lr)
+    losses, curves = pde_nn_chanflow.train(y_space, reynolds_stress,
+                        kinematic_viscosity=kinematic_viscosity, pressure_gradient=pressure_gradient,
+                         batch_size=batch_size, epochs=num_epochs, lr=lr)
