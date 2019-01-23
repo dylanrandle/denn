@@ -19,7 +19,7 @@ class Chanflow(torch.nn.Module):
             x = torch.tanh(self.layers[i](x))
         return self.layers[-1](x) # last layer is just linear (regression)
 
-    def train(self, y_space, reynolds_stress_fn, kinematic_viscosity=1.0, pressure_gradient=1.0, batch_size=100, epochs=500, lr=0.001):
+    def train(self, y_space, reynolds_stress_fn, boundary=(-1,1), kinematic_viscosity=1.0, pressure_gradient=1.0, batch_size=100, epochs=500, lr=0.001, C=1.0):
         optimizer=torch.optim.Adam(self.parameters(), lr=lr)
         n = y_space.shape[0]
         num_batches = n//batch_size
@@ -57,7 +57,9 @@ class Chanflow(torch.nn.Module):
 
                 # compute loss!
                 axial_eqn = kinematic_viscosity * d2u_dy2 - dre_dy + pressure_gradient
-                loss = torch.mean(torch.pow(axial_eqn, 2))
+                lower_boundary = u_bar[np.where(y_batch == boundary[0])]
+                upper_boundary = u_bar[np.where(y_batch == boundary[1])]
+                loss = torch.mean(torch.pow(axial_eqn, 2)) + C * torch.mean(torch.pow(lower_boundary + upper_boundary, 2))
                 accum_loss+=loss
 
                 # zero grad, backprop, step
