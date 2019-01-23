@@ -19,7 +19,7 @@ class Chanflow(torch.nn.Module):
             x = torch.tanh(self.layers[i](x))
         return self.layers[-1](x) # last layer is just linear (regression)
 
-    def train(self, y_space, reynolds_stress_fn, boundary=(-1,1), kinematic_viscosity=1.0, pressure_gradient=1.0, batch_size=100, epochs=500, lr=0.001, C=1.0):
+    def train(self, y_space, reynolds_stress_fn, boundary=(-1,1), kinematic_viscosity=1.0, pressure_gradient=1.0, rho=1.0, batch_size=100, epochs=500, lr=0.001, C=1.0):
         optimizer=torch.optim.Adam(self.parameters(), lr=lr)
         n = y_space.shape[0]
         num_batches = n//batch_size
@@ -56,7 +56,7 @@ class Chanflow(torch.nn.Module):
                                create_graph=True)
 
                 # compute loss!
-                axial_eqn = kinematic_viscosity * d2u_dy2 - dre_dy + pressure_gradient
+                axial_eqn = kinematic_viscosity * d2u_dy2 - dre_dy - (1/rho) * pressure_gradient
                 lower_boundary = u_bar[np.where(y_batch == boundary[0])]
                 upper_boundary = u_bar[np.where(y_batch == boundary[1])]
                 loss = torch.mean(torch.pow(axial_eqn, 2)) + C * torch.mean(torch.pow(lower_boundary + upper_boundary, 2))
@@ -75,11 +75,28 @@ class Chanflow(torch.nn.Module):
 
         return losses, curves
 
+def calc_reynolds_nums(delta, u_bar, ygrid, nu, rho, dp_dx):
+    """ calculates reynolds numbers Re, Re_0, Re_Tau for channel flow """
+    n = u_bar.shape[0]
+    # Re_0
+    U_0 = u_bar[n//2][0]
+    renot = U_0 * delta / nu
+    # Re
+    U_bar = (1/delta) * np.trapz(u_bar[:n//2], x=ygrid[:n//2], axis=0)[0] # integrate from wall to center
+    renum = 2 * delta * U_bar / nu
+    # Re_tau
+    tau_w = -delta * dp_dx
+    u_tau = np.sqrt(tau_w / rho)
+    re_tau = u_tau * delta / nu
+
+    return renum, renot, re_tau
+
 if __name__ == '__main__':
     print('Testing channel flow NN...')
     # super-simple model for reynolds stress
-    pressure_gradient = 1.0
-    kinematic_viscosity = 1.0
+    pressure_gradient = -1.0
+    kinematic_viscosity = 0.001 # nu
+    rho=1.0
     karman_const = 0.4 # https://en.wikipedia.org/wiki/Von_K%C3%A1rm%C3%A1n_constant
     reynolds_stress = lambda y, du_dy: -1*((karman_const*y)**2)*torch.abs(du_dy)*du_dy
     # create grid of points
@@ -88,12 +105,16 @@ if __name__ == '__main__':
     ygrid = torch.linspace(ymin, ymax, n).reshape(-1,1)
     y_space = torch.autograd.Variable(ygrid, requires_grad=True)
     # initialize the PDE net
-    num_units=100
-    num_layers=7
+    num_units=50
+    num_layers=5
     pde_nn_chanflow = Chanflow(in_dim=1, out_dim=1, num_units=num_units, num_layers=num_layers)
-    num_epochs=100
+    num_epochs=500
     batch_size=1000
     lr=0.001
+    boundary_reg_C = 1
     losses, curves = pde_nn_chanflow.train(y_space, reynolds_stress,
-                        kinematic_viscosity=kinematic_viscosity, pressure_gradient=pressure_gradient,
-                         batch_size=batch_size, epochs=num_epochs, lr=lr)
+                                           kinematic_viscosity=kinematic_viscosity,
+                                           pressure_gradient=pressure_gradient,
+                                           rho=rho,
+                                           batch_size=batch_size, epochs=num_epochs, lr=lr,
+                                           C=boundary_reg_C)
