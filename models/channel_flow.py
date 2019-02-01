@@ -106,7 +106,7 @@ def calc_retau(delta, dp_dx, rho, nu):
 
 def get_hyperparams(dp_dx=-1.0, nu=0.001, rho=1.0, k=0.41, num_units=50,
                     num_layers=5, batch_size=1000, lr=0.001, num_epochs=1000,
-                    ymin=0, ymax=2):
+                    ymin=-1, ymax=1):
     """
     dp_dx - pressure gradient
     nu - kinematic viscosity
@@ -120,16 +120,42 @@ def get_yspace(n=1000, ymin=-1, ymax=1):
     ygrid = torch.linspace(ymin, ymax, n).reshape(-1,1)
     return torch.autograd.Variable(ygrid, requires_grad=True)
 
-def get_mixing_len_model(k, delta):
+def get_mixing_len_model(k, delta, dp_dx, rho, nu):
     return lambda y, du_dy: -1*((k*(torch.abs(y)-delta))**2)*torch.abs(du_dy)*du_dy
+    # def model(y, du_dy):
+    #     tau_w = -delta * dp_dx
+    #     u_tau = np.sqrt(tau_w / rho)
+    #     h_v = nu / u_tau
+    #     y = y / h_v
+    #     return -1*((k*(torch.abs(y)-delta))**2)*torch.abs(du_dy)*du_dy
+    # return model
+
+def make_plots(ax, losses,  model, hypers, retau, dns_u=None, dns_y=None):
+    """ plot loss and prediction of model at retau """
+    # losses
+    ax[0].plot(np.arange(len(losses)), losses, color='blue')
+    ax[0].set_title('Mean loss per epoch at Retau={}'.format(retau))
+    ax[0].set_xlabel('epoch')
+    ax[0].set_ylabel('mean loss')
+    # preds
+    y_space = torch.linspace(hypers['ymin'], hypers['ymax'], 1000).reshape(-1,1)
+    preds = model(y_space).detach().numpy()
+    ax[1].plot(preds, y_space.detach().numpy(), alpha=1, color='blue', label='NN')
+    if dns_u is not None and dns_y is not None:
+        ax[1].plot(dns_u, dns_y, alpha=1, color='red', label='DNS')
+    ax[1].set_title('Predicted $<u>$ at Retau={}'.format(retau))
+    ax[1].set_ylabel('y')
+    ax[1].set_xlabel('$<u>$')
+    ax[1].legend()
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     print('Testing channel flow NN...')
+
     # hyperparams
-    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=2000, lr=0.001, num_layers=4, num_units=40)
+    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=1000, lr=0.001, num_layers=4, num_units=20)
     delta = (hypers['ymax']-hypers['ymin'])/2
-    reynolds_stress = get_mixing_len_model(hypers['k'], delta)
+    reynolds_stress = get_mixing_len_model(hypers['k'], delta, hypers['dp_dx'], hypers['rho'], hypers['nu'])
 
     ## TRAINING: RETAU 1000
     retau=calc_retau(delta, hypers['dp_dx'], hypers['rho'], hypers['nu'])
@@ -147,18 +173,5 @@ if __name__ == '__main__':
 
     ## PLOT ##
     fig, ax = plt.subplots(1, 2, figsize=(20,10))
-    # losses
-    ax[0].plot(np.arange(len(losses1000)), losses1000, label='Retau={}'.format(retau))
-    ax[0].set_title('Mean loss per epoch')
-    ax[0].set_xlabel('epoch')
-    ax[0].set_ylabel('mean loss')
-    ax[0].legend()
-    # preds
-    y_space = torch.linspace(hypers['ymin'], hypers['ymax'], 1000).reshape(-1,1)
-    preds1000 = pdenn1000(y_space).detach().numpy()
-    ax[1].scatter(preds1000, y_space.detach().numpy(), alpha=1, s=1, label='Retau={}'.format(retau))
-    ax[1].set_title('Predicted $<u>$')
-    ax[1].set_ylabel('y')
-    ax[1].set_xlabel('$<u>$')
-    ax[1].legend()
+    make_plots(ax, losses1000, pdenn1000, hypers, retau)
     plt.show()
