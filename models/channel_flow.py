@@ -25,6 +25,20 @@ class Chanflow(torch.nn.Module):
             x = self.activation(self.layers[i](x))
         return self.layers[-1](x) # last layer is just linear (regression)
 
+    def predict(self, y, ymin=-1, ymax=1):
+        """  implements prediction (using analytical adjustment for boundary conditions) """
+        u_bar = self(y)
+        # adjust for BV conditions
+        boundary=torch.tensor(np.array([ymin, ymax]).reshape(-1,1), dtype=torch.float)
+        boundary_condition=torch.zeros_like(boundary)
+        y_0 = boundary[0,0]
+        y_f = boundary[1,0]
+        u_0 = boundary_condition[0,0]
+        u_f = boundary_condition[1,0]
+        u_bar = u_0 + (u_f-u_0)*(y - y_0)/(y_f - y_0) + (y - y_0)*(y - y_f)*u_bar
+        return u_bar
+
+
     def train(self, ymin, ymax, reynolds_stress_fn,
               nu=1., dp_dx=-1., rho=1., batch_size=1000,
               epochs=500, lr=0.001, C=1., momentum=0.9):
@@ -37,19 +51,27 @@ class Chanflow(torch.nn.Module):
         """
 
         optimizer=torch.optim.Adam(self.parameters(), lr=lr)
-        boundary=torch.tensor(np.array([ymin, ymax]).reshape(-1,1), dtype=torch.float)
-        boundary_condition=torch.zeros_like(boundary)
+        # boundary=torch.tensor(np.array([ymin, ymax]).reshape(-1,1), dtype=torch.float)
+        # boundary_condition=torch.zeros_like(boundary)
         losses=[]
 
         with tqdm.trange(epochs) as t:
             for e in t:
+
                 y_batch = ymin + (ymax-ymin)*torch.rand((batch_size,1), requires_grad=True)
 
-                # compute \bar{u} predictions
-                u_bar = self(y_batch)
+                # # compute \bar{u} predictions
+                # u_bar = self(y_batch)
+                #
+                # # adjust for BV conditions
+                # y_0 = boundary[0,0]
+                # y_f = boundary[1,0]
+                # u_0 = boundary_condition[0,0]
+                # u_f = boundary_condition[1,0]
+                # u_bar = u_0 + (u_f-u_0)*(y_batch - y_0)/(y_f - y_0) + (y_batch - y_0)*(y_batch - y_f)*u_bar
 
-                # adjust for BV conditions
-                # u_bar = BV[0] + (BV[1]-BV[0])*(y_batch - boundary[0])/(boundary[1]-boundary[0]) + (y_batch - boundary[0])*(y_batch - boundary[1])*u_bar
+                # predict
+                u_bar = self.predict(y_batch)
 
                 # compute d(\bar{u})/dy
                 du_dy, = grad(u_bar, y_batch,
@@ -72,8 +94,8 @@ class Chanflow(torch.nn.Module):
 
                 # compute loss!
                 axial_eqn = nu * d2u_dy2 - dre_dy - (1/rho) * dp_dx
-                boundary_pred = self(boundary)
-                loss = torch.mean(torch.pow(axial_eqn, 2)) + C * torch.mean(torch.pow(boundary_condition - boundary_pred, 2))
+                # boundary_pred = self(boundary)
+                loss = torch.mean(torch.pow(axial_eqn, 2)) #+ C * torch.mean(torch.pow(boundary_condition - boundary_pred, 2))
 
                 # zero grad, backprop, step
                 optimizer.zero_grad()
@@ -104,6 +126,21 @@ def calc_retau(delta, dp_dx, rho, nu):
     re_tau = u_tau * delta / nu
     return re_tau
 
+def convert_dns(delta, hypers, dns):
+    tau_w = -delta * hypers['dp_dx']
+    u_tau = np.sqrt(tau_w / hypers['rho'])
+    h_v = hypers['nu'] / u_tau
+    half_y = dns[['y+,']]*h_v
+    half_u = dns[['u_1,']]
+    # full_u = np.concatenate([half_u, half_u], axis=0)
+    # full_y = np.concatenate([half_y, -half_y+2*delta], axis=0)
+    return half_u,  half_y
+
+def plot_dns(handle, half_u, half_y, delta):
+    handle.plot(half_u, half_y-1, color='red', label='DNS')
+    handle.plot(half_u, -half_y+2*delta-1, color='red')
+    handle.legend()
+
 def get_hyperparams(dp_dx=-1.0, nu=0.001, rho=1.0, k=0.41, num_units=50,
                     num_layers=5, batch_size=1000, lr=0.001, num_epochs=1000,
                     ymin=-1, ymax=1):
@@ -122,6 +159,7 @@ def get_yspace(n=1000, ymin=-1, ymax=1):
 
 def get_mixing_len_model(k, delta, dp_dx, rho, nu):
     return lambda y, du_dy: -1*((k*(torch.abs(y)-delta))**2)*torch.abs(du_dy)*du_dy
+
     # def model(y, du_dy):
     #     tau_w = -delta * dp_dx
     #     u_tau = np.sqrt(tau_w / rho)
@@ -139,7 +177,7 @@ def make_plots(ax, losses,  model, hypers, retau, dns_u=None, dns_y=None):
     ax[0].set_ylabel('mean loss')
     # preds
     y_space = torch.linspace(hypers['ymin'], hypers['ymax'], 1000).reshape(-1,1)
-    preds = model(y_space).detach().numpy()
+    preds = model.predict(y_space).detach().numpy()
     ax[1].plot(preds, y_space.detach().numpy(), alpha=1, color='blue', label='NN')
     if dns_u is not None and dns_y is not None:
         ax[1].plot(dns_u, dns_y, alpha=1, color='red', label='DNS')
