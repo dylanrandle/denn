@@ -38,6 +38,31 @@ class Chanflow(torch.nn.Module):
         u_bar = u_0 + (u_f-u_0)*(y - y_0)/(y_f - y_0) + (y - y_0)*(y - y_f)*u_bar
         return u_bar
 
+    def compute_loss(self, u_bar, y_batch, reynolds_stress_fn, nu, rho, dp_dx):
+        # compute d(\bar{u})/dy
+        du_dy, = grad(u_bar, y_batch,
+                      grad_outputs=u_bar.data.new(u_bar.shape).fill_(1),
+                      retain_graph=True,
+                      create_graph=True)
+
+        # compute d^2(\bar{u})/dy^2
+        d2u_dy2, = grad(du_dy, y_batch,
+                        grad_outputs=du_dy.data.new(du_dy.shape).fill_(1),
+                        retain_graph=True,
+                        create_graph=True)
+
+        # compute d<uv>/dy
+        re = reynolds_stress_fn(y_batch, du_dy)
+        dre_dy, = grad(re, y_batch,
+                       grad_outputs=re.data.new(re.shape).fill_(1),
+                       retain_graph=True,
+                       create_graph=True)
+
+        # compute loss!
+        axial_eqn = nu * d2u_dy2 - dre_dy - (1/rho) * dp_dx
+        loss = torch.mean(torch.pow(axial_eqn, 2))
+        return loss
+
 
     def train(self, ymin, ymax, reynolds_stress_fn,
               nu=1., dp_dx=-1., rho=1., batch_size=1000,
@@ -51,51 +76,18 @@ class Chanflow(torch.nn.Module):
         """
 
         optimizer=torch.optim.Adam(self.parameters(), lr=lr)
-        # boundary=torch.tensor(np.array([ymin, ymax]).reshape(-1,1), dtype=torch.float)
-        # boundary_condition=torch.zeros_like(boundary)
         losses=[]
 
         with tqdm.trange(epochs) as t:
             for e in t:
-
+                # sample y_batch
                 y_batch = ymin + (ymax-ymin)*torch.rand((batch_size,1), requires_grad=True)
 
-                # # compute \bar{u} predictions
-                # u_bar = self(y_batch)
-                #
-                # # adjust for BV conditions
-                # y_0 = boundary[0,0]
-                # y_f = boundary[1,0]
-                # u_0 = boundary_condition[0,0]
-                # u_f = boundary_condition[1,0]
-                # u_bar = u_0 + (u_f-u_0)*(y_batch - y_0)/(y_f - y_0) + (y_batch - y_0)*(y_batch - y_f)*u_bar
-
-                # predict
+                # predict on y_batch (does BV adjustment)
                 u_bar = self.predict(y_batch)
 
-                # compute d(\bar{u})/dy
-                du_dy, = grad(u_bar, y_batch,
-                              grad_outputs=u_bar.data.new(u_bar.shape).fill_(1),
-                              retain_graph=True,
-                              create_graph=True)
-
-                # compute d^2(\bar{u})/dy^2
-                d2u_dy2, = grad(du_dy, y_batch,
-                                grad_outputs=du_dy.data.new(du_dy.shape).fill_(1),
-                                retain_graph=True,
-                                create_graph=True)
-
-                # compute d<uv>/dy
-                re = reynolds_stress_fn(y_batch, du_dy)
-                dre_dy, = grad(re, y_batch,
-                               grad_outputs=re.data.new(re.shape).fill_(1),
-                               retain_graph=True,
-                               create_graph=True)
-
-                # compute loss!
-                axial_eqn = nu * d2u_dy2 - dre_dy - (1/rho) * dp_dx
-                # boundary_pred = self(boundary)
-                loss = torch.mean(torch.pow(axial_eqn, 2)) #+ C * torch.mean(torch.pow(boundary_condition - boundary_pred, 2))
+                # compute loss
+                loss = self.compute_loss(u_bar, y_batch, reynolds_stress_fn, nu, rho, dp_dx)
 
                 # zero grad, backprop, step
                 optimizer.zero_grad()
