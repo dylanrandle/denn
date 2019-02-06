@@ -38,7 +38,7 @@ class Chanflow(torch.nn.Module):
         u_bar = u_0 + (u_f-u_0)*(y - y_0)/(y_f - y_0) + (y - y_0)*(y - y_f)*u_bar
         return u_bar
 
-    def compute_loss(self, u_bar, y_batch, reynolds_stress_fn, nu, rho, dp_dx):
+    def compute_diffeq(self, u_bar, y_batch, reynolds_stress_fn, nu, rho, dp_dx):
         # compute d(\bar{u})/dy
         du_dy, = grad(u_bar, y_batch,
                       grad_outputs=u_bar.data.new(u_bar.shape).fill_(1),
@@ -59,10 +59,8 @@ class Chanflow(torch.nn.Module):
                        create_graph=True)
 
         # compute loss!
-        axial_eqn = nu * d2u_dy2 - dre_dy - (1/rho) * dp_dx
-        loss = torch.mean(torch.pow(axial_eqn, 2))
-        return loss
-
+        diffeq = nu * d2u_dy2 - dre_dy - (1/rho) * dp_dx
+        return diffeq
 
     def train(self, ymin, ymax, reynolds_stress_fn,
               nu=1., dp_dx=-1., rho=1., batch_size=1000,
@@ -86,14 +84,16 @@ class Chanflow(torch.nn.Module):
                 # predict on y_batch (does BV adjustment)
                 u_bar = self.predict(y_batch)
 
-                # compute loss
-                loss = self.compute_loss(u_bar, y_batch, reynolds_stress_fn, nu, rho, dp_dx)
+                # compute diffeq and loss
+                diffeq = self.compute_diffeq(u_bar, y_batch, reynolds_stress_fn, nu, rho, dp_dx)
+                loss = torch.mean(torch.pow(diffeq, 2))
 
                 # zero grad, backprop, step
                 optimizer.zero_grad()
                 loss.backward(retain_graph=False, create_graph=False)
                 optimizer.step()
 
+                # do some bookkeeping
                 loss = loss.data.numpy()
                 losses.append(loss)
                 t.set_postfix(loss=np.round(loss, 2))
