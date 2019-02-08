@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from torch.autograd import grad
 import tqdm
+import copy
 
 class Chanflow(torch.nn.Module):
     """ Basic neural network to approximate the solution of the stationary channel flow PDE """
@@ -18,6 +19,10 @@ class Chanflow(torch.nn.Module):
                 self.layers.append(torch.nn.Linear(num_units, out_dim))
             else: # hidden layer(s)
                 self.layers.append(torch.nn.Linear(num_units, num_units))
+
+        ## TODO ##
+        # - should include reynolds stress function when initializing the model
+        # - should save the nu associated with each Re_tau number
 
     def forward(self, x):
         """ implements a forward pass """
@@ -58,9 +63,24 @@ class Chanflow(torch.nn.Module):
                        retain_graph=True,
                        create_graph=True)
 
-        # compute loss!
         diffeq = nu * d2u_dy2 - dre_dy - (1/rho) * dp_dx
         return diffeq
+
+    # def compute_coupled_diffeq(self, u_bar, y_batch, reynolds_stress_fn, nu, rho, dp_dx):
+    #     # compute du/dy
+    #     du_dy, = grad(u_bar, y_batch,
+    #                   grad_outputs=u_bar.data.new(u_bar.shape).fill_(1),
+    #                   retain_graph=True,
+    #                   create_graph=True)
+    #
+    #     # compute d<uv>/dy
+    #     re = reynolds_stress_fn(y_batch, du_dy)
+    #     dre_dy, = grad(re, y_batch,
+    #                    grad_outputs=re.data.new(re.shape).fill_(1),
+    #                    retain_graph=True,
+    #                    create_graph=True)
+    #
+    #     # diffeq1 =
 
     def train(self, ymin, ymax, reynolds_stress_fn,
               nu=1., dp_dx=-1., rho=1., batch_size=1000,
@@ -75,6 +95,8 @@ class Chanflow(torch.nn.Module):
 
         optimizer=torch.optim.Adam(self.parameters(), lr=lr)
         losses=[]
+        best_model=None
+        best_loss=1e8
 
         with tqdm.trange(epochs) as t:
             for e in t:
@@ -88,6 +110,10 @@ class Chanflow(torch.nn.Module):
                 diffeq = self.compute_diffeq(u_bar, y_batch, reynolds_stress_fn, nu, rho, dp_dx)
                 loss = torch.mean(torch.pow(diffeq, 2))
 
+                if loss.data.numpy() < best_loss:
+                    best_model=copy.deepcopy(self)
+                    best_loss=loss.data.numpy()
+
                 # zero grad, backprop, step
                 optimizer.zero_grad()
                 loss.backward(retain_graph=False, create_graph=False)
@@ -98,7 +124,17 @@ class Chanflow(torch.nn.Module):
                 losses.append(loss)
                 t.set_postfix(loss=np.round(loss, 2))
 
-        return losses
+        return losses, best_model
+
+def loss_vs_distance(ax, ymin, ymax, model, hypers, reynolds_stress):
+    y = torch.tensor(torch.linspace(ymin,ymax,1000).reshape(-1,1), requires_grad=True)
+    u_bar = model.predict(y)
+    axial_eqn = model.compute_diffeq(u_bar, y, reynolds_stress, hypers['nu'], hypers['rho'], hypers['dp_dx'])
+    ax.plot(y.detach().numpy(), np.power(axial_eqn.detach().numpy(), 2), 'o', markersize=2, lw=0.5, label='square')
+    ax.set_title('Loss as a function of distance on ({}, {})'.format(ymin, ymax))
+    ax.set_ylabel('Loss (f^2 or |f|)')
+    ax.set_xlabel('position (y)')
+    ax.legend()
 
 def calc_renot(u_bar, delta, nu):
     n = u_bar.shape[0]
@@ -163,10 +199,10 @@ def get_mixing_len_model(k, delta, dp_dx, rho, nu):
 def make_plots(ax, losses,  model, hypers, retau, dns_u=None, dns_y=None):
     """ plot loss and prediction of model at retau """
     # losses
-    ax[0].plot(np.arange(len(losses)), losses, color='blue')
-    ax[0].set_title('Mean loss per epoch at Retau={}'.format(retau))
-    ax[0].set_xlabel('epoch')
-    ax[0].set_ylabel('mean loss')
+    ax[0].loglog(np.arange(len(losses)), losses, color='blue')
+    ax[0].set_title('Log mean loss vs. log epoch at Retau={}'.format(retau))
+    ax[0].set_xlabel('log( epoch )')
+    ax[0].set_ylabel('log( mean loss )')
     # preds
     y_space = torch.linspace(hypers['ymin'], hypers['ymax'], 1000).reshape(-1,1)
     preds = model.predict(y_space).detach().numpy()
