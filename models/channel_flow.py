@@ -227,7 +227,7 @@ if __name__ == '__main__':
     retau=calc_retau(delta, hypers['dp_dx'], hypers['rho'], hypers['nu'])
     print('Training at Retau={}'.format(retau))
     pdenn1000 = Chanflow(num_units=hypers['num_units'], num_layers=hypers['num_layers'])
-    losses1000 = pdenn1000.train(hypers['ymin'], hypers['ymax'],
+    losses1000, pdenn1000 = pdenn1000.train(hypers['ymin'], hypers['ymax'],
                                    reynolds_stress,
                                    nu=hypers['nu'],
                                    dp_dx=hypers['dp_dx'],
