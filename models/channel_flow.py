@@ -217,6 +217,7 @@ def make_plots(ax, losses,  model, hypers, retau, dns_u=None, dns_y=None):
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
     import time
+    import os
     print('Testing channel flow NN...')
 
     # hyperparams
@@ -239,14 +240,16 @@ if __name__ == '__main__':
                                    lr=hypers['lr'],
                                    weight_decay=hypers['weight_decay'])
 
-    # save preds
+    # save everything from the run
     y=np.linspace(-1,1,1000)
     preds = pdenn_best.predict(torch.tensor(y.reshape(-1,1), dtype=torch.float)).detach().numpy()
     timestamp=time.time()
-    retau=np.round(retau, 0)
-    np.save('data/mixlen_preds_u{}_{}.npy'.format(retau, timestamp), preds)
-    np.save('data/mixlen_loss_u{}_{}.npy'.format(retau, timestamp), np.array(losses))
-    np.save('data/mixlen_hypers_u{}_{}.npy'.format(retau, timestamp), hypers)
+    retau=np.round(retau, decimals=2)
+    os.mkdir('data/{}'.format(timestamp))
+    np.save('data/{}/mixlen_preds_u{}.npy'.format(timestamp, retau), preds)
+    np.save('data/{}/mixlen_loss_u{}.npy'.format(timestamp, retau), np.array(losses))
+    np.save('data/{}/mixlen_hypers_u{}.npy'.format(timestamp, retau), hypers)
+    torch.save(pdenn_best.state_dict(), 'data/{}/mixlen_model_u{}.pt'.format(timestamp, retau))
 
     ## PLOT ##
     # fig, ax = plt.subplots(1, 2, figsize=(20,10))
