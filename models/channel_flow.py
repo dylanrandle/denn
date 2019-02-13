@@ -221,7 +221,7 @@ if __name__ == '__main__':
     print('Testing channel flow NN...')
 
     # hyperparams
-    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=200000, lr=0.0001, num_layers=4, num_units=40, batch_size=1000, weight_decay=1)
+    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=200000, lr=0.0001, num_layers=4, num_units=40, batch_size=1000, weight_decay=.1)
     delta = (hypers['ymax']-hypers['ymin'])/2
     reynolds_stress = get_mixing_len_model(hypers['k'], delta, hypers['dp_dx'], hypers['rho'], hypers['nu'])
 
