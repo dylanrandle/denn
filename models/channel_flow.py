@@ -84,7 +84,7 @@ class Chanflow(torch.nn.Module):
 
     def train(self, ymin, ymax, reynolds_stress_fn,
               nu=1., dp_dx=-1., rho=1., batch_size=1000,
-              epochs=500, lr=0.001, C=1., momentum=0.9):
+              epochs=500, lr=0.001, momentum=0.9, weight_decay=0):
 
         """ implements training
         args:
@@ -93,7 +93,7 @@ class Chanflow(torch.nn.Module):
         reynolds_stress_fn - a function that accepts as arguments (y, du_dy) and returns a reynolds stress
         """
 
-        optimizer=torch.optim.Adam(self.parameters(), lr=lr)
+        optimizer=torch.optim.Adam(self.parameters(), lr=lr, weight_decay=weight_decay)
         losses=[]
         best_model=None
         best_loss=1e8
@@ -171,7 +171,7 @@ def plot_dns(handle, half_u, half_y, delta):
 
 def get_hyperparams(dp_dx=-1.0, nu=0.001, rho=1.0, k=0.41, num_units=50,
                     num_layers=5, batch_size=1000, lr=0.001, num_epochs=1000,
-                    ymin=-1, ymax=1):
+                    ymin=-1, ymax=1, weight_decay=0):
     """
     dp_dx - pressure gradient
     nu - kinematic viscosity
@@ -179,7 +179,7 @@ def get_hyperparams(dp_dx=-1.0, nu=0.001, rho=1.0, k=0.41, num_units=50,
     k - karman constant (mixing length model), see: https://en.wikipedia.org/wiki/Von_K%C3%A1rm%C3%A1n_constant
     """
     return dict(dp_dx=dp_dx, nu=nu, rho=rho, k=k, num_units=num_units, num_layers=num_layers,
-                batch_size=batch_size, lr=lr, num_epochs=num_epochs, ymin=ymin, ymax=ymax)
+                batch_size=batch_size, lr=lr, num_epochs=num_epochs, ymin=ymin, ymax=ymax, weight_decay=weight_decay)
 
 def get_yspace(n=1000, ymin=-1, ymax=1):
     ygrid = torch.linspace(ymin, ymax, n).reshape(-1,1)
@@ -219,7 +219,7 @@ if __name__ == '__main__':
     print('Testing channel flow NN...')
 
     # hyperparams
-    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=1000, lr=0.001, num_layers=4, num_units=20)
+    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=10000, lr=0.001, num_layers=4, num_units=20)
     delta = (hypers['ymax']-hypers['ymin'])/2
     reynolds_stress = get_mixing_len_model(hypers['k'], delta, hypers['dp_dx'], hypers['rho'], hypers['nu'])
 
@@ -235,7 +235,7 @@ if __name__ == '__main__':
                                    batch_size=hypers['batch_size'],
                                    epochs=hypers['num_epochs'],
                                    lr=hypers['lr'],
-                                   C=1)
+                                   weight_decay=hypers['weight_decay'])
 
     ## PLOT ##
     fig, ax = plt.subplots(1, 2, figsize=(20,10))
