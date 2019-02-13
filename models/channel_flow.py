@@ -216,18 +216,20 @@ def make_plots(ax, losses,  model, hypers, retau, dns_u=None, dns_y=None):
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
+    import time
     print('Testing channel flow NN...')
 
     # hyperparams
-    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=10000, lr=0.001, num_layers=4, num_units=20)
+    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=200000, lr=0.0001, num_layers=4, num_units=40, batch_size=1000)
     delta = (hypers['ymax']-hypers['ymin'])/2
     reynolds_stress = get_mixing_len_model(hypers['k'], delta, hypers['dp_dx'], hypers['rho'], hypers['nu'])
 
-    ## TRAINING: RETAU 1000
+    # training
+    hypers['nu']=0.005555555555
     retau=calc_retau(delta, hypers['dp_dx'], hypers['rho'], hypers['nu'])
     print('Training at Retau={}'.format(retau))
-    pdenn1000 = Chanflow(num_units=hypers['num_units'], num_layers=hypers['num_layers'])
-    losses1000, pdenn1000 = pdenn1000.train(hypers['ymin'], hypers['ymax'],
+    pdenn = Chanflow(num_units=hypers['num_units'], num_layers=hypers['num_layers'])
+    losses, pdenn_best = pdenn.train(hypers['ymin'], hypers['ymax'],
                                    reynolds_stress,
                                    nu=hypers['nu'],
                                    dp_dx=hypers['dp_dx'],
@@ -237,7 +239,14 @@ if __name__ == '__main__':
                                    lr=hypers['lr'],
                                    weight_decay=hypers['weight_decay'])
 
+    # save preds
+    y=np.linspace(-1,1,1000)
+    preds = pdenn_best.predict(torch.tensor(y.reshape(-1,1), dtype=torch.float)).detach().numpy()
+    timestamp=time.time()
+    np.save('data/mixlen_preds_u180_{}.npy'.format(timestamp), preds)
+    np.save('data/mixlen_loss_u180_{}.npy'.format(timestamp), np.array(losses))
+
     ## PLOT ##
-    fig, ax = plt.subplots(1, 2, figsize=(20,10))
-    make_plots(ax, losses1000, pdenn1000, hypers, retau)
-    plt.show()
+    # fig, ax = plt.subplots(1, 2, figsize=(20,10))
+    # make_plots(ax, losses1000, pdenn1000, hypers, retau)
+    # plt.show()
