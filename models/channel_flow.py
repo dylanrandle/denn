@@ -220,7 +220,7 @@ if __name__ == '__main__':
     print('Testing channel flow NN...')
 
     # hyperparams
-    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=200000, lr=0.0001, num_layers=4, num_units=40, batch_size=1000)
+    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=200000, lr=0.0001, num_layers=4, num_units=40, batch_size=1000, weight_decay=1)
     delta = (hypers['ymax']-hypers['ymin'])/2
     reynolds_stress = get_mixing_len_model(hypers['k'], delta, hypers['dp_dx'], hypers['rho'], hypers['nu'])
 
@@ -243,8 +243,10 @@ if __name__ == '__main__':
     y=np.linspace(-1,1,1000)
     preds = pdenn_best.predict(torch.tensor(y.reshape(-1,1), dtype=torch.float)).detach().numpy()
     timestamp=time.time()
-    np.save('data/mixlen_preds_u180_{}.npy'.format(timestamp), preds)
-    np.save('data/mixlen_loss_u180_{}.npy'.format(timestamp), np.array(losses))
+    retau=np.round(retau, 0)
+    np.save('data/mixlen_preds_u{}_{}.npy'.format(retau, timestamp), preds)
+    np.save('data/mixlen_loss_u{}_{}.npy'.format(retau, timestamp), np.array(losses))
+    np.save('data/mixlen_hypers_u{}_{}.npy'.format(retau, timestamp), hypers)
 
     ## PLOT ##
     # fig, ax = plt.subplots(1, 2, figsize=(20,10))
