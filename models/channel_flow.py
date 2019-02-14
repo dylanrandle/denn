@@ -84,7 +84,8 @@ class Chanflow(torch.nn.Module):
 
     def train(self, ymin, ymax, reynolds_stress_fn,
               nu=1., dp_dx=-1., rho=1., batch_size=1000,
-              epochs=500, lr=0.001, momentum=0.9, weight_decay=0):
+              epochs=500, lr=0.001, momentum=0.9, weight_decay=0,
+              device=torch.device('cpu'), disable_status=False):
 
         """ implements training
         args:
@@ -98,10 +99,10 @@ class Chanflow(torch.nn.Module):
         best_model=None
         best_loss=1e8
 
-        with tqdm.trange(epochs) as t:
+        with tqdm.trange(epochs, disable=disable_status) as t:
             for e in t:
                 # sample y_batch
-                y_batch = ymin + (ymax-ymin)*torch.rand((batch_size,1), requires_grad=True)
+                y_batch = ymin + (ymax-ymin)*torch.rand((batch_size,1), requires_grad=True, device=device)
 
                 # predict on y_batch (does BV adjustment)
                 u_bar = self.predict(y_batch)
@@ -221,11 +222,11 @@ if __name__ == '__main__':
     print('Testing channel flow NN...')
 
     # hyperparams
-    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=200000, lr=0.0001, num_layers=4, num_units=40, batch_size=1000, weight_decay=.1)
+    hypers = get_hyperparams(ymin=-1, ymax=1, num_epochs=1000, lr=0.0001, num_layers=4, num_units=40, batch_size=1000, weight_decay=.1)
     delta = (hypers['ymax']-hypers['ymin'])/2
     reynolds_stress = get_mixing_len_model(hypers['k'], delta, hypers['dp_dx'], hypers['rho'], hypers['nu'])
 
-    # training
+    # test training
     hypers['nu']=0.005555555555
     retau=calc_retau(delta, hypers['dp_dx'], hypers['rho'], hypers['nu'])
     print('Training at Retau={}'.format(retau))
@@ -240,7 +241,7 @@ if __name__ == '__main__':
                                    lr=hypers['lr'],
                                    weight_decay=hypers['weight_decay'])
 
-    # save everything from the run
+    # test saving everything from the run
     y=np.linspace(-1,1,1000)
     preds = pdenn_best.predict(torch.tensor(y.reshape(-1,1), dtype=torch.float)).detach().numpy()
     timestamp=time.time()
@@ -251,7 +252,7 @@ if __name__ == '__main__':
     np.save('data/{}/mixlen_hypers_u{}.npy'.format(timestamp, retau), hypers)
     torch.save(pdenn_best.state_dict(), 'data/{}/mixlen_model_u{}.pt'.format(timestamp, retau))
 
-    ## PLOT ##
-    # fig, ax = plt.subplots(1, 2, figsize=(20,10))
-    # make_plots(ax, losses1000, pdenn1000, hypers, retau)
-    # plt.show()
+    # test plots
+    fig, ax = plt.subplots(1, 2, figsize=(20,10))
+    make_plots(ax, losses1000, pdenn1000, hypers, retau)
+    plt.show()
