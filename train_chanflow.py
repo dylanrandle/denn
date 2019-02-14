@@ -23,7 +23,7 @@ if __name__ == '__main__':
     hypers = chan.get_hyperparams(
                   ymin=-1,
                   ymax=1,
-                  num_epochs=200,
+                  num_epochs=200000,
                   lr=0.0001,
                   num_layers=4,
                   num_units=40,
