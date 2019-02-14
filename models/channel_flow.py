@@ -95,26 +95,38 @@ class Chanflow(torch.nn.Module):
         """
 
         optimizer=torch.optim.Adam(self.parameters(), lr=lr, weight_decay=weight_decay)
-        losses=[]
+        # optimizer=torch.optim.SGD(self.parameters(), lr=lr)
+        # optimizer=torch.optim.Nadam(self.parameters())
+        train_losses, val_losses=[], []
         best_model=None
         best_loss=1e8
+
+        # train_set = ymin + (ymax-ymin)*torch.rand((epochs, batch_size,1), requires_grad=True, device=device)
+        val_set = ymin + (ymax-ymin)*torch.rand((epochs, batch_size,1), requires_grad=True, device=device)
+        grid_points = torch.linspace(ymin, ymax, batch_size, requires_grad=True, device=device).reshape(-1,1)
 
         with tqdm.trange(epochs, disable=disable_status) as t:
             for e in t:
                 # sample y_batch
-                y_batch = ymin + (ymax-ymin)*torch.rand((batch_size,1), requires_grad=True, device=device)
+                # y_batch = ymin + (ymax-ymin)*torch.rand((batch_size,1), requires_grad=True, device=device)
+                y_batch = grid_points
+                val_batch = val_set[e,:,:]
 
                 # predict on y_batch (does BV adjustment)
                 u_bar = self.predict(y_batch)
+                u_val = self.predict(val_batch)
 
                 # compute diffeq and loss
                 diffeq = self.compute_diffeq(u_bar, y_batch, reynolds_stress_fn, nu, rho, dp_dx)
+                diffeq_val = self.compute_diffeq(u_val, val_batch, reynolds_stress_fn, nu, rho, dp_dx)
                 loss = torch.mean(torch.pow(diffeq, 2))
+                val_loss = torch.mean(torch.pow(diffeq_val, 2))
 
-                loss_val = loss.data.cpu().numpy()
-                if loss_val < best_loss:
+                loss_ = loss.data.cpu().numpy()
+                val_loss_ = val_loss.data.cpu().numpy()
+                if val_loss_ < best_loss:
                     best_model=copy.deepcopy(self)
-                    best_loss=loss_val
+                    best_loss=val_loss_
 
                 # zero grad, backprop, step
                 optimizer.zero_grad()
@@ -122,13 +134,14 @@ class Chanflow(torch.nn.Module):
                 optimizer.step()
 
                 # do some bookkeeping
-                losses.append(loss_val)
-                t.set_postfix(loss=np.round(loss_val, 2))
+                train_losses.append(loss_)
+                val_losses.append(val_loss_)
+                t.set_postfix(loss=np.round(loss_, 2))
 
                 if e > 0 and disable_status and e % 1000 == 0: # use very light logging when disable_status is true
                     print('Epoch {}: Loss = {}'.format(e, loss_val))
 
-        return losses, best_model
+        return dict(train_loss=train_losses, val_loss=val_losses, best_model=best_model)
 
 def loss_vs_distance(ax, ymin, ymax, model, hypers, reynolds_stress):
     y = torch.tensor(torch.linspace(ymin,ymax,1000).reshape(-1,1), requires_grad=True)
