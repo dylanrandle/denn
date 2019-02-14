@@ -111,9 +111,10 @@ class Chanflow(torch.nn.Module):
                 diffeq = self.compute_diffeq(u_bar, y_batch, reynolds_stress_fn, nu, rho, dp_dx)
                 loss = torch.mean(torch.pow(diffeq, 2))
 
-                if loss.data.numpy() < best_loss:
+                loss_val = loss.data.cpu().numpy()
+                if loss_val < best_loss:
                     best_model=copy.deepcopy(self)
-                    best_loss=loss.data.numpy()
+                    best_loss=loss_val
 
                 # zero grad, backprop, step
                 optimizer.zero_grad()
@@ -121,9 +122,11 @@ class Chanflow(torch.nn.Module):
                 optimizer.step()
 
                 # do some bookkeeping
-                loss = loss.data.numpy()
-                losses.append(loss)
-                t.set_postfix(loss=np.round(loss, 2))
+                losses.append(loss_val)
+                t.set_postfix(loss=np.round(loss_val, 2))
+
+                if e > 0 and disable_status and e % 1000 == 0: # use very light logging when disable_status is true
+                    print('Epoch {}: Loss = {}'.format(e, loss_val))
 
         return losses, best_model
 
