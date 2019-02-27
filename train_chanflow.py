@@ -1,4 +1,4 @@
-import models.channel_flow as chan
+import channel_flow as chan
 import numpy as np
 import torch
 import os

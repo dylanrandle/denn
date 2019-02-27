@@ -5,11 +5,12 @@ import tqdm
 import copy
 import time
 import os
+import utils
 
 class Chanflow(torch.nn.Module):
     """ Basic neural network to approximate the solution of the stationary channel flow PDE """
 
-    def __init__(self, in_dim=1, out_dim=1, **kwargs):
+    def __init__(self, **kwargs):
         """ initializes architecture:
         - for now, user should call set_hyperparams() to change from defaults
         """
@@ -20,6 +21,8 @@ class Chanflow(torch.nn.Module):
         self.set_hyperparams(**kwargs)
         num_units=self.hypers['num_units']
         num_layers=self.hypers['num_layers']
+        in_dim=self.hypers['in_dim']
+        out_dim=self.hypers['out_dim']
         self.set_reynolds_stress_fn()
 
         # build architecture
@@ -30,19 +33,21 @@ class Chanflow(torch.nn.Module):
 
     def set_hyperparams(self, dp_dx=-1.0, nu=0.0055555555, rho=1.0, k=0.41, num_units=40,
                         num_layers=2, batch_size=1000, lr=0.0001, num_epochs=1000,
-                        ymin=-1, ymax=1, n=1000, weight_decay=0, in_dim=1, out_dim=1):
+                        ymin=-1, ymax=1, n=1000, weight_decay=0, in_dim=1, out_dim=1,
+                        delta=1, retau=180):
         """
         dp_dx - pressure gradient
         nu - kinematic viscosity
         rho - density
-        k - karman constant (mixing length model), see: https://en.wikipedia.org/wiki/Von_K%C3%A1rm%C3%A1n_constant
+        k - karman constant (mixing length model),
+            see: https://en.wikipedia.org/wiki/Von_K%C3%A1rm%C3%A1n_constant
         """
-        delta = np.abs(ymax-ymin)/2
+        # delta = np.abs(ymax-ymin)/2
         self.hypers = dict(dp_dx=dp_dx, nu=nu, rho=rho, k=k,
                     num_units=num_units, num_layers=num_layers,
                     batch_size=batch_size, lr=lr, num_epochs=num_epochs,
                     ymin=ymin, ymax=ymax, weight_decay=weight_decay,
-                    delta=delta, n=1000, in_dim=1, out_dim=1)
+                    delta=delta, n=1000, in_dim=1, out_dim=1, retau=retau)
 
     def forward(self, x):
         """ implements a forward pass """
@@ -71,6 +76,9 @@ class Chanflow(torch.nn.Module):
         self.reynolds_stress_fn = lambda y, du_dy: -1*((k*(torch.abs(y)-delta))**2)*torch.abs(du_dy)*du_dy
 
     def compute_diffeq(self, u_bar, y_batch):
+        dp_dx=self.hypers['dp_dx']
+        rho=self.hypers['rho']
+        nu=self.hypers['nu']
         # compute d(\bar{u})/dy
         du_dy, = grad(u_bar, y_batch,
                       grad_outputs=u_bar.data.new(u_bar.shape).fill_(1),
@@ -90,9 +98,6 @@ class Chanflow(torch.nn.Module):
                        retain_graph=True,
                        create_graph=True)
 
-        dp_dx=self.hypers['dp_dx']
-        rho=self.hypers['rho']
-        nu=self.hypers['nu']
         diffeq = nu * d2u_dy2 - dre_dy - (1/rho) * dp_dx
         return diffeq
 
@@ -110,7 +115,7 @@ class Chanflow(torch.nn.Module):
         epochs=self.hypers['num_epochs']
         lr=self.hypers['lr']
         weight_decay=self.hypers['weight_decay']
-        self.set_reynolds_stress_fn() # in case state has changed since initialization
+        self.set_reynolds_stress_fn() # in case hypers has changed since initialization (TODO: check if this is necessary)
 
         optimizer=torch.optim.Adam(self.parameters(), lr=lr, weight_decay=weight_decay)
         train_losses, val_losses=[], []
@@ -174,22 +179,16 @@ class Chanflow(torch.nn.Module):
         y = np.linspace(self.hypers['ymin'],self.hypers['ymax'],self.hypers['n'])
         preds = pdenn_best.predict(torch.tensor(y.reshape(-1,1), dtype=torch.float)).detach().numpy()
         timestamp=time.time()
-        retau=np.round(calc_retau(self.hypers['delta'], self.hypers['dp_dx'], self.hypers['rho'], self.hypers['nu']), decimals=2)
+        retau=np.round(utils.calc_retau(self.hypers['delta'], self.hypers['dp_dx'], self.hypers['rho'], self.hypers['nu']), decimals=2)
         hypers=self.hypers
+        hypers['retau']=retau
         # saving them
         os.mkdir('data/{}'.format(timestamp))
-        np.save('data/{}/mixlen_preds_u{}.npy'.format(timestamp, retau), preds)
-        np.save('data/{}/mixlen_loss_u{}.npy'.format(timestamp, retau), np.array(losses))
-        np.save('data/{}/mixlen_hypers_u{}.npy'.format(timestamp, retau), hypers)
-        torch.save(pdenn_best.state_dict(), 'data/{}/mixlen_model_u{}.pt'.format(timestamp, retau))
+        np.save('data/{}/preds.npy'.format(timestamp), preds)
+        np.save('data/{}/loss.npy'.format(timestamp), np.array(losses))
+        np.save('data/{}/hypers.npy'.format(timestamp), hypers)
+        torch.save(pdenn_best.state_dict(), 'data/{}/model.pt'.format(timestamp, retau))
         print('Successfully saved at data/{}/'.format(timestamp))
-
-def calc_retau(delta, dp_dx, rho, nu):
-    """calculates Re_tau (Re stands for Reynolds number)"""
-    tau_w = -delta * dp_dx
-    u_tau = np.sqrt(tau_w / rho)
-    re_tau = u_tau * delta / nu
-    return re_tau
 
 if __name__ == '__main__':
     print('Testing channel flow NN')
