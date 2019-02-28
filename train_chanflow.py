@@ -7,6 +7,11 @@ import time
 import utils
 torch.random.manual_seed(123)
 
+HYPERS={
+        'num_epochs': 10000,
+        'sampling': 'grid'
+       }
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='ChannelFlow command-line args')
     parser.add_argument('--disable-cuda', action='store_true',
@@ -23,7 +28,8 @@ if __name__ == '__main__':
         args.device = torch.device('cpu')
 
     pdenn = chan.Chanflow().to(device=args.device)
+    pdenn.set_hyperparams(**HYPERS)
     hypers = pdenn.hypers
-    retau=utils.calc_retau(hypers['delta'], hypers['dp_dx'], hypers['rho'], hypers['nu'])
+    retau = utils.calc_retau(hypers['delta'], hypers['dp_dx'], hypers['rho'], hypers['nu'])
     print('Training with Retau={}'.format(retau))
     run_dict = pdenn.train(device=args.device, disable_status=args.disable_status, save_run=not args.disable_save)

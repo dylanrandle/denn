@@ -52,12 +52,11 @@ def loss_vs_distance(ax, ymin, ymax, model, n):
     ax.set_xlabel('position (y)')
     ax.legend()
 
-def make_plots(ax, losses,  model, hypers, retau, numerical):
+def make_plots(ax, train_loss, val_loss,  model, hypers, retau, numerical):
     """ plot loss and prediction of model at retau """
     # losses
-    n=np.arange(len(losses))
-    ax[0].loglog(n, losses[:,0], color='blue', label='train')
-    ax[0].loglog(n, losses[:,1], color='green', label='val', alpha=0.5)
+    ax[0].loglog(np.arange(train_loss.shape[0]), train_loss, color='blue', label='train')
+    ax[0].loglog(np.arange(val_loss.shape[0])*100, val_loss, color='orange', label='val', alpha=0.7)
     ax[0].set_title('Log mean loss vs. log epoch at Retau={}'.format(retau))
     ax[0].set_xlabel('log( epoch )')
     ax[0].set_ylabel('log( mean loss )')
@@ -77,7 +76,8 @@ def expose_results(folder_timestamp, dns_file='data/LM_Channel_Retau180.txt', nu
 
     # load everything from disk
     preds = np.load('data/{}/preds.npy'.format(folder_timestamp))
-    losses = np.load('data/{}/loss.npy'.format(folder_timestamp))
+    train_loss = np.load('data/{}/train_loss.npy'.format(folder_timestamp))
+    val_loss = np.load('data/{}/val_loss.npy'.format(folder_timestamp))
     hypers = np.load('data/{}/hypers.npy'.format(folder_timestamp))
     hypers = hypers.item()
     pdenn = chan.Chanflow(**hypers)
@@ -89,7 +89,7 @@ def expose_results(folder_timestamp, dns_file='data/LM_Channel_Retau180.txt', nu
 
     fig, ax = plt.subplots(1, 2, figsize=(20,10))
     plot_dns(ax[1], half_u, half_y, hypers['delta'])
-    make_plots(ax, losses, pdenn, hypers, retau, numerical)
+    make_plots(ax, train_loss, val_loss, pdenn, hypers, retau, numerical)
 
     y = np.linspace(hypers['ymin'], hypers['ymax'], hypers['n'])
     fig, ax = plt.subplots(1, 1, figsize=(10,8))

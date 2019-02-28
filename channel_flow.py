@@ -11,8 +11,8 @@ class Chanflow(torch.nn.Module):
     """ Basic neural network to approximate the solution of the stationary channel flow PDE """
 
     def __init__(self, **kwargs):
-        """ initializes architecture:
-        - for now, user should call set_hyperparams() to change from defaults
+        """
+        initializes architecture, sets hyper parameters, and sets reynolds stress model
         """
         super().__init__()
         self.activation=torch.nn.Tanh()
@@ -34,7 +34,7 @@ class Chanflow(torch.nn.Module):
     def set_hyperparams(self, dp_dx=-1.0, nu=0.0055555555, rho=1.0, k=0.41, num_units=40,
                         num_layers=2, batch_size=1000, lr=0.0001, num_epochs=1000,
                         ymin=-1, ymax=1, n=1000, weight_decay=0, in_dim=1, out_dim=1,
-                        delta=1, retau=180):
+                        delta=1, retau=180, sampling='grid'):
         """
         dp_dx - pressure gradient
         nu - kinematic viscosity
@@ -47,7 +47,8 @@ class Chanflow(torch.nn.Module):
                     num_units=num_units, num_layers=num_layers,
                     batch_size=batch_size, lr=lr, num_epochs=num_epochs,
                     ymin=ymin, ymax=ymax, weight_decay=weight_decay,
-                    delta=delta, n=1000, in_dim=1, out_dim=1, retau=retau)
+                    delta=delta, n=1000, in_dim=1, out_dim=1, retau=retau,
+                    sampling=sampling)
 
     def forward(self, x):
         """ implements a forward pass """
@@ -115,6 +116,7 @@ class Chanflow(torch.nn.Module):
         epochs=self.hypers['num_epochs']
         lr=self.hypers['lr']
         weight_decay=self.hypers['weight_decay']
+        sampling=self.hypers['sampling']
         self.set_reynolds_stress_fn() # in case hypers has changed since initialization (TODO: check if this is necessary)
 
         optimizer=torch.optim.Adam(self.parameters(), lr=lr, weight_decay=weight_decay)
@@ -122,45 +124,67 @@ class Chanflow(torch.nn.Module):
         best_model=None
         best_loss=1e8
 
-        # train_set = ymin + (ymax-ymin)*torch.rand((epochs, batch_size,1), requires_grad=True, device=device)
-        val_set = ymin + (ymax-ymin)*torch.rand((epochs, batch_size,1), requires_grad=True, device=device)
-        grid_points = torch.linspace(ymin, ymax, batch_size, requires_grad=True, device=device).reshape(-1,1)
+        if sampling == 'grid':
+            grid = torch.linspace(ymin, ymax, batch_size, requires_grad=True, device=device).reshape(-1,1)
+            get_batch = lambda i: grid # just returns grid every time
+
+        elif sampling == 'uniform':
+            get_batch = lambda i: ymin + (ymax-ymin)*torch.rand((batch_size, 1), requires_grad=True, device=device)
+
+        elif sampling == 'perturb':
+            grid = torch.linspace(ymin, ymax, batch_size).reshape(-1,1)
+            delta_y = grid[1]-grid[0]
+            def get_batch(i):
+                noise = delta_y * torch.randn_like(grid) / 3 # ensure 3 x sigma is within delta_y
+                pts = grid + noise
+                return torch.tensor(pts, requires_grad=True, device=device)
+
+        elif sampling == 'boundary':
+            lhs = np.geomspace(0.02, 1, num=500) - 1.02
+            rhs = np.flip(-lhs, axis=0)
+            geomgrid = torch.tensor(np.concatenate([lhs, rhs]), requires_grad=True, device=device, dtype=torch.float).reshape(-1, 1)
+            get_batch = lambda i: geomgrid
+
+        else:
+            raise Exception('Encountered unexpected sampling type: {}'.format(sampling))
 
         with tqdm.trange(epochs, disable=disable_status) as t:
             for e in t:
-                # sample y_batch
-                # y_batch = ymin + (ymax-ymin)*torch.rand((batch_size,1), requires_grad=True, device=device)
-                y_batch = grid_points
-                val_batch = val_set[e,:,:]
+                # get a batch
+                y_batch = get_batch(e)
 
                 # predict on y_batch (does BV adjustment)
                 u_bar = self.predict(y_batch)
-                u_val = self.predict(val_batch)
 
-                # compute diffeq and loss
+                # compute diffeq
                 diffeq = self.compute_diffeq(u_bar, y_batch)
-                diffeq_val = self.compute_diffeq(u_val, val_batch)
-                loss = torch.mean(torch.pow(diffeq, 2))
-                val_loss = torch.mean(torch.pow(diffeq_val, 2))
 
-                loss_ = loss.data.cpu().numpy()
-                val_loss_ = val_loss.data.cpu().numpy()
-                if val_loss_ < best_loss:
-                    best_model=copy.deepcopy(self)
-                    best_loss=val_loss_
+                # compute loss
+                loss = torch.mean(torch.pow(diffeq, 2))
 
                 # zero grad, backprop, step
                 optimizer.zero_grad()
                 loss.backward(retain_graph=False, create_graph=False)
                 optimizer.step()
 
-                # do some bookkeeping
-                train_losses.append(loss_)
-                val_losses.append(val_loss_)
-                t.set_postfix(loss=np.round(loss_, 2))
+                # record history
+                loss_np = loss.data.cpu().numpy()
+                train_losses.append(loss_np)
+                t.set_postfix(loss=np.round(loss_np, 2))
+
+                if e % 100 == 0: # run validation
+                    val_batch = ymin + (ymax-ymin)*torch.rand((batch_size, 1), requires_grad=True, device=device)
+                    u_val = self.predict(val_batch)
+                    diffeq_val = self.compute_diffeq(u_val, val_batch)
+                    val_loss = torch.mean(torch.pow(diffeq_val, 2))
+                    val_loss_np = val_loss.data.cpu().numpy()
+                    val_losses.append(val_loss_np)
+                    if val_loss_np < best_loss: # record best so far
+                        best_model=copy.deepcopy(self)
+                        best_loss=val_loss_np
 
                 if e > 0 and disable_status and e % 1000 == 0: # use very light logging when disable_status is true
-                    print('Epoch {}: Loss = {}'.format(e, loss_val))
+                    print('Epoch {}: Loss = {}'.format(e, loss_np))
 
         run_dict = dict(train_loss=train_losses, val_loss=val_losses, best_model=best_model)
 
@@ -175,7 +199,6 @@ class Chanflow(torch.nn.Module):
         pdenn_best = run_dict['best_model']
         train_loss = np.array(run_dict['train_loss']).reshape(-1,1)
         val_loss = np.array(run_dict['val_loss']).reshape(-1,1)
-        losses = np.hstack([train_loss, val_loss])
         y = np.linspace(self.hypers['ymin'],self.hypers['ymax'],self.hypers['n'])
         preds = pdenn_best.predict(torch.tensor(y.reshape(-1,1), dtype=torch.float)).detach().numpy()
         timestamp=time.time()
@@ -185,7 +208,8 @@ class Chanflow(torch.nn.Module):
         # saving them
         os.mkdir('data/{}'.format(timestamp))
         np.save('data/{}/preds.npy'.format(timestamp), preds)
-        np.save('data/{}/loss.npy'.format(timestamp), np.array(losses))
+        np.save('data/{}/train_loss.npy'.format(timestamp), train_loss)
+        np.save('data/{}/val_loss.npy'.format(timestamp), val_loss)
         np.save('data/{}/hypers.npy'.format(timestamp), hypers)
         torch.save(pdenn_best.state_dict(), 'data/{}/model.pt'.format(timestamp, retau))
         print('Successfully saved at data/{}/'.format(timestamp))
