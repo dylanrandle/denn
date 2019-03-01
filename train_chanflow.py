@@ -8,7 +8,7 @@ import utils
 torch.random.manual_seed(123)
 
 HYPERS={
-        'num_epochs': 10000,
+        'num_epochs': 100000,
         'sampling': 'grid'
        }
 
@@ -26,6 +26,7 @@ if __name__ == '__main__':
         args.device = torch.device('cuda')
     else:
         args.device = torch.device('cpu')
+
 
     pdenn = chan.Chanflow().to(device=args.device)
     pdenn.set_hyperparams(**HYPERS)
