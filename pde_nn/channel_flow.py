@@ -193,7 +193,7 @@ class Chanflow(torch.nn.Module):
 
         return run_dict
 
-    def save_run(self, run_dict):
+    def save_run(self, run_dict, top_dir='data/'):
         """ saves everything from a training run in data/timestamp """
         # objects to save
         pdenn_best = run_dict['best_model']
@@ -206,13 +206,13 @@ class Chanflow(torch.nn.Module):
         hypers=self.hypers
         hypers['retau']=retau
         # saving them
-        os.mkdir('data/{}'.format(timestamp))
-        np.save('data/{}/preds.npy'.format(timestamp), preds)
-        np.save('data/{}/train_loss.npy'.format(timestamp), train_loss)
-        np.save('data/{}/val_loss.npy'.format(timestamp), val_loss)
-        np.save('data/{}/hypers.npy'.format(timestamp), hypers)
+        os.mkdir(top_dir+'{}'.format(timestamp))
+        np.save(top_dir+'{}/preds.npy'.format(timestamp), preds)
+        np.save(top_dir+'{}/train_loss.npy'.format(timestamp), train_loss)
+        np.save(top_dir+'{}/val_loss.npy'.format(timestamp), val_loss)
+        np.save(top_dir+'{}/hypers.npy'.format(timestamp), hypers)
         torch.save(pdenn_best.state_dict(), 'data/{}/model.pt'.format(timestamp, retau))
-        print('Successfully saved at data/{}/'.format(timestamp))
+        print('Successfully saved at '+top_dir+'{}/'.format(timestamp))
 
 if __name__ == '__main__':
     print('Testing channel flow NN')

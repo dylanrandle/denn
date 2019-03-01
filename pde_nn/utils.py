@@ -74,16 +74,16 @@ def make_plots(ax, train_loss, val_loss,  model, hypers, retau, numerical):
     ax[1].set_xlabel('$<u>$')
     ax[1].legend()
 
-def expose_results(folder_timestamp, dns_file='data/LM_Channel_Retau180.txt', numerical_file='data/mixlen_numerical_u180.npy'):
+def expose_results(folder_timestamp, top_dir='data/', dns_file='data/LM_Channel_Retau180.txt', numerical_file='data/mixlen_numerical_u180.npy'):
 
     # load everything from disk
-    preds = np.load('data/{}/preds.npy'.format(folder_timestamp))
-    train_loss = np.load('data/{}/train_loss.npy'.format(folder_timestamp))
-    val_loss = np.load('data/{}/val_loss.npy'.format(folder_timestamp))
-    hypers = np.load('data/{}/hypers.npy'.format(folder_timestamp))
+    preds = np.load(top_dir+'{}/preds.npy'.format(folder_timestamp))
+    train_loss = np.load(top_dir+'{}/train_loss.npy'.format(folder_timestamp))
+    val_loss = np.load(top_dir+'{}/val_loss.npy'.format(folder_timestamp))
+    hypers = np.load(top_dir+'{}/hypers.npy'.format(folder_timestamp))
     hypers = hypers.item()
     pdenn = chan.Chanflow(**hypers)
-    pdenn.load_state_dict(torch.load('data/{}/model.pt'.format(folder_timestamp)))
+    pdenn.load_state_dict(torch.load(top_dir+'{}/model.pt'.format(folder_timestamp)))
     dns = pd.read_csv(dns_file, delimiter=' ')
     # half_u, half_y = convert_dns(hypers, dns)
     numerical = np.load(numerical_file)
