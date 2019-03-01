@@ -35,10 +35,12 @@ def convert_dns(hypers, dns):
     half_u = dns[['u_1,']]
     return half_u,  half_y
 
-def plot_dns(handle, half_u, half_y, delta):
+def plot_dns(handle, dns, hypers, color='red', label='DNS'):
+    half_u, half_y = convert_dns(hypers, dns)
     """plots DNS data (reflected over the center axis)"""
-    handle.plot(half_u, half_y-1, color='red', label='DNS')
-    handle.plot(half_u, -half_y+2*delta-1, color='red')
+    delta=hypers['delta']
+    handle.plot(half_u, half_y-1, color=color, label=label)
+    handle.plot(half_u, -half_y+2*delta-1, color=color)
     handle.legend()
 
 def loss_vs_distance(ax, ymin, ymax, model, n):
@@ -83,12 +85,12 @@ def expose_results(folder_timestamp, dns_file='data/LM_Channel_Retau180.txt', nu
     pdenn = chan.Chanflow(**hypers)
     pdenn.load_state_dict(torch.load('data/{}/model.pt'.format(folder_timestamp)))
     dns = pd.read_csv(dns_file, delimiter=' ')
-    half_u, half_y = convert_dns(hypers, dns)
+    # half_u, half_y = convert_dns(hypers, dns)
     numerical = np.load(numerical_file)
     retau=hypers['retau']
 
     fig, ax = plt.subplots(1, 2, figsize=(20,10))
-    plot_dns(ax[1], half_u, half_y, hypers['delta'])
+    plot_dns(ax[1], dns, hypers)
     make_plots(ax, train_loss, val_loss, pdenn, hypers, retau, numerical)
 
     y = np.linspace(hypers['ymin'], hypers['ymax'], hypers['n'])
