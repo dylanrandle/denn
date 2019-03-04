@@ -1,6 +1,7 @@
 # testing  sampling methods
 import channel_flow as chan
 import utils
+torch.random.manual_seed(123)
 
 sampling = ['grid', 'perturb', 'boundary', 'uniform']
 HYPERS={'num_epochs': 100000}
