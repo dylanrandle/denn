@@ -52,7 +52,7 @@ class Chanflow(torch.nn.Module):
                     batch_size=batch_size, lr=lr, num_epochs=num_epochs,
                     ymin=ymin, ymax=ymax, weight_decay=weight_decay,
                     delta=delta, n=1000, in_dim=1, out_dim=1, retau=retau,
-                    sampling=sampling)
+                    sampling=sampling, activation=activation)
 
     def forward(self, x):
         """ implements a forward pass """
