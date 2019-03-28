@@ -25,6 +25,10 @@ class Chanflow(torch.nn.Module):
         out_dim=self.hypers['out_dim']
         self.set_reynolds_stress_fn()
 
+        activation=self.hypers['activation']
+        if activation == 'swish':
+            self.activation=utils.Swish
+
         # build architecture
         self.layers.append(torch.nn.Linear(in_dim, num_units)) # input layer
         for i in range(num_layers):
@@ -34,7 +38,7 @@ class Chanflow(torch.nn.Module):
     def set_hyperparams(self, dp_dx=-1.0, nu=0.0055555555, rho=1.0, k=0.41, num_units=40,
                         num_layers=2, batch_size=1000, lr=0.0001, num_epochs=1000,
                         ymin=-1, ymax=1, n=1000, weight_decay=0, in_dim=1, out_dim=1,
-                        delta=1, retau=180, sampling='grid'):
+                        delta=1, retau=180, sampling='grid', activation='tanh'):
         """
         dp_dx - pressure gradient
         nu - kinematic viscosity
@@ -74,7 +78,7 @@ class Chanflow(torch.nn.Module):
     def set_reynolds_stress_fn(self):
         k=self.hypers['k']
         delta=self.hypers['delta']
-        self.reynolds_stress_fn = lambda y, du_dy: -1*((k*(torch.abs(y)-delta))**2)*torch.abs(du_dy)*du_dy
+        self.reynolds_stress_fn = lambda y, du_dy: -((k * (torch.abs(y)-delta)/(2*delta)) ** 2) * torch.abs(du_dy) * du_dy
 
     def compute_diffeq(self, u_bar, y_batch):
         dp_dx=self.hypers['dp_dx']

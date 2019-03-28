@@ -5,6 +5,11 @@ import channel_flow as chan
 import pandas as pd
 import matplotlib.pyplot as plt
 
+def Swish(x):
+    """input: x - a pytorch tensor
+       output: out - swish activation as pytorch tensor"""
+    return x * x.sigmoid()
+
 def calc_renot(u_bar, delta, nu):
     """ calculates Re_not where Re stands for Reynolds number"""
     n = u_bar.shape[0]

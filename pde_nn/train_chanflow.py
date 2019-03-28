@@ -8,8 +8,10 @@ import utils
 torch.random.manual_seed(123)
 
 HYPERS={
-        'num_epochs': 100000,
-        'sampling': 'grid'
+        'num_epochs': 10000,
+        'sampling': 'perturb',
+        'k': 0.41,
+        'activation': 'swish'
        }
 
 if __name__ == '__main__':
