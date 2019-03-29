@@ -27,7 +27,7 @@ class Chanflow(torch.nn.Module):
 
         activation=self.hypers['activation']
         if activation == 'swish':
-            self.activation=utils.Swish
+            self.activation=utils.Swish()
 
         # build architecture
         self.layers.append(torch.nn.Linear(in_dim, num_units)) # input layer

@@ -5,10 +5,23 @@ import channel_flow as chan
 import pandas as pd
 import matplotlib.pyplot as plt
 
-def Swish(x):
-    """input: x - a pytorch tensor
-       output: out - swish activation as pytorch tensor"""
-    return x * x.sigmoid()
+# def Swish(x):
+#     """input: x - a pytorch tensor
+#        output: out - swish activation as pytorch tensor"""
+#     return x * x.sigmoid()
+class Swish(torch.nn.Module):
+    """
+    Swish activation function
+    """
+    def __init__(self, beta=1.0):
+        super(Swish, self).__init__()
+        self.beta = beta
+
+    def forward(self, input):
+        return input * torch.sigmoid(self.beta * input)
+
+    def extra_repr(self):
+        return 'beta={}'.format(self.beta)
 
 def calc_renot(u_bar, delta, nu):
     """ calculates Re_not where Re stands for Reynolds number"""
@@ -59,7 +72,7 @@ def loss_vs_distance(ax, ymin, ymax, model, n):
     ax.set_xlabel('position (y)')
     ax.legend()
 
-def make_plots(ax, train_loss, val_loss,  model, hypers, retau, numerical):
+def make_plots(ax, train_loss, val_loss,  preds, hypers, retau, numerical):
     """ plot loss and prediction of model at retau """
     # losses
     ax[0].loglog(np.arange(train_loss.shape[0]), train_loss, color='blue', label='train')
@@ -69,8 +82,7 @@ def make_plots(ax, train_loss, val_loss,  model, hypers, retau, numerical):
     ax[0].set_ylabel('log( mean loss )')
     ax[0].legend()
     # preds
-    y_space = torch.linspace(hypers['ymin'], hypers['ymax'], 1000).reshape(-1,1)
-    preds = model.predict(y_space).detach().numpy()
+    y_space = torch.linspace(hypers['ymin'], hypers['ymax'], hypers['n']).reshape(-1,1)
     y=y_space.detach().numpy()
     ax[1].plot(preds, y, alpha=1, color='blue', label='NN')
     ax[1].plot(numerical, y, label='FD', color='black')
@@ -87,6 +99,7 @@ def expose_results(folder_timestamp, top_dir='data/', dns_file='data/LM_Channel_
     val_loss = np.load(top_dir+'{}/val_loss.npy'.format(folder_timestamp))
     hypers = np.load(top_dir+'{}/hypers.npy'.format(folder_timestamp))
     hypers = hypers.item()
+    print('hypers: \n{}'.format(hypers))
     pdenn = chan.Chanflow(**hypers)
     pdenn.load_state_dict(torch.load(top_dir+'{}/model.pt'.format(folder_timestamp)))
     dns = pd.read_csv(dns_file, delimiter=' ')
@@ -96,7 +109,7 @@ def expose_results(folder_timestamp, top_dir='data/', dns_file='data/LM_Channel_
 
     fig, ax = plt.subplots(1, 2, figsize=(20,10))
     plot_dns(ax[1], dns, hypers)
-    make_plots(ax, train_loss, val_loss, pdenn, hypers, retau, numerical)
+    make_plots(ax, train_loss, val_loss, preds, hypers, retau, numerical)
 
     y = np.linspace(hypers['ymin'], hypers['ymax'], hypers['n'])
     fig, ax = plt.subplots(1, 1, figsize=(10,8))
