@@ -129,20 +129,12 @@ def train(num_epochs,
 
     # optimization
     cross_entropy = nn.BCELoss()
-    # mse = nn.MSELoss()
-    # wass_loss = lambda y_true, y_pred: torch.mean(y_true * y_pred)
     optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=(0.9, 0.999))
     optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=(0.9, 0.999))
 
     # logging
     D_losses = []
     G_losses = []
-
-    # # sanity check with data from analytic solution
-    # real = torch.exp(L*t)
-    # # sample data from perturb grid
-    # def get_real(t):
-    #     return torch.exp(L*t)
 
     for epoch in range(num_epochs):
 
@@ -151,7 +143,6 @@ def train(num_epochs,
         ## =========
 
         t = get_batch()
-        # real = get_real(t)
 
         for i in range(G_iters):
 
