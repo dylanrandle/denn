@@ -91,7 +91,7 @@ def make_plots(ax, train_loss, val_loss,  preds, hypers, retau, numerical):
     ax[1].set_xlabel('$<u>$')
     ax[1].legend()
 
-def expose_results(folder_timestamp, top_dir='data/', dns_file='data/LM_Channel_Retau180.txt', numerical_file='data/mixlen_numerical_u180.npy'):
+def expose_results(folder_timestamp, top_dir='experiments/', dns_file='data/LM_Channel_Retau180.txt', numerical_file='data/mixlen_numerical_u180.npy'):
 
     # load everything from disk
     preds = np.load(top_dir+'{}/preds.npy'.format(folder_timestamp))

@@ -197,7 +197,7 @@ class Chanflow(torch.nn.Module):
 
         return run_dict
 
-    def save_run(self, run_dict, top_dir='data/'):
+    def save_run(self, run_dict, top_dir='experiments/'):
         """ saves everything from a training run in data/timestamp """
         # objects to save
         pdenn_best = run_dict['best_model']
