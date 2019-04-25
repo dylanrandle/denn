@@ -12,8 +12,8 @@ analytic_oscillator = lambda t: np.cos(t)
 
 args = dict(g_hidden_units=35,
             g_hidden_layers=3,
-            d_hidden_units=35,
-            d_hidden_layers=3,
+            d_hidden_units=20,
+            d_hidden_layers=2,
             d_lr=0.001,
             g_lr=0.001,
             t_low=0,
@@ -28,8 +28,8 @@ args = dict(g_hidden_units=35,
             k=1,
             clip=.1,
             loss_diff=.1,
-            max_while=10,
-            grad_penalty=10)
+            max_while=50,
+            grad_penalty=.1)
 epochs=1000
 fname='epochs'+str(epochs)+'_'+'_'.join([str(key)+str(val) for key,val in list(zip(args.keys(), args.values()))])+'.png'
 

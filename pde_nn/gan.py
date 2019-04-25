@@ -335,7 +335,9 @@ def train_GAN_SHO(num_epochs,
 
                 for p in D.parameters():
                     param_norm = p.grad.data.norm(2)
-                    total_norm += param_norm.item()
+                    total_norm += param_norm.item() ** 2
+                total_norm = total_norm ** (1. / 2)
+
                 norm_penalty = grad_penalty * torch.pow(total_norm - 1, 2)
 
             real_loss = wass_loss(D(real), perturbed_real_label)
