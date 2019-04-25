@@ -81,7 +81,7 @@ def plot_preds(G, t, analytic, ax):
     ax.legend()
     return ax
 
-def plot_losses_and_preds(G_loss, D_loss, G, t, analytic, figsize=(15,5)):
+def plot_losses_and_preds(G_loss, D_loss, G, t, analytic, figsize=(15,5), savefig=False, fname=None):
     fig, ax = plt.subplots(1,2,figsize=figsize)
     ax1 = plot_loss(G_loss, D_loss, ax[0])
     ax2 = plot_preds(G, t, analytic, ax[1])
@@ -200,7 +200,6 @@ def train(num_epochs,
     return G, D, G_losses, D_losses
 
 def train_GAN_SHO(num_epochs,
-          L=-1,
           g_hidden_units=10,
           d_hidden_units=10,
           g_hidden_layers=2,
@@ -211,19 +210,23 @@ def train_GAN_SHO(num_epochs,
           t_high=10,
           n=100,
           real_label=1,
-          fake_label=0,
+          fake_label=-1,
           logging=True,
           G_iters=1,
           D_iters=1,
           m=1.,
           k=1.,
-          clip=1.,
-          loss_diff=0.5,
+          clip=.1,
+          loss_diff=.1,
           max_while=20):
 
     """
     function to perform training of generator and discriminator for num_epochs
     equation: simple harmonic oscillator (SHO)
+    gan hacks:
+        - wasserstein + clipping
+        - label smoothing
+        - while loop iters
     """
 
     # initialize nets
