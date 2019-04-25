@@ -10,9 +10,9 @@ torch.manual_seed(42)
 t = np.linspace(0,10,100)
 analytic_oscillator = lambda t: np.cos(t)
 
-args = dict(g_hidden_units=20,
-            g_hidden_layers=2,
-            d_hidden_units=20,
+args = dict(g_hidden_units=35,
+            g_hidden_layers=3,
+            d_hidden_units=35,
             d_hidden_layers=3,
             d_lr=0.001,
             g_lr=0.001,
@@ -28,8 +28,9 @@ args = dict(g_hidden_units=20,
             k=1,
             clip=.1,
             loss_diff=.1,
-            max_while=50)
-epochs=2000
+            max_while=10,
+            grad_penalty=10)
+epochs=1000
 fname='epochs'+str(epochs)+'_'+'_'.join([str(key)+str(val) for key,val in list(zip(args.keys(), args.values()))])+'.png'
 
 G,D,G_loss,D_loss = train_GAN_SHO(epochs, **args)
