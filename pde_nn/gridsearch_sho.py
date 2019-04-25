@@ -30,7 +30,7 @@ args = dict(g_hidden_units=20,
             loss_diff=.1,
             max_while=50)
 epochs=2000
-fname='epochs'+str(epochs)+'_'+'_'.join([str(key)+str(val) for key,val in list(zip(args.keys(), args.values()))])
+fname='epochs'+str(epochs)+'_'+'_'.join([str(key)+str(val) for key,val in list(zip(args.keys(), args.values()))])+'.png'
 
 G,D,G_loss,D_loss = train_GAN_SHO(epochs, **args)
 loss_ax, pred_ax = plot_losses_and_preds(np.exp(G_loss),
