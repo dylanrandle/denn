@@ -33,7 +33,7 @@ args = dict(g_hidden_units=40,
             grad_penalty=1,
             x0=1,
             dx_dt0=-1)
-epochs=2000
+epochs=10000
 fname='epochs'+str(epochs)+'_'+'_'.join([str(key)+str(val) for key,val in list(zip(args.keys(), args.values()))])+'.png'
 
 G,D,G_loss,D_loss = train_GAN_SHO(epochs, **args)
