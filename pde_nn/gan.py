@@ -40,6 +40,35 @@ class Generator(nn.Module):
         x_adj = self.x0 + (1 - torch.exp(-t)) * x_pred
         return x_adj
 
+class SHOGenerator(nn.Module):
+    def __init__(self, in_dim=1, n_hidden_units=20, n_hidden_layers=2, activation=nn.Tanh(), x0=1, dx_dt0=-1):
+        super(SHOGenerator, self).__init__()
+
+        self.x0 = x0
+        self.dx_dt0 = dx_dt0
+
+        layers = [('lin1', nn.Linear(in_dim, n_hidden_units)), ('act1', activation)]
+        for i in range(n_hidden_layers):
+            layer_id = i+2
+            layers.append(('lin{}'.format(layer_id), nn.Linear(n_hidden_units, n_hidden_units)))
+            layers.append(('act{}'.format(layer_id), activation))
+        layers.append(('linout', nn.Linear(n_hidden_units, 1))) # output x and dx_dt
+        layers.append(('actout', nn.Tanh()))
+
+        layers = OrderedDict(layers)
+        self.main = nn.Sequential(layers)
+
+    def forward(self, x):
+        output = self.main(x)
+        return output
+
+    def predict(self, t):
+        pred = self(t)
+        # x_pred = pred[:,0]
+        x_pred = self.x0 + (1 - torch.exp(-t)) * pred[:,0].reshape(-1,1)
+        dxdt_pred = self.dx_dt0 + (1 - torch.exp(-t)) * pred[:,1].reshape(-1,1)
+        return x_pred, dxdt_pred
+
 class Discriminator(nn.Module):
     def __init__(self, vec_dim=1, n_hidden_units=20, n_hidden_layers=2, activation=nn.Tanh(), unbounded=False):
         super(Discriminator, self).__init__()
@@ -70,10 +99,13 @@ def plot_loss(G_loss, D_loss, ax):
     ax.legend()
     return ax
 
-def plot_preds(G, t, analytic, ax):
+def plot_preds(G, t, analytic, ax, sho=False):
     ax.plot(t, analytic(t), label='analytic')
     t_torch = tensor(t, dtype=torch.float, requires_grad=True).reshape(-1,1)
-    pred = G.predict(t_torch)
+    if not sho:
+        pred = G.predict(t_torch)
+    else:
+        pred = G.predict(t_torch)[0] # G outputs (x, dx_dt)
     ax.plot(t, pred.detach().numpy().flatten(), '--', label='pred')
     ax.set_title('Pred and Analytic')
     ax.set_xlabel('t')
@@ -81,10 +113,10 @@ def plot_preds(G, t, analytic, ax):
     ax.legend()
     return ax
 
-def plot_losses_and_preds(G_loss, D_loss, G, t, analytic, figsize=(15,5), savefig=False, fname=None):
+def plot_losses_and_preds(G_loss, D_loss, G, t, analytic, figsize=(15,5), savefig=False, fname=None, sho=False):
     fig, ax = plt.subplots(1,2,figsize=figsize)
     ax1 = plot_loss(G_loss, D_loss, ax[0])
-    ax2 = plot_preds(G, t, analytic, ax[1])
+    ax2 = plot_preds(G, t, analytic, ax[1], sho=sho)
     if not savefig:
         plt.show()
     else:
@@ -219,7 +251,9 @@ def train_GAN_SHO(num_epochs,
           clip=.1,
           loss_diff=.1,
           max_while=20,
-          grad_penalty=0.1):
+          grad_penalty=0.1,
+          x0=1,
+          dx_dt0=-1):
 
     """
     function to perform training of generator and discriminator for num_epochs
@@ -229,18 +263,18 @@ def train_GAN_SHO(num_epochs,
         - label smoothing
         - while loop iters
     """
-
     # initialize nets
     G = Generator(vec_dim=1,
                   n_hidden_units=g_hidden_units,
                   n_hidden_layers=g_hidden_layers,
-                  activation=nn.Tanh()) # twice diff'able activation
+                  activation=nn.Tanh(), # twice diff'able activation
+                  x0=x0)
 
     D = Discriminator(vec_dim=1,
                       n_hidden_units=d_hidden_units,
                       n_hidden_layers=d_hidden_layers,
                       activation=nn.Tanh(),
-                      unbounded=True) # WGAN
+                      unbounded=False) # WGAN
 
     # grid
     t = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
@@ -256,8 +290,8 @@ def train_GAN_SHO(num_epochs,
     fake_label_vec = torch.full((n,), fake_label).reshape(-1,1)
 
     # optimization
-    # cross_entropy = nn.BCELoss()
-    wass_loss = lambda y_true, y_pred: torch.mean(y_true * y_pred)
+    cross_entropy = nn.BCELoss()
+    # wass_loss = lambda y_true, y_pred: torch.mean(y_true * y_pred)
     optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=(0.9, 0.999))
     optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=(0.9, 0.999))
 
@@ -288,6 +322,8 @@ def train_GAN_SHO(num_epochs,
             dx_dt, = autograd.grad(x_pred, t,
                                    grad_outputs=real.data.new(real.shape).fill_(1),
                                    create_graph=True)
+            # apply initial condition
+            dx_dt = dx_dt0 + (1 - torch.exp(-t)) * dx_dt
 
             # compute d2x_dt2
             d2x_dt2, = autograd.grad(dx_dt, t,
@@ -298,9 +334,11 @@ def train_GAN_SHO(num_epochs,
             fake = -(m/k)*d2x_dt2
 
             # generator loss
-            g_loss = wass_loss(D(fake), real_label_vec) # generator wants discriminator to think real
+            g_loss = cross_entropy(D(fake), real_label_vec)
+            # g_loss = wass_loss(D(fake), real_label_vec) # generator wants discriminator to think real
+            # g_loss = torch.mean(-D(fake))
 
-            optiG.zero_grad()
+            optiG.zero_grad() # zero grad before backprop
             g_loss.backward(retain_graph=True)
             # g_grad_norm = nn.utils.clip_grad_norm_(G.parameters(), clip)
             optiG.step()
@@ -320,32 +358,40 @@ def train_GAN_SHO(num_epochs,
             it_counter+=1
 #             noisy_real_label_vec = np.random.choice([0,1], p=[.01,.99])
 #             noisy_fake_label_vec = np.random.choice([0,1], p=[.99,.01])
-            perturbed_real_label = real_label_vec + (-.3 + .6*torch.rand_like(real_label_vec))
-            perturbed_fake_label = fake_label_vec + (-.3 + .6*torch.rand_like(fake_label_vec))
+            # perturbed_real_label = real_label_vec + (-.3 + .6*torch.rand_like(real_label_vec))
+            # perturbed_fake_label = fake_label_vec + (-.3 + .6*torch.rand_like(fake_label_vec))
             # discriminator loss
-#             real_loss = cross_entropy(D(real), perturbed_real_label)
-#             fake_loss = cross_entropy(D(fake), fake_label_vec)
+            real_loss = cross_entropy(D(real), real_label_vec)
+            fake_loss = cross_entropy(D(fake), fake_label_vec)
 
-            total_norm = torch.zeros(1)
-            norm_penalty = torch.zeros(1)
+            # total_norm = torch.zeros(1)
+            # norm_penalty = torch.zeros(1)
 
-            if epoch > 0:
-                eps_mix = torch.rand(1)
-                x_grad = eps_mix * real + (1-eps_mix) * fake
+            # zero grad before computing the mix grad norm
+            # optiD.zero_grad()
 
-                for p in D.parameters():
-                    param_norm = p.grad.data.norm(2)
-                    total_norm += param_norm.item() ** 2
-                total_norm = total_norm ** (1. / 2)
+            # if epoch > 0:
+            #     eps_mix = torch.rand(1)
+            #     x_grad = eps_mix * real + (1-eps_mix) * fake
+            #
+            #     grad_loss = torch.mean(D(x_grad))
+            #     grad_loss.backward(retain_graph=True)
+            #
+            #     for p in D.parameters():
+            #         param_norm = p.grad.data.norm(2)
+            #         total_norm += param_norm.item() ** 2
+            #     total_norm = total_norm ** (1. / 2)
+            #
+            #     norm_penalty = grad_penalty * torch.pow(total_norm - 1, 2)
 
-                norm_penalty = grad_penalty * torch.pow(total_norm - 1, 2)
+            # real_loss = wass_loss(D(real), perturbed_real_label)
+            # fake_loss = wass_loss(D(fake), perturbed_fake_label)
 
-            real_loss = wass_loss(D(real), perturbed_real_label)
-            fake_loss = wass_loss(D(fake), perturbed_fake_label)
+            d_loss = (real_loss + fake_loss)/2
+            # d_loss = torch.mean(D(fake) - D(real) + norm_penalty)
 
-            d_loss = ((real_loss + fake_loss) / 2) + norm_penalty
+            optiD.zero_grad() # zero grad before backprop
 
-            optiD.zero_grad()
             d_loss.backward(retain_graph=True)
             # d_grad_norm = nn.utils.clip_grad_norm_(D.parameters(), clip)
             optiD.step()
