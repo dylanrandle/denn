@@ -99,13 +99,10 @@ def plot_loss(G_loss, D_loss, ax):
     ax.legend()
     return ax
 
-def plot_preds(G, t, analytic, ax, sho=False):
+def plot_preds(G, t, analytic, ax):
     ax.plot(t, analytic(t), label='analytic')
     t_torch = tensor(t, dtype=torch.float, requires_grad=True).reshape(-1,1)
-    if not sho:
-        pred = G.predict(t_torch)
-    else:
-        pred = G.predict(t_torch)[0] # G outputs (x, dx_dt)
+    pred = G.predict(t_torch)
     ax.plot(t, pred.detach().numpy().flatten(), '--', label='pred')
     ax.set_title('Pred and Analytic')
     ax.set_xlabel('t')
@@ -113,10 +110,10 @@ def plot_preds(G, t, analytic, ax, sho=False):
     ax.legend()
     return ax
 
-def plot_losses_and_preds(G_loss, D_loss, G, t, analytic, figsize=(15,5), savefig=False, fname=None, sho=False):
+def plot_losses_and_preds(G_loss, D_loss, G, t, analytic, figsize=(15,5), savefig=False, fname=None):
     fig, ax = plt.subplots(1,2,figsize=figsize)
     ax1 = plot_loss(G_loss, D_loss, ax[0])
-    ax2 = plot_preds(G, t, analytic, ax[1], sho=sho)
+    ax2 = plot_preds(G, t, analytic, ax[1])
     if not savefig:
         plt.show()
     else:
@@ -274,7 +271,7 @@ def train_GAN_SHO(num_epochs,
                       n_hidden_units=d_hidden_units,
                       n_hidden_layers=d_hidden_layers,
                       activation=nn.Tanh(),
-                      unbounded=False) # WGAN
+                      unbounded=True) # WGAN
 
     # grid
     t = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
@@ -291,7 +288,7 @@ def train_GAN_SHO(num_epochs,
 
     # optimization
     cross_entropy = nn.BCELoss()
-    # wass_loss = lambda y_true, y_pred: torch.mean(y_true * y_pred)
+    wass_loss = lambda y_true, y_pred: torch.mean(y_true * y_pred)
     optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=(0.9, 0.999))
     optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=(0.9, 0.999))
 
@@ -334,13 +331,13 @@ def train_GAN_SHO(num_epochs,
             fake = -(m/k)*d2x_dt2
 
             # generator loss
-            g_loss = cross_entropy(D(fake), real_label_vec)
-            # g_loss = wass_loss(D(fake), real_label_vec) # generator wants discriminator to think real
+            # g_loss = cross_entropy(D(fake), real_label_vec)
+            g_loss = wass_loss(D(fake), real_label_vec) # generator wants discriminator to think real
             # g_loss = torch.mean(-D(fake))
 
             optiG.zero_grad() # zero grad before backprop
             g_loss.backward(retain_graph=True)
-            # g_grad_norm = nn.utils.clip_grad_norm_(G.parameters(), clip)
+            g_grad_norm = nn.utils.clip_grad_norm_(G.parameters(), clip)
             optiG.step()
 
             if epoch < 10 or g_loss.item() < d_loss.item() or it_counter > max_while:
@@ -360,9 +357,7 @@ def train_GAN_SHO(num_epochs,
 #             noisy_fake_label_vec = np.random.choice([0,1], p=[.99,.01])
             # perturbed_real_label = real_label_vec + (-.3 + .6*torch.rand_like(real_label_vec))
             # perturbed_fake_label = fake_label_vec + (-.3 + .6*torch.rand_like(fake_label_vec))
-            # discriminator loss
-            real_loss = cross_entropy(D(real), real_label_vec)
-            fake_loss = cross_entropy(D(fake), fake_label_vec)
+
 
             # total_norm = torch.zeros(1)
             # norm_penalty = torch.zeros(1)
@@ -384,8 +379,12 @@ def train_GAN_SHO(num_epochs,
             #
             #     norm_penalty = grad_penalty * torch.pow(total_norm - 1, 2)
 
-            # real_loss = wass_loss(D(real), perturbed_real_label)
-            # fake_loss = wass_loss(D(fake), perturbed_fake_label)
+            # discriminator loss
+            # real_loss = cross_entropy(D(real), real_label_vec)
+            # fake_loss = cross_entropy(D(fake), fake_label_vec)
+
+            real_loss = wass_loss(D(real), real_label_vec)
+            fake_loss = wass_loss(D(fake), fake_label_vec)
 
             d_loss = (real_loss + fake_loss)/2
             # d_loss = torch.mean(D(fake) - D(real) + norm_penalty)
@@ -393,7 +392,7 @@ def train_GAN_SHO(num_epochs,
             optiD.zero_grad() # zero grad before backprop
 
             d_loss.backward(retain_graph=True)
-            # d_grad_norm = nn.utils.clip_grad_norm_(D.parameters(), clip)
+            d_grad_norm = nn.utils.clip_grad_norm_(D.parameters(), clip)
             optiD.step()
             if epoch < 10 or d_loss.item() < g_loss.item() or it_counter > max_while:
                 break
