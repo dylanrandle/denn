@@ -340,7 +340,7 @@ def train_GAN_SHO(num_epochs,
             g_grad_norm = nn.utils.clip_grad_norm_(G.parameters(), clip)
             optiG.step()
 
-            if epoch < 10 or g_loss.item() < d_loss.item() or it_counter > max_while:
+            if epoch < 1 or g_loss.item() < d_loss.item() or it_counter > max_while:
                 break
 
         ## =========
@@ -355,22 +355,22 @@ def train_GAN_SHO(num_epochs,
             it_counter+=1
 #             noisy_real_label_vec = np.random.choice([0,1], p=[.01,.99])
 #             noisy_fake_label_vec = np.random.choice([0,1], p=[.99,.01])
-            # perturbed_real_label = real_label_vec + (-.3 + .6*torch.rand_like(real_label_vec))
-            # perturbed_fake_label = fake_label_vec + (-.3 + .6*torch.rand_like(fake_label_vec))
+            perturbed_real_label = real_label_vec + (-.3 + .6*torch.rand_like(real_label_vec))
+            perturbed_fake_label = fake_label_vec + (-.3 + .6*torch.rand_like(fake_label_vec))
 
 
             # total_norm = torch.zeros(1)
             # norm_penalty = torch.zeros(1)
-
-            # zero grad before computing the mix grad norm
+            #
+            # # zero grad before computing the mix grad norm
             # optiD.zero_grad()
-
+            #
             # if epoch > 0:
             #     eps_mix = torch.rand(1)
-            #     x_grad = eps_mix * real + (1-eps_mix) * fake
+            #     x_mix = eps_mix * real + (1-eps_mix) * fake
             #
-            #     grad_loss = torch.mean(D(x_grad))
-            #     grad_loss.backward(retain_graph=True)
+            #     mix_loss = torch.mean(D(x_mix))
+            #     mix_loss.backward(retain_graph=True)
             #
             #     for p in D.parameters():
             #         param_norm = p.grad.data.norm(2)
@@ -383,8 +383,8 @@ def train_GAN_SHO(num_epochs,
             # real_loss = cross_entropy(D(real), real_label_vec)
             # fake_loss = cross_entropy(D(fake), fake_label_vec)
 
-            real_loss = wass_loss(D(real), real_label_vec)
-            fake_loss = wass_loss(D(fake), fake_label_vec)
+            real_loss = wass_loss(D(real), perturbed_real_label)
+            fake_loss = wass_loss(D(fake), perturbed_fake_label)
 
             d_loss = (real_loss + fake_loss)/2
             # d_loss = torch.mean(D(fake) - D(real) + norm_penalty)
@@ -394,7 +394,7 @@ def train_GAN_SHO(num_epochs,
             d_loss.backward(retain_graph=True)
             d_grad_norm = nn.utils.clip_grad_norm_(D.parameters(), clip)
             optiD.step()
-            if epoch < 10 or d_loss.item() < g_loss.item() or it_counter > max_while:
+            if epoch < 1 or d_loss.item() < g_loss.item() or it_counter > max_while:
                 break
 
         ## ========
