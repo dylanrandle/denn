@@ -8,8 +8,9 @@ torch.manual_seed(42)
 
 # analytic solution
 tlo,thi=0,10
+x0,dx_dt0=1,-1
 t = np.linspace(tlo,thi,100)
-analytic_oscillator = lambda t: 1*np.cos(t) + -1*np.sin(t)
+analytic_oscillator = lambda t: x0*np.cos(t) + dx_dt0*np.sin(t)
 
 args = dict(g_hidden_units=40,
             g_hidden_layers=3,
@@ -31,9 +32,9 @@ args = dict(g_hidden_units=40,
             loss_diff=.1,
             max_while=20,
             grad_penalty=1,
-            x0=1,
-            dx_dt0=-1)
-epochs=10000
+            x0=x0,
+            dx_dt0=dx_dt0)
+epochs=1000
 fname='epochs'+str(epochs)+'_'+'_'.join([str(key)+str(val) for key,val in list(zip(args.keys(), args.values()))])+'.png'
 
 G,D,G_loss,D_loss = train_GAN_SHO(epochs, **args)
