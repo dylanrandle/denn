@@ -4,9 +4,14 @@ import numpy as np
 import torch
 from torch import nn
 import sys
+import os
 
 try:
     experiment_name = str(sys.argv[1])
+    with open(experiment_name, 'w') as f:
+        print('valid experiment name, thank you')
+    os.remove(experiment_name)
+
 except:
     raise Exception('Provide an experiment name on the command line')
 
