@@ -17,19 +17,19 @@ from copy import deepcopy
 from IPython.display import clear_output
 
 class Generator(nn.Module):
-    def __init__(self, vec_dim=1, n_hidden_units=20, n_hidden_layers=2, activation=nn.Tanh(), x0=1,
+    def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2, activation=nn.Tanh(), x0=1,
                 output_tan=True):
         super(Generator, self).__init__()
 
         # initial condition
         self.x0 = x0
 
-        layers = [('lin1', nn.Linear(vec_dim, n_hidden_units)), ('act1', activation)]
+        layers = [('lin1', nn.Linear(in_dim, n_hidden_units)), ('act1', activation)]
         for i in range(n_hidden_layers):
             layer_id = i+2
             layers.append(('lin{}'.format(layer_id), nn.Linear(n_hidden_units, n_hidden_units)))
             layers.append(('act{}'.format(layer_id), activation))
-        layers.append(('linout', nn.Linear(n_hidden_units, vec_dim)))
+        layers.append(('linout', nn.Linear(n_hidden_units, out_dim)))
         if output_tan:
             layers.append(('actout', nn.Tanh()))
 
@@ -98,7 +98,7 @@ def plot_losses_and_preds(G_loss, D_loss, G, t, analytic, figsize=(15,5), savefi
        plt.savefig(fname)
     return ax1, ax2
 
-def train(num_epochs,
+def train_GAN(num_epochs,
           L=-1,
           g_hidden_units=10,
           d_hidden_units=10,
@@ -206,6 +206,63 @@ def train(num_epochs,
 
     return G, D, G_losses, D_losses
 
+def train_Lagaris(num_epochs,
+                  L=-1,
+                  g_hidden_units=10,
+                  g_hidden_layers=2,
+                  g_lr=0.001,
+                  t_low=0,
+                  t_high=10,
+                  G_iters=1,
+                  n=100):
+    """
+    function to perform Lagaris-style training
+    """
+
+    # initialize net
+    G = Generator(vec_dim=1,
+                  n_hidden_units=g_hidden_units,
+                  n_hidden_layers=g_hidden_layers,
+                  activation=nn.LeakyReLU())
+
+    # grid
+    t = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
+
+    # perturb grid
+    delta_t = t[1]-t[0]
+    def get_batch():
+        return t + delta_t * torch.randn_like(t) / 3
+
+    mse = nn.MSELoss()
+    optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=(0.9, 0.999))
+
+    # logging
+    D_losses = []
+    G_losses = []
+
+    for epoch in range(num_epochs):
+
+        t = get_batch()
+
+        for i in range(G_iters):
+
+            x_pred = G.predict(t)
+            lam_x = L * x_pred
+
+            # compute dx/dt
+            dx_dt, = autograd.grad(x_pred, t,
+                                  grad_outputs=lam_x.data.new(lam_x.shape).fill_(1),
+                                  create_graph=True)
+
+            optiG.zero_grad()
+            g_loss = mse(lam_x, dx_dt)
+            g_loss.backward(retain_graph=True)
+            optiG.step()
+
+        G_losses.append(g_loss.item())
+
+    return G, G_losses
+
 def realtime_vis(g_loss, d_loss, t, preds, analytic_fn, dx_dt, d2x_dt2, savefig=False, fname=None):
     fig, ax = plt.subplots(1,3,figsize=(20,6))
     steps = len(g_loss)
@@ -274,7 +331,8 @@ def train_GAN_SHO(num_epochs,
           real_data=False,
           gradient_penalty=False,
           savefig=False,
-          fname=None):
+          fname=None,
+          systemOfODE=False):
 
     """
     function to perform training of generator and discriminator for num_epochs
@@ -287,8 +345,12 @@ def train_GAN_SHO(num_epochs,
     if wgan:
         fake_label = -1
 
+    out_dim=1
+    if systemOfODE:
+        out_dim=2
+
     # initialize nets
-    G = Generator(vec_dim=1,
+    G = Generator(in_dim=1, out_dim=out_dim,
                   n_hidden_units=g_hidden_units,
                   n_hidden_layers=g_hidden_layers,
                   activation=activation, # twice diff'able activation
@@ -343,6 +405,20 @@ def train_GAN_SHO(num_epochs,
 
         return x_adj, dx_dt, d2x_dt2
 
+    def produce_SHO_preds_systemODE(G, t):
+        pred_vec = G(t)
+        x_pred, u_pred = pred_vec[:,0].reshape(-1,1), pred_vec[:,1].reshape(-1,1)
+        # adjust for x condition
+        x_adj = x0 + (1 - torch.exp(-t)) * dx_dt0 + ((1 - torch.exp(-t))**2) * x_pred
+        # adjust for u condition
+        u_adj = dx_dt0 + (1 - torch.exp(-t)) * u_pred
+        # compute dx_dt = u
+        dx_dt = compute_first_derivative(x_adj, t)
+        # compute du_dt = d2x_dt2
+        du_dt = compute_first_derivative(u_adj, t)
+
+        return x_adj, u_adj, dx_dt, du_dt
+
     for epoch in range(num_epochs):
 
         ## =========
@@ -361,13 +437,20 @@ def train_GAN_SHO(num_epochs,
 #         while True:
 #             it_counter+=1
 
-            x_adj, dx_dt, d2x_dt2 = produce_SHO_preds(G, t)
+            if systemOfODE:
+                x_adj, u_adj, dx_dt, du_dt = produce_SHO_preds_systemODE(G,t)
+            else:
+                x_adj, dx_dt, d2x_dt2 = produce_SHO_preds(G, t)
 
             if real_data:
                 fake = x_adj
             else:
-                real = x_adj
-                fake = -(m/k)*d2x_dt2
+                if not systemOfODE:
+                    real = x_adj
+                    fake = -(m/k)*d2x_dt2
+                else:
+                    real = du_dt + x_adj
+                    fake = dx_dt - u_adj
 
             # generator loss
             g_loss = criterion(D(fake), real_label_vec)
@@ -467,7 +550,10 @@ def train_GAN_SHO(num_epochs,
             # only do this stuff if we are not planning to savefig (which is used for fire-and-forget training)
             clear_output(True)
             if not real_data:
-                x_adj, dx_dt, d2x_dt2 = produce_SHO_preds(G, t_torch)
+                if not systemOfODE:
+                    x_adj, dx_dt, d2x_dt2 = produce_SHO_preds(G, t_torch)
+                else:
+                    x_adj, u_adj, dx_dt, d2x_dt2 = produce_SHO_preds_systemODE(G, t_torch)
                 realtime_vis(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
                             dx_dt.detach().numpy(), d2x_dt2.detach().numpy())
             else:
@@ -476,7 +562,10 @@ def train_GAN_SHO(num_epochs,
 
     if savefig:
         if not real_data:
-            x_adj, dx_dt, d2x_dt2 = produce_SHO_preds(best_gen, t_torch)
+            if not systemOfODE:
+                x_adj, dx_dt, d2x_dt2 = produce_SHO_preds(best_gen, t_torch)
+            else:
+                x_adj, u_adj, dx_dt, d2x_dt2 = produce_SHO_preds_systemODE(best_gen, t_torch)
             realtime_vis(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
                         dx_dt.detach().numpy(), d2x_dt2.detach().numpy(), savefig=savefig, fname=fname)
         else:

@@ -6,17 +6,6 @@ from torch import nn
 import sys
 import os
 import multiprocessing as mp
-# # torch.set_num_threads(4)
-# print('Going to be using {} threads'.format(torch.get_num_threads()))
-#
-# try:
-#     experiment_name = str(sys.argv[1])
-#     with open(experiment_name, 'w') as f:
-#         print('valid experiment name, thank you')
-#     os.remove(experiment_name)
-#
-# except:
-#     raise Exception('Provide an experiment name on the command line')
 
 # set seed for reproducibility
 torch.manual_seed(42)
@@ -25,12 +14,11 @@ torch.manual_seed(42)
 import matplotlib
 print('Matplotlib rc file: {}'.format(matplotlib.matplotlib_fname()))
 
-g_units = [50, 70, 100, 120]
-g_layers = [4, 5, 6]
-d_units = [20, 40, 60, 80]
-d_layers = [2, 3, 4]
+g_units = [20,30,40]
+g_layers = [2,3,4]
+d_units= [20,30,40]
+d_layers = [2,3,4]
 
-# q = mp.Queue()
 settings = []
 for gu in g_units:
     for gl in g_layers:
@@ -38,7 +26,7 @@ for gu in g_units:
             for dl in d_layers:
                 settings.append((gu,gl,du,dl))
 
-epochs=250
+epochs=10000
 print('Training each setting for {} epochs'.format(epochs))
 
 def run_at_params(gunit, glayer, dunit, dlayer):
@@ -51,8 +39,8 @@ def run_at_params(gunit, glayer, dunit, dlayer):
                 t_low=0,
                 t_high=2*np.pi,
                 logging=False,
-                G_iters=1,
-                D_iters=4,
+                G_iters=9,
+                D_iters=1,
                 n=100,
                 x0=0.,
                 dx_dt0=.5,
@@ -62,8 +50,9 @@ def run_at_params(gunit, glayer, dunit, dlayer):
                 soft_labels=False,
                 real_data=False,
                 gradient_penalty=False,
-                gp_hyper=0.)
-    experiment_name = '{}keps_{}x{}gen_{}x{}disc'.format(epochs//1000, gunit, glayer, dunit, dlayer)
+                gp_hyper=0.,
+                systemOfODE=True)
+    experiment_name = 'systemODE_{}keps_{}x{}gen_{}x{}disc'.format(epochs//1000, gunit, glayer, dunit, dlayer)
     train_GAN_SHO(epochs,**args,savefig=True,fname=experiment_name)
 
 print("Total searches {}".format(len(settings)))
@@ -72,5 +61,4 @@ print('Starting training')
 print('Using {} cpus'.format(mp.cpu_count()))
 p = mp.Pool(mp.cpu_count())
 p.starmap(run_at_params, settings)
-
 print('Done')
