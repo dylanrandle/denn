@@ -18,18 +18,22 @@ g_units = [20,30,40]
 g_layers = [2,3,4]
 d_units= [20,30,40]
 d_layers = [2,3,4]
+g_iters = [1,4,9]
+d_iters = [1,4]
 
 settings = []
 for gu in g_units:
     for gl in g_layers:
         for du in d_units:
             for dl in d_layers:
-                settings.append((gu,gl,du,dl))
+                for gi in g_iters:
+                    for di in d_iters:
+                        settings.append((gu,gl,du,dl,gi,di))
 
 epochs=10000
 print('Training each setting for {} epochs'.format(epochs))
 
-def run_at_params(gunit, glayer, dunit, dlayer):
+def run_at_params(gunit, glayer, dunit, dlayer, giter, diter):
     args = dict(g_hidden_units=gunit,
                 g_hidden_layers=glayer,
                 d_hidden_units=dunit,
@@ -39,8 +43,8 @@ def run_at_params(gunit, glayer, dunit, dlayer):
                 t_low=0,
                 t_high=2*np.pi,
                 logging=False,
-                G_iters=9,
-                D_iters=1,
+                G_iters=giter,
+                D_iters=diter,
                 n=100,
                 x0=0.,
                 dx_dt0=.5,
@@ -52,7 +56,7 @@ def run_at_params(gunit, glayer, dunit, dlayer):
                 gradient_penalty=False,
                 gp_hyper=0.,
                 systemOfODE=True)
-    experiment_name = 'systemODE_{}keps_{}x{}gen_{}x{}disc'.format(epochs//1000, gunit, glayer, dunit, dlayer)
+    experiment_name = 'twoDiscSystem_{}keps_{}x{}gen_{}x{}disc_{}Gto{}D'.format(epochs//1000, gunit, glayer, dunit, dlayer, giter, diter)
     train_GAN_SHO(epochs,**args,savefig=True,fname=experiment_name)
 
 print("Total searches {}".format(len(settings)))

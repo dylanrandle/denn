@@ -289,6 +289,35 @@ def realtime_vis(g_loss, d_loss, t, preds, analytic_fn, dx_dt, d2x_dt2, savefig=
     else:
        plt.savefig(fname)
 
+def realtime_vis_system(g_loss, d_loss, t, preds, analytic_fn, u, dx_dt, du_dt, savefig=False, fname=None):
+    fig, ax = plt.subplots(1,3,figsize=(20,6))
+    steps = len(g_loss)
+    epochs = np.arange(steps)
+
+    ax[0].plot(epochs, [dl[0] for dl in d_loss], label='d1_loss')
+    ax[0].plot(epochs, [dl[1] for dl in d_loss], label='d2_loss')
+
+    ax[0].plot(epochs, g_loss, label='g_loss')
+    ax[0].legend()
+    ax[0].set_title('Losses')
+
+    ax[1].plot(t, analytic_fn(t), label='true')
+    ax[1].plot(t, preds, '--', label='pred')
+    ax[1].legend()
+    ax[1].set_title('X Pred')
+
+    ax[2].plot(t, dx_dt, label='dx_dt')
+    ax[2].plot(t, du_dt, label='du_dt')
+    ax[2].plot(t, -preds, '--', label='-x')
+    ax[2].plot(t, u, '--', label='u')
+    ax[2].legend()
+    ax[2].set_title('Derivatives')
+
+    if not savefig:
+       plt.show()
+    else:
+       plt.savefig(fname)
+
 def compute_first_derivative(x, t):
     dx_dt, = autograd.grad(x, t,
                            grad_outputs=x.data.new(x.shape).fill_(1),
@@ -342,6 +371,9 @@ def train_GAN_SHO(num_epochs,
         - label smoothing
         - while loop iters
     """
+    if savefig and realtime_plot:
+        raise Exception('savefig and realtime_plot both True. Assuming you dont want that.')
+
     if wgan:
         fake_label = -1
 
@@ -363,6 +395,21 @@ def train_GAN_SHO(num_epochs,
                       activation=activation,
                       unbounded=wgan) # true for WGAN
 
+    if systemOfODE: # need second disc (and here we use second generator too)
+        # G1 = G
+        # G2 = Generator(in_dim=1, out_dim=out_dim,
+        #               n_hidden_units=g_hidden_units,
+        #               n_hidden_layers=g_hidden_layers,
+        #               activation=activation,
+        #               x0=x0,
+        #               output_tan=True)
+        D1 = D
+        D2 = Discriminator(vec_dim=1,
+                          n_hidden_units=d_hidden_units,
+                          n_hidden_layers=d_hidden_layers,
+                          activation=activation,
+                          unbounded=wgan)
+
     # grid
     t_torch = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
     t_np = np.linspace(t_low, t_high, n).reshape(-1,1)
@@ -382,8 +429,12 @@ def train_GAN_SHO(num_epochs,
     else:
         criterion = nn.BCELoss()
 
-    optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=(0.9, 0.999))
     optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=(0.9, 0.999))
+    if not systemOfODE:
+        optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=(0.9, 0.999))
+    else:
+        optiD1 = torch.optim.Adam(D1.parameters(), lr=d_lr, betas=(0.9, 0.999))
+        optiD2 = torch.optim.Adam(D2.parameters(), lr=d_lr, betas=(0.9, 0.999))
 
     # logging
     D_losses = []
@@ -449,12 +500,21 @@ def train_GAN_SHO(num_epochs,
                     real = x_adj
                     fake = -(m/k)*d2x_dt2
                 else:
-                    real = du_dt + x_adj
-                    fake = dx_dt - u_adj
+                    # equation 1: x = -du/dt
+                    real1 = x_adj
+                    fake1 = -du_dt
+                    # equation 2: u = dx_dt
+                    real2 = u_adj
+                    fake2 = dx_dt
 
             # generator loss
-            g_loss = criterion(D(fake), real_label_vec)
-            # g_loss = torch.mean(-D(fake))
+            if not systemOfODE:
+                g_loss = criterion(D(fake), real_label_vec)
+                # g_loss = torch.mean(-D(fake))
+            else:
+                g_loss1 = criterion(D1(fake1), real_label_vec)
+                g_loss2 = criterion(D2(fake2), real_label_vec)
+                g_loss = g_loss1 + g_loss2
 
             optiG.zero_grad() # zero grad before backprop
             g_loss.backward(retain_graph=True)
@@ -477,8 +537,6 @@ def train_GAN_SHO(num_epochs,
 #         it_counter=0
 #         while True:
 #             it_counter+=1
-#             noisy_real_label_vec = np.random.choice([0,1], p=[.01,.99])
-#             noisy_fake_label_vec = np.random.choice([0,1], p=[.99,.01])
 
             if soft_labels:
                 real_label_vec_ = real_label_vec + (-.3 + .6 * torch.rand_like(real_label_vec))
@@ -508,25 +566,34 @@ def train_GAN_SHO(num_epochs,
                     norm_penalty = gp_hyper * torch.pow(total_norm - 1, 2)
 
             # discriminator loss
-            real_loss = criterion(D(real), real_label_vec_)
-            fake_loss = criterion(D(fake), fake_label_vec_)
+            if not systemOfODE:
+                real_loss = criterion(D(real), real_label_vec_)
+                fake_loss = criterion(D(fake), fake_label_vec_)
+                d_loss = (real_loss + fake_loss)/2 + norm_penalty
+                # d_loss = torch.mean(D(fake) - D(real) + norm_penalty)
+                optiD.zero_grad()
+                d_loss.backward(retain_graph=True)
+                if wgan and not gradient_penalty:
+                    d_grad_norm = nn.utils.clip_grad_norm_(D.parameters(), clip)
+                optiD.step()
 
-            d_loss = (real_loss + fake_loss)/2 + norm_penalty
-            # d_loss = torch.mean(D(fake) - D(real) + norm_penalty)
+            else:
+                real_loss1 = criterion(D1(real1), real_label_vec_)
+                fake_loss1 = criterion(D1(fake1), fake_label_vec_)
+                real_loss2 = criterion(D2(real2), real_label_vec_)
+                fake_loss2 = criterion(D2(fake2), fake_label_vec_)
 
-    #         optiD.zero_grad() # zero grad before backprop
-    #         real_loss.backward(retain_graph=True)
-    #         optiD.step()
+                d1_loss = (real_loss1 + fake_loss1)/2
+                d2_loss = (real_loss2 + fake_loss2)/2
 
-    #         optiD.zero_grad()
-    #         fake_loss.backward(retain_graph=True)
-    #         optiD.step()
+                optiD1.zero_grad()
+                optiD2.zero_grad()
 
-            optiD.zero_grad()
-            d_loss.backward(retain_graph=True)
-            if wgan and not gradient_penalty:
-                d_grad_norm = nn.utils.clip_grad_norm_(D.parameters(), clip)
-            optiD.step()
+                d1_loss.backward(retain_graph=True)
+                d2_loss.backward(retain_graph=True)
+
+                optiD1.step()
+                optiD2.step()
 
     #             if epoch < 1 or d_loss.item() < g_loss.item() or it_counter > max_while:
     #                 break
@@ -538,42 +605,55 @@ def train_GAN_SHO(num_epochs,
         if logging:
             print('[%d/%d] D_Loss : %.4f Loss_G: %.4f' % (epoch, num_epochs, d_loss.item(), g_loss.item()))
 
-        D_losses.append(d_loss.item())
-        G_losses.append(g_loss.item())
-        this_mse = np.mean((x_adj.detach().numpy() - analytic_oscillator_np(t_np))**2)
-        if this_mse < best_mse:
-            best_mse = this_mse
-            best_gen = deepcopy(G)
-            best_disc = deepcopy(D)
+        if not systemOfODE:
+            D_losses.append(d_loss.item())
+        else:
+            D_losses.append([d1_loss.item(), d2_loss.item()])
 
-        if (realtime_plot or epoch == num_epochs - 1) and not savefig:
-            # only do this stuff if we are not planning to savefig (which is used for fire-and-forget training)
+        G_losses.append(g_loss.item())
+        # this_mse = np.mean((x_adj.detach().numpy() - analytic_oscillator_np(t_np))**2)
+        # if this_mse < best_mse:
+        #     best_mse = this_mse
+        #     best_gen = deepcopy(G)
+        #     best_disc = deepcopy(D)
+
+        if (realtime_plot or epoch == num_epochs - 1):
+            # either every time or on last epoch, show plots
+            # if savefig is True, the figure will be saved (only on last epoch)
             clear_output(True)
             if not real_data:
                 if not systemOfODE:
                     x_adj, dx_dt, d2x_dt2 = produce_SHO_preds(G, t_torch)
+                    realtime_vis(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
+                                dx_dt.detach().numpy(), d2x_dt2.detach().numpy(), savefig=savefig, fname=fname)
                 else:
-                    x_adj, u_adj, dx_dt, d2x_dt2 = produce_SHO_preds_systemODE(G, t_torch)
-                realtime_vis(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
-                            dx_dt.detach().numpy(), d2x_dt2.detach().numpy())
+                    x_adj, u_adj, dx_dt, du_dt = produce_SHO_preds_systemODE(G, t_torch)
+                    realtime_vis_system(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
+                                u_adj.detach().numpy(), dx_dt.detach().numpy(), du_dt.detach().numpy(),
+                                savefig=savefig, fname=fname)
             else:
                 loss_ax, pred_ax = plot_losses_and_preds(G_losses, D_losses, G, t_np, analytic_oscillator_np)
                 plt.show()
 
-    if savefig:
-        if not real_data:
-            if not systemOfODE:
-                x_adj, dx_dt, d2x_dt2 = produce_SHO_preds(best_gen, t_torch)
-            else:
-                x_adj, u_adj, dx_dt, d2x_dt2 = produce_SHO_preds_systemODE(best_gen, t_torch)
-            realtime_vis(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
-                        dx_dt.detach().numpy(), d2x_dt2.detach().numpy(), savefig=savefig, fname=fname)
-        else:
-            loss_ax, pred_ax = plot_losses_and_preds(G_losses, D_losses, best_gen, t_np, analytic_oscillator_np,
-                                                    savefig=savefig, fname=fname)
+    # if savefig:
+    #     if not real_data:
+    #         if not systemOfODE:
+    #             x_adj, dx_dt, d2x_dt2 = produce_SHO_preds(G, t_torch)
+    #             realtime_vis(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
+    #                         dx_dt.detach().numpy(), d2x_dt2.detach().numpy(), savefig=savefig, fname=fname)
+    #         else:
+    #             x_adj, u_adj, dx_dt, du_dt = produce_SHO_preds_systemODE(G, t_torch)
+    #             realtime_vis(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
+    #                         dx_dt.detach().numpy(), du_dt.detach().numpy(), savefig=savefig, fname=fname)
+    #
+    #     else:
+    #         loss_ax, pred_ax = plot_losses_and_preds(G_losses, D_losses, G, t_np, analytic_oscillator_np,
+    #                                                 savefig=savefig, fname=fname)
 
-    print('Best MSE = {}'.format(best_mse))
-    return best_gen, best_disc, G_losses, D_losses
+    if not systemOfODE:
+        return G, D, G_losses, D_losses
+    else:
+        return G, D1, D2, G_losses, D_losses
 
 if __name__ == "__main__":
     L = -1
