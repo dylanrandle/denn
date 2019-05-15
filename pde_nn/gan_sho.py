@@ -98,171 +98,6 @@ def plot_losses_and_preds(G_loss, D_loss, G, t, analytic, figsize=(15,5), savefi
        plt.savefig(fname)
     return ax1, ax2
 
-def train_GAN(num_epochs,
-          L=-1,
-          g_hidden_units=10,
-          d_hidden_units=10,
-          g_hidden_layers=2,
-          d_hidden_layers=2,
-          d_lr=0.001,
-          g_lr=0.001,
-          t_low=0,
-          t_high=10,
-          n=100,
-          real_label=1,
-          fake_label=0,
-          logging=True,
-          G_iters=1,
-          D_iters=1):
-    """
-    function to perform training of generator and discriminator for num_epochs
-    equation: dx_dt = lambda * x
-    """
-
-    # initialize nets
-    G = Generator(vec_dim=1,
-                  n_hidden_units=g_hidden_units,
-                  n_hidden_layers=g_hidden_layers,
-                  activation=nn.LeakyReLU())
-
-    D = Discriminator(vec_dim=1,
-                      n_hidden_units=d_hidden_units,
-                      n_hidden_layers=d_hidden_layers,
-                      activation=nn.LeakyReLU())
-
-    # grid
-    t = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
-
-    # perturb grid
-    delta_t = t[1]-t[0]
-    def get_batch():
-        return t + delta_t * torch.randn_like(t) / 3
-
-    # labels
-    real_label_vec = torch.full((n,), real_label).reshape(-1,1)
-    fake_label_vec = torch.full((n,), fake_label).reshape(-1,1)
-
-    # optimization
-    cross_entropy = nn.BCELoss()
-    optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=(0.9, 0.999))
-    optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=(0.9, 0.999))
-
-    # logging
-    D_losses = []
-    G_losses = []
-
-    for epoch in range(num_epochs):
-
-        ## =========
-        ##  TRAIN G
-        ## =========
-
-        for p in D.parameters():
-            p.requires_grad = False # turn off computation for D
-
-        t = get_batch()
-
-        for i in range(G_iters):
-
-            x_pred = G.predict(t)
-            real = L * x_pred
-
-            # compute dx/dt
-            fake, = autograd.grad(x_pred, t,
-                                  grad_outputs=real.data.new(real.shape).fill_(1),
-                                  create_graph=True)
-
-            optiG.zero_grad()
-            g_loss = cross_entropy(D(fake), real_label_vec)
-            g_loss.backward(retain_graph=True)
-            optiG.step()
-
-        ## =========
-        ##  TRAIN D
-        ## =========
-
-        for p in D.parameters():
-            p.requires_grad = True # turn on computation for D
-
-        for i in range(D_iters):
-
-            real_loss = cross_entropy(D(real), real_label_vec)
-            fake_loss = cross_entropy(D(fake), fake_label_vec)
-
-            optiD.zero_grad()
-            d_loss = (real_loss + fake_loss) / 2
-            d_loss.backward(retain_graph=True)
-            optiD.step()
-
-        ## ========
-        ## Logging
-        ## ========
-
-        if logging:
-            print('[%d/%d] D_Loss : %.4f Loss_G: %.4f' % (epoch, num_epochs, d_loss.item(), g_loss.item()))
-
-        D_losses.append(d_loss.item())
-        G_losses.append(g_loss.item())
-
-    return G, D, G_losses, D_losses
-
-def train_Lagaris(num_epochs,
-                  L=-1,
-                  g_hidden_units=10,
-                  g_hidden_layers=2,
-                  g_lr=0.001,
-                  t_low=0,
-                  t_high=10,
-                  G_iters=1,
-                  n=100):
-    """
-    function to perform Lagaris-style training
-    """
-
-    # initialize net
-    G = Generator(vec_dim=1,
-                  n_hidden_units=g_hidden_units,
-                  n_hidden_layers=g_hidden_layers,
-                  activation=nn.LeakyReLU())
-
-    # grid
-    t = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
-
-    # perturb grid
-    delta_t = t[1]-t[0]
-    def get_batch():
-        return t + delta_t * torch.randn_like(t) / 3
-
-    mse = nn.MSELoss()
-    optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=(0.9, 0.999))
-
-    # logging
-    D_losses = []
-    G_losses = []
-
-    for epoch in range(num_epochs):
-
-        t = get_batch()
-
-        for i in range(G_iters):
-
-            x_pred = G.predict(t)
-            lam_x = L * x_pred
-
-            # compute dx/dt
-            dx_dt, = autograd.grad(x_pred, t,
-                                  grad_outputs=lam_x.data.new(lam_x.shape).fill_(1),
-                                  create_graph=True)
-
-            optiG.zero_grad()
-            g_loss = mse(lam_x, dx_dt)
-            g_loss.backward(retain_graph=True)
-            optiG.step()
-
-        G_losses.append(g_loss.item())
-
-    return G, G_losses
-
 def realtime_vis(g_loss, d_loss, t, preds, analytic_fn, dx_dt, d2x_dt2, savefig=False, fname=None):
     fig, ax = plt.subplots(1,3,figsize=(20,6))
     steps = len(g_loss)
@@ -354,7 +189,7 @@ def train_GAN_SHO(num_epochs,
           x0=0,
           dx_dt0=.5,
           activation=nn.Tanh(),
-          realtime_plot=True,
+          realtime_plot=False,
           wgan=False,
           soft_labels=False,
           real_data=False,
@@ -379,7 +214,7 @@ def train_GAN_SHO(num_epochs,
 
     out_dim=1
     if systemOfODE:
-        out_dim=2
+        out_dim=1 # symplectic: only 1 output
 
     # initialize nets
     G = Generator(in_dim=1, out_dim=out_dim,
@@ -395,20 +230,20 @@ def train_GAN_SHO(num_epochs,
                       activation=activation,
                       unbounded=wgan) # true for WGAN
 
-    if systemOfODE: # need second disc (and here we use second generator too)
-        # G1 = G
-        # G2 = Generator(in_dim=1, out_dim=out_dim,
-        #               n_hidden_units=g_hidden_units,
-        #               n_hidden_layers=g_hidden_layers,
-        #               activation=activation,
-        #               x0=x0,
-        #               output_tan=True)
-        D1 = D
-        D2 = Discriminator(vec_dim=1,
-                          n_hidden_units=d_hidden_units,
-                          n_hidden_layers=d_hidden_layers,
-                          activation=activation,
-                          unbounded=wgan)
+    # if systemOfODE: # need second disc (and here we use second generator too)
+    #     # G1 = G
+    #     # G2 = Generator(in_dim=1, out_dim=out_dim,
+    #     #               n_hidden_units=g_hidden_units,
+    #     #               n_hidden_layers=g_hidden_layers,
+    #     #               activation=activation,
+    #     #               x0=x0,
+    #     #               output_tan=True)
+    #     D1 = D
+    #     D2 = Discriminator(vec_dim=1,
+    #                       n_hidden_units=d_hidden_units,
+    #                       n_hidden_layers=d_hidden_layers,
+    #                       activation=activation,
+    #                       unbounded=wgan)
 
     # grid
     t_torch = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
@@ -433,8 +268,9 @@ def train_GAN_SHO(num_epochs,
     if not systemOfODE:
         optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=(0.9, 0.999))
     else:
-        optiD1 = torch.optim.Adam(D1.parameters(), lr=d_lr, betas=(0.9, 0.999))
-        optiD2 = torch.optim.Adam(D2.parameters(), lr=d_lr, betas=(0.9, 0.999))
+        optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=(0.9, 0.999))
+        # optiD1 = torch.optim.Adam(D1.parameters(), lr=d_lr, betas=(0.9, 0.999))
+        # optiD2 = torch.optim.Adam(D2.parameters(), lr=d_lr, betas=(0.9, 0.999))
 
     # logging
     D_losses = []
@@ -456,19 +292,32 @@ def train_GAN_SHO(num_epochs,
 
         return x_adj, dx_dt, d2x_dt2
 
+    # def produce_SHO_preds_systemODE(G, t):
+    #     pred_vec = G(t)
+    #     x_pred, u_pred = pred_vec[:,0].reshape(-1,1), pred_vec[:,1].reshape(-1,1)
+    #     # adjust for x condition
+    #     x_adj = x0 + (1 - torch.exp(-t)) * dx_dt0 + ((1 - torch.exp(-t))**2) * x_pred
+    #     # adjust for u condition
+    #     u_adj = dx_dt0 + (1 - torch.exp(-t)) * u_pred
+    #     # compute dx_dt = u
+    #     dx_dt = compute_first_derivative(x_adj, t)
+    #     # compute du_dt = d2x_dt2
+    #     du_dt = compute_first_derivative(u_adj, t)
+    #
+    #     return x_adj, u_adj, dx_dt, du_dt
+
     def produce_SHO_preds_systemODE(G, t):
-        pred_vec = G(t)
-        x_pred, u_pred = pred_vec[:,0].reshape(-1,1), pred_vec[:,1].reshape(-1,1)
-        # adjust for x condition
+        x_pred = G(t)
+        # x condition
         x_adj = x0 + (1 - torch.exp(-t)) * dx_dt0 + ((1 - torch.exp(-t))**2) * x_pred
-        # adjust for u condition
-        u_adj = dx_dt0 + (1 - torch.exp(-t)) * u_pred
-        # compute dx_dt = u
-        dx_dt = compute_first_derivative(x_adj, t)
+        # dx_dt
+        dx_dt = compute_first_derivative(x_pred, t)
+        # u condition
+        u_adj = torch.exp(-t) * dx_dt0 + 2 * (1 - torch.exp(-t)) * torch.exp(-t) * x_pred + (1 - torch.exp(-t)) * dx_dt
         # compute du_dt = d2x_dt2
         du_dt = compute_first_derivative(u_adj, t)
 
-        return x_adj, u_adj, dx_dt, du_dt
+        return x_adj, u_adj, du_dt
 
     for epoch in range(num_epochs):
 
@@ -489,7 +338,8 @@ def train_GAN_SHO(num_epochs,
 #             it_counter+=1
 
             if systemOfODE:
-                x_adj, u_adj, dx_dt, du_dt = produce_SHO_preds_systemODE(G,t)
+                # x_adj, u_adj, dx_dt, du_dt = produce_SHO_preds_systemODE(G,t)
+                x_adj, u_adj, d2x_dt2 = produce_SHO_preds_systemODE(G, t)
             else:
                 x_adj, dx_dt, d2x_dt2 = produce_SHO_preds(G, t)
 
@@ -500,21 +350,24 @@ def train_GAN_SHO(num_epochs,
                     real = x_adj
                     fake = -(m/k)*d2x_dt2
                 else:
-                    # equation 1: x = -du/dt
-                    real1 = x_adj
-                    fake1 = -du_dt
-                    # equation 2: u = dx_dt
-                    real2 = u_adj
-                    fake2 = dx_dt
+                    # # equation 1: x = -du/dt
+                    # real1 = x_adj
+                    # fake1 = -du_dt
+                    # # equation 2: u = dx_dt
+                    # real2 = u_adj
+                    # fake2 = dx_dt
+                    real = x_adj
+                    fake = d2x_dt2
 
             # generator loss
             if not systemOfODE:
                 g_loss = criterion(D(fake), real_label_vec)
                 # g_loss = torch.mean(-D(fake))
             else:
-                g_loss1 = criterion(D1(fake1), real_label_vec)
-                g_loss2 = criterion(D2(fake2), real_label_vec)
-                g_loss = g_loss1 + g_loss2
+                # g_loss1 = criterion(D1(fake1), real_label_vec)
+                # g_loss2 = criterion(D2(fake2), real_label_vec)
+                # g_loss = g_loss1 + g_loss2
+                g_loss = criterion(D(fake), real_label_vec)
 
             optiG.zero_grad() # zero grad before backprop
             g_loss.backward(retain_graph=True)
@@ -578,22 +431,29 @@ def train_GAN_SHO(num_epochs,
                 optiD.step()
 
             else:
-                real_loss1 = criterion(D1(real1), real_label_vec_)
-                fake_loss1 = criterion(D1(fake1), fake_label_vec_)
-                real_loss2 = criterion(D2(real2), real_label_vec_)
-                fake_loss2 = criterion(D2(fake2), fake_label_vec_)
+                # real_loss1 = criterion(D1(real1), real_label_vec_)
+                # fake_loss1 = criterion(D1(fake1), fake_label_vec_)
+                # real_loss2 = criterion(D2(real2), real_label_vec_)
+                # fake_loss2 = criterion(D2(fake2), fake_label_vec_)
+                #
+                # d1_loss = (real_loss1 + fake_loss1)/2
+                # d2_loss = (real_loss2 + fake_loss2)/2
+                #
+                # optiD1.zero_grad()
+                # optiD2.zero_grad()
+                #
+                # d1_loss.backward(retain_graph=True)
+                # d2_loss.backward(retain_graph=True)
+                #
+                # optiD1.step()
+                # optiD2.step()
 
-                d1_loss = (real_loss1 + fake_loss1)/2
-                d2_loss = (real_loss2 + fake_loss2)/2
-
-                optiD1.zero_grad()
-                optiD2.zero_grad()
-
-                d1_loss.backward(retain_graph=True)
-                d2_loss.backward(retain_graph=True)
-
-                optiD1.step()
-                optiD2.step()
+                real_loss = criterion(D(real), real_label_vec_)
+                fake_loss = criterion(D(fake), fake_label_vec_)
+                d_loss = (real_loss + fake_loss)/2 + norm_penalty
+                optiD.zero_grad()
+                d_loss.backward(retain_graph=True)
+                optiD.step()
 
     #             if epoch < 1 or d_loss.item() < g_loss.item() or it_counter > max_while:
     #                 break
@@ -608,7 +468,8 @@ def train_GAN_SHO(num_epochs,
         if not systemOfODE:
             D_losses.append(d_loss.item())
         else:
-            D_losses.append([d1_loss.item(), d2_loss.item()])
+            # D_losses.append([d1_loss.item(), d2_loss.item()])
+            D_losses.append(d_loss.item())
 
         G_losses.append(g_loss.item())
         # this_mse = np.mean((x_adj.detach().numpy() - analytic_oscillator_np(t_np))**2)
@@ -627,10 +488,13 @@ def train_GAN_SHO(num_epochs,
                     realtime_vis(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
                                 dx_dt.detach().numpy(), d2x_dt2.detach().numpy(), savefig=savefig, fname=fname)
                 else:
-                    x_adj, u_adj, dx_dt, du_dt = produce_SHO_preds_systemODE(G, t_torch)
-                    realtime_vis_system(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
-                                u_adj.detach().numpy(), dx_dt.detach().numpy(), du_dt.detach().numpy(),
-                                savefig=savefig, fname=fname)
+                    # x_adj, u_adj, dx_dt, du_dt = produce_SHO_preds_systemODE(G, t_torch)
+                    x_adj, u_adj, d2x_dt2 = produce_SHO_preds_systemODE(G, t)
+                    # realtime_vis_system(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
+                                # u_adj.detach().numpy(), dx_dt.detach().numpy(), du_dt.detach().numpy(),
+                                # savefig=savefig, fname=fname)
+                    realtime_vis(G_losses, D_losses, t_np, x_adj.detach().numpy(), analytic_oscillator_np,
+                                u_adj.detach().numpy(), d2x_dt2.detach().numpy(), savefig=savefig, fname=fname)
             else:
                 loss_ax, pred_ax = plot_losses_and_preds(G_losses, D_losses, G, t_np, analytic_oscillator_np)
                 plt.show()
@@ -656,18 +520,4 @@ def train_GAN_SHO(num_epochs,
         return G, D1, D2, G_losses, D_losses
 
 if __name__ == "__main__":
-    L = -1
-    n = 100
-    analytic = lambda t: np.exp(L*t)
-    t = np.linspace(0,10,n)
-    G,D,G_loss,D_loss = train(500,
-                          L=L,
-                          g_hidden_units=20,
-                          g_hidden_layers=3,
-                          d_hidden_units=10,
-                          d_hidden_layers=2,
-                          logging=False,
-                          G_iters=10,
-                          D_iters=1,
-                          n=n)
-    plot_losses_and_preds(G_loss, D_loss, G, t, analytic)
+    raise NotImplementedError()
