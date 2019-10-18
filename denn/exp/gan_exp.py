@@ -2,10 +2,10 @@
 Implementation of GAN for Unsupervised deep learning of differential equations
 
 Equation:
-dx/dt = L * x
+x' + Lx = 0
 
 Analytic Solution:
-x = exp(L * t)
+x = exp(-Lt)
 """
 import torch
 import torch.nn as nn
@@ -13,6 +13,9 @@ from torch import tensor, autograd
 from collections import OrderedDict
 import numpy as np
 import matplotlib.pyplot as plt
+
+TITLE_FONTSIZE=15
+LABEL_FONTSIZE=12
 
 class Generator(nn.Module):
     def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2, activation=nn.Tanh(), x0=1,
@@ -65,39 +68,57 @@ class Discriminator(nn.Module):
         output = self.main(x)
         return output
 
-def plot_loss(G_loss, D_loss, ax):
+def plot_loss(G_loss, D_loss, ax, legend=True):
     epochs=np.arange(len(G_loss))
-    ax.plot(epochs, np.log(G_loss), label='G Loss')
-    ax.plot(epochs, np.log(D_loss), label='D Loss')
-    ax.set_title('Loss of D and G')
-    ax.set_xlabel('epoch')
-    ax.set_ylabel('log-loss')
-    ax.legend()
+    ax.plot(epochs, G_loss, label='G Loss', scaley='log')
+    ax.plot(epochs, D_loss, label='D Loss', scaley='log')
+    ax.set_title('Loss Curve', fontsize=TITLE_FONTSIZE)
+    ax.set_xlabel('Epoch', fontsize=LABEL_FONTSIZE)
+    ax.set_ylabel('Loss', fontsize=LABEL_FONTSIZE)
+    ax.set_yscale("log")
+    if legend:
+        ax.legend()
     return ax
 
 def plot_preds(G, t, analytic, ax):
-    ax.plot(t, analytic(t), label='analytic')
+    ax.plot(t, analytic(t), label='x')
     t_torch = tensor(t, dtype=torch.float, requires_grad=True).reshape(-1,1)
     pred = G.predict(t_torch)
-    ax.plot(t, pred.detach().numpy().flatten(), '--', label='pred')
-    ax.set_title('Pred and Analytic')
-    ax.set_xlabel('t')
-    ax.set_ylabel('x')
+    ax.plot(t, pred.detach().numpy().flatten(), '--', label='$\hat{x}$')
+    ax.set_title('Prediction and Analytic Solution', fontsize=TITLE_FONTSIZE)
+    ax.set_xlabel('$t$', fontsize=LABEL_FONTSIZE)
+    ax.set_ylabel('$x$, $\hat{x}$', fontsize=LABEL_FONTSIZE)
     ax.legend()
     return ax
 
-def plot_losses_and_preds(G_loss, D_loss, G, t, analytic, figsize=(15,5), savefig=False, fname=None):
-    fig, ax = plt.subplots(1,2,figsize=figsize)
-    ax1 = plot_loss(G_loss, D_loss, ax[0])
+def plot_derivatives(G, t, ax):
+    t_torch = tensor(t, dtype=torch.float, requires_grad=True).reshape(-1,1)
+    pred = G.predict(t_torch)
+    dxdt, = autograd.grad(pred, t_torch,
+                          grad_outputs=pred.data.new(pred.shape).fill_(1),
+                          create_graph=True)
+    ax.plot(t, pred.detach().numpy().flatten(), label='$\hat{x}$')
+    ax.plot(t, dxdt.detach().numpy().flatten(), '--', label="$\hat{x'}$")
+    ax.set_title('Prediction and Derivative', fontsize=TITLE_FONTSIZE)
+    ax.set_xlabel('$t$', fontsize=LABEL_FONTSIZE)
+    ax.set_ylabel("$\hat{x}$, $\hat{x'}$", fontsize=LABEL_FONTSIZE)
+    ax.legend()
+    return ax
+
+def plot_losses_and_preds(G_loss, D_loss, G, t, analytic, figsize=(15,5), savefig=False, fname=None, legend=True):
+    fig, ax = plt.subplots(1,3,figsize=figsize)
+    ax1 = plot_loss(G_loss, D_loss, ax[0], legend=legend)
     ax2 = plot_preds(G, t, analytic, ax[1])
+    ax3 = plot_derivatives(G, t, ax[2])
+    plt.tight_layout()
     if not savefig:
        plt.show()
     else:
        plt.savefig(fname)
-    return ax1, ax2
+    return ax1, ax2, ax3
 
 def train_GAN(num_epochs,
-          L=-1,
+          L=1,
           g_hidden_units=10,
           d_hidden_units=10,
           g_hidden_layers=2,
@@ -111,11 +132,14 @@ def train_GAN(num_epochs,
           fake_label=0,
           logging=True,
           G_iters=1,
-          D_iters=1):
+          D_iters=1,
+          seed=42):
     """
     function to perform training of generator and discriminator for num_epochs
     equation: dx_dt = lambda * x
     """
+    if seed:
+        torch.manual_seed(seed)
 
     # initialize nets
     G = Generator(in_dim=1,
@@ -163,7 +187,7 @@ def train_GAN(num_epochs,
         for i in range(G_iters):
 
             x_pred = G.predict(t)
-            real = L * x_pred
+            real = - L * x_pred
 
             # compute dx/dt
             fake, = autograd.grad(x_pred, t,
@@ -205,7 +229,7 @@ def train_GAN(num_epochs,
     return G, D, G_losses, D_losses
 
 def train_Lagaris(num_epochs,
-                  L=-1,
+                  L=1,
                   g_hidden_units=10,
                   g_hidden_layers=2,
                   g_lr=0.001,
@@ -218,7 +242,7 @@ def train_Lagaris(num_epochs,
     """
 
     # initialize net
-    G = Generator(vec_dim=1,
+    G = Generator(in_dim=1,
                   n_hidden_units=g_hidden_units,
                   n_hidden_layers=g_hidden_layers,
                   activation=nn.LeakyReLU())
@@ -245,7 +269,7 @@ def train_Lagaris(num_epochs,
         for i in range(G_iters):
 
             x_pred = G.predict(t)
-            lam_x = L * x_pred
+            lam_x = - L * x_pred
 
             # compute dx/dt
             dx_dt, = autograd.grad(x_pred, t,
@@ -262,9 +286,9 @@ def train_Lagaris(num_epochs,
     return G, G_losses
 
 if __name__ == "__main__":
-    L = -1
+    L = 1
     n = 100
-    analytic = lambda t: np.exp(L*t)
+    analytic = lambda t: np.exp(-L*t)
     t = np.linspace(0,10,n)
     G,D,G_loss,D_loss = train_GAN(500,
                           L=L,
