@@ -118,7 +118,7 @@ def train_GAN(num_epochs,
     """
 
     # initialize nets
-    G = Generator(vec_dim=1,
+    G = Generator(in_dim=1,
                   n_hidden_units=g_hidden_units,
                   n_hidden_layers=g_hidden_layers,
                   activation=nn.LeakyReLU())
@@ -266,7 +266,7 @@ if __name__ == "__main__":
     n = 100
     analytic = lambda t: np.exp(L*t)
     t = np.linspace(0,10,n)
-    G,D,G_loss,D_loss = train(500,
+    G,D,G_loss,D_loss = train_GAN(500,
                           L=L,
                           g_hidden_units=20,
                           g_hidden_layers=3,
