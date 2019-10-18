@@ -109,5 +109,5 @@ venv.bak/
 # experimental results
 experiments/*
 
-# pictures
-*.png
+# data dir
+data/*
