@@ -4,7 +4,7 @@ import torch
 import os
 import argparse
 import time
-import utils
+import rans_utils
 torch.random.manual_seed(123)
 
 HYPERS={
@@ -30,9 +30,9 @@ if __name__ == '__main__':
         args.device = torch.device('cpu')
 
 
-    pdenn = chan.Chanflow().to(device=args.device)
-    pdenn.set_hyperparams(**HYPERS)
-    hypers = pdenn.hypers
-    retau = utils.calc_retau(hypers['delta'], hypers['dp_dx'], hypers['rho'], hypers['nu'])
+    model = chan.Chanflow().to(device=args.device)
+    model.set_hyperparams(**HYPERS)
+    hypers = model.hypers
+    retau = rans_utils.calc_retau(hypers['delta'], hypers['dp_dx'], hypers['rho'], hypers['nu'])
     print('Training with Retau={}'.format(retau))
-    run_dict = pdenn.train(device=args.device, disable_status=args.disable_status, save_run=not args.disable_save)
+    run_dict = model.train(device=args.device, disable_status=args.disable_status, save_run=not args.disable_save)
