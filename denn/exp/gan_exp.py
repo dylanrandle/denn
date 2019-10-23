@@ -14,8 +14,9 @@ from collections import OrderedDict
 import numpy as np
 import matplotlib.pyplot as plt
 
-TITLE_FONTSIZE=15
-LABEL_FONTSIZE=12
+plt.rc('axes', titlesize=15)     # fontsize of the axes title
+plt.rc('axes', labelsize=12)     # fontsize of the x and y labels
+plt.rc('legend', fontsize=12)    # fontsize of the legend
 
 class Generator(nn.Module):
     def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2, activation=nn.Tanh(), x0=1,
@@ -72,9 +73,9 @@ def plot_loss(G_loss, D_loss, ax, legend=True):
     epochs=np.arange(len(G_loss))
     ax.plot(epochs, G_loss, label='G Loss', scaley='log')
     ax.plot(epochs, D_loss, label='D Loss', scaley='log')
-    ax.set_title('Loss Curve', fontsize=TITLE_FONTSIZE)
-    ax.set_xlabel('Epoch', fontsize=LABEL_FONTSIZE)
-    ax.set_ylabel('Loss', fontsize=LABEL_FONTSIZE)
+    ax.set_title('Loss Curve')
+    ax.set_xlabel('Epoch')
+    ax.set_ylabel('Loss')
     ax.set_yscale("log")
     if legend:
         ax.legend()
@@ -85,9 +86,9 @@ def plot_preds(G, t, analytic, ax):
     t_torch = tensor(t, dtype=torch.float, requires_grad=True).reshape(-1,1)
     pred = G.predict(t_torch)
     ax.plot(t, pred.detach().numpy().flatten(), '--', label='$\hat{x}$')
-    ax.set_title('Prediction and Analytic Solution', fontsize=TITLE_FONTSIZE)
-    ax.set_xlabel('$t$', fontsize=LABEL_FONTSIZE)
-    ax.set_ylabel('$x$, $\hat{x}$', fontsize=LABEL_FONTSIZE)
+    ax.set_title('Prediction and Analytic Solution')
+    ax.set_xlabel('$t$')
+    ax.set_ylabel('$x$, $\hat{x}$')
     ax.legend()
     return ax
 
@@ -99,9 +100,9 @@ def plot_derivatives(G, t, ax):
                           create_graph=True)
     ax.plot(t, pred.detach().numpy().flatten(), label='$\hat{x}$')
     ax.plot(t, dxdt.detach().numpy().flatten(), '--', label="$\hat{x'}$")
-    ax.set_title('Prediction and Derivative', fontsize=TITLE_FONTSIZE)
-    ax.set_xlabel('$t$', fontsize=LABEL_FONTSIZE)
-    ax.set_ylabel("$\hat{x}$, $\hat{x'}$", fontsize=LABEL_FONTSIZE)
+    ax.set_title('Prediction and Derivative')
+    ax.set_xlabel('$t$')
+    ax.set_ylabel("$\hat{x}$, $\hat{x'}$")
     ax.legend()
     return ax
 
