@@ -305,46 +305,4 @@ def train_GAN_SHO(
     return {'G': G, 'D': D, 'G_loss': G_losses, 'D_loss': D_losses, 't': t_torch, 'analytic': analytic_oscillator}
 
 if __name__ == '__main__':
-    res = train_GAN_SHO(
-        # Architecture
-        num_epochs=1000,
-        activation=nn.Tanh(),
-        g_hidden_units=50,
-        d_hidden_units=30,
-        g_hidden_layers=5,
-        d_hidden_layers=3,
-        d_lr=0.0002, # change optimizer params
-        g_lr=0.0002,
-        d_betas=(0.0, 0.9),
-        g_betas=(0.0, 0.9),
-        G_iters=1,
-        D_iters=1,
-        # Problem
-        t_low=0,
-        t_high=4*np.pi,
-        x0=0,
-        dx_dt0=.5,
-        n=100,
-        m=1.,
-        k=1.,
-        real_label=1,
-        fake_label=0,
-        # Hacks
-        perturb=True,
-        residual=True,
-        wgan=True,
-        gp=1.,
-        d1=1.,
-        d2=1.,
-        outputTan=True,
-        systemOfODE=True,
-        conditionalGAN=True,
-        lr_schedule=False,
-        decay_start_epoch=5000,
-        # Inspect
-        savefig=False,
-        fname=None,
-        device=None,
-        check_every=100,
-        logging=False,
-        realtime_plot=False)
+    res = train_GAN_SHO(num_epochs=1000)

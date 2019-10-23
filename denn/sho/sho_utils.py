@@ -57,7 +57,7 @@ def plot_SHO(g_loss, d_loss, t, analytic, G, pred_fn, clear=False, savefig=False
     analytic = analytic.cpu().detach().numpy()[:,0]
 
     # make plots
-    fig, ax = plt.subplots(1,3,figsize=(20,6))
+    fig, ax = plt.subplots(1,3,figsize=(15,5))
     steps = len(g_loss)
     epochs = np.arange(steps)
 
