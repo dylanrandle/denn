@@ -57,26 +57,34 @@ def plot_SHO(g_loss, d_loss, t, analytic, G, pred_fn, clear=False, savefig=False
     epochs = np.arange(steps)
 
     # Losses
-    ax[0].plot(epochs, [g[0] for g in g_loss], label='g_loss1', color='orange')
-    ax[0].plot(epochs, [g[1] for g in g_loss], label='g_loss2', color='green')
+    ax[0].plot(epochs, [g[0] for g in g_loss], label='$G_{S}$')
+    ax[0].plot(epochs, [g[1] for g in g_loss], label='$G_{U}$')
 
-    ax[0].plot(epochs, [d[0] for d in d_loss], label='d_loss1', color='blue')
-    ax[0].plot(epochs, [d[1] for d in d_loss], label='d_loss2', color='red')
+    ax[0].plot(epochs, [d[0] for d in d_loss], label='$D_{S}$')
+    ax[0].plot(epochs, [d[1] for d in d_loss], label='$D_{U}$')
 
     ax[0].legend()
-    ax[0].set_title('Losses')
+    ax[0].set_title('Loss Curve')
+    ax[0].set_xlabel('Epoch')
+    ax[0].set_ylabel('Loss')
 
     # Prediction
-    ax[1].plot(t, preds, label='pred', color='orange')
-    ax[1].plot(t, analytic, '--', label='true', color='blue')
+    ax[1].plot(t, analytic, '--', label='$x$')
+    ax[1].plot(t, preds, label='$\hat{x}$')
     ax[1].legend()
-    ax[1].set_title('Prediction')
+    ax[1].set_title('Prediction And Analytic Solution')
+    ax[1].set_xlabel('$t$')
+    ax[1].set_ylabel('$x$')
 
     # Derivatives
-    ax[2].plot(t, preds, label='x', color='orange')
-    ax[2].plot(t, -d2x_dt2, '--', label="-x''", color='green')
+    ax[2].plot(t, preds, label='$\hat{x}$')
+    ax[2].plot(t, d2x_dt2, '--', label="$\hat{x}''$")
     ax[2].legend()
-    ax[2].set_title('Derivatives')
+    ax[2].set_title('Prediction And Second Derivative')
+    ax[2].set_xlabel('$t$')
+    ax[2].set_ylabel('$x$')
+
+    plt.tight_layout()
 
     if not savefig:
         plt.show()

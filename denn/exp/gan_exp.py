@@ -99,7 +99,7 @@ def plot_derivatives(G, t, ax):
                           grad_outputs=pred.data.new(pred.shape).fill_(1),
                           create_graph=True)
     ax.plot(t, pred.detach().numpy().flatten(), label='$\hat{x}$')
-    ax.plot(t, dxdt.detach().numpy().flatten(), '--', label="$\hat{x'}$")
+    ax.plot(t, dxdt.detach().numpy().flatten(), '--', label="$\hat{x}'$")
     ax.set_title('Prediction and Derivative')
     ax.set_xlabel('$t$')
     ax.set_ylabel("$\hat{x}$, $\hat{x'}$")
