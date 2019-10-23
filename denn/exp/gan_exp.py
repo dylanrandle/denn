@@ -76,7 +76,7 @@ def plot_loss(G_loss, D_loss, ax, legend=True):
     ax.set_title('Loss Curve')
     ax.set_xlabel('Epoch')
     ax.set_ylabel('Loss')
-    ax.set_yscale("log")
+    # ax.set_yscale("log") # really only need log-loss for MSE-based
     if legend:
         ax.legend()
     return ax
@@ -88,7 +88,7 @@ def plot_preds(G, t, analytic, ax):
     ax.plot(t, pred.detach().numpy().flatten(), '--', label='$\hat{x}$')
     ax.set_title('Prediction and Analytic Solution')
     ax.set_xlabel('$t$')
-    ax.set_ylabel('$x$, $\hat{x}$')
+    ax.set_ylabel('$x$')
     ax.legend()
     return ax
 
@@ -102,7 +102,7 @@ def plot_derivatives(G, t, ax):
     ax.plot(t, dxdt.detach().numpy().flatten(), '--', label="$\hat{x}'$")
     ax.set_title('Prediction and Derivative')
     ax.set_xlabel('$t$')
-    ax.set_ylabel("$\hat{x}$, $\hat{x'}$")
+    ax.set_ylabel("$x$")
     ax.legend()
     return ax
 
