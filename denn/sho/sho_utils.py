@@ -4,6 +4,11 @@ import torch
 from denn.utils import diff
 from IPython.display import clear_output
 
+# Global plot params
+plt.rc('axes', titlesize=15)     # fontsize of the axes title
+plt.rc('axes', labelsize=12)     # fontsize of the x and y labels
+plt.rc('legend', fontsize=12)     # fontsize of the x and y labels
+
 def produce_SHO_preds(G, t, x0=0, dx_dt0=0.5):
     """ produce sho preds that satisfy system, without u adjustment """
     x_raw = G(t)
