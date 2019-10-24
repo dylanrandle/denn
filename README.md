@@ -29,3 +29,13 @@ also includes the simpler mean-square error method for comparison
 - `Analysis_of_Sampling.ipynb`: shows the effect of different grid sampling strategies
 - `GAN.ipynb`: shows the setup and results of GANs and MSE-based method on exponential decay
 - `GAN_Paper_Results.ipynb`: shows concise results for examples in paper
+
+## Description of GAN Setup
+Below is a pictorial representation of our propose unsupervised GAN training scheme for solving the exponential decay equation.
+![gan_diagram](img/gan_diagram.png)
+
+Here are some images of the neural networks actually used in our experiment (mainly for fun):
+- Discriminator: \
+![discriminator](img/discriminator.png)
+- Generator: \
+![generator](img/generator.png)
