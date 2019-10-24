@@ -20,6 +20,7 @@ routines are contained in `denn`. There are a few modules to explain:
 1. `rans`: Module implementing unsupervised methods for solving Reynolds-Averaged Navier Stokes equations
 2. `exp`: Module implementing unsupervised Generative Adversarial Network methods for solving exponential decay; \
 also includes the simpler mean-square error method for comparison
+3. `sho`: Module for Simple Harmonic Oscillator; includes updated approach using semi-supervised learning
 
 `notebooks` contains a large collection of Jupyter notebooks with experimental results, as well as some additional nuggets of insight and small implementations. Particular highlights:
 - `channel_flow_nb.ipynb`: initial experiments on the RANS equations
