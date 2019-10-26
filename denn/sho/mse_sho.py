@@ -11,7 +11,8 @@ def train_MSE(model, method='semisupervised', niters=1000, x0=0, dx_dt0=0.5, see
     Train/test Lagaris method (MSE loss) fully supervised
     """
     assert method in ['supervised', 'semisupervised', 'unsupervised']
-    torch.manual_seed(seed)
+    if seed:
+        torch.manual_seed(seed)
     analytic_oscillator = lambda t: x0*torch.cos(t) + dx_dt0*torch.sin(t)
     t_torch = torch.linspace(0, tmax, n, requires_grad=True).reshape(-1, 1)
     y = analytic_oscillator(t_torch)
@@ -80,6 +81,12 @@ def train_MSE(model, method='semisupervised', niters=1000, x0=0, dx_dt0=0.5, see
     plt.tight_layout()
     plt.show()
 
+    xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t_torch, x0=x0, dx_dt0=dx_dt0)
+    final_mse = mse(xadj, y)
+    result = {'model': model, 'final_mse': final_mse, 'loss_trace': loss_trace,
+            'x_adj': xadj, 'dx_dt': dxdt, 'd2x_dt2': d2xdt2, 't_torch': t_torch}
+    return result
+
 if __name__=="__main__":
-    resgnet = Generator(n_hidden_units=30, n_hidden_layers=5, residual=True)
+    resgnet = Generator(n_hidden_units=30, n_hidden_layers=7, residual=True)
     train_MSE(resgnet, method='semisupervised', niters=500)

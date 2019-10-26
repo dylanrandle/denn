@@ -14,11 +14,11 @@ from denn.sho.sho_utils import produce_SHO_preds, produce_SHO_preds_system, plot
 
 def train_GAN_SHO(
     # Architecture
-    num_epochs=50000,
+    num_epochs=100000,
     activation=nn.Tanh(),
     g_hidden_units=30,
     d_hidden_units=30,
-    g_hidden_layers=5,
+    g_hidden_layers=7,
     d_hidden_layers=3,
     d_lr=0.0002,
     g_lr=0.0002,
@@ -51,21 +51,21 @@ def train_GAN_SHO(
     wgan=True,
     gp=1.0,
     d1=1.0,
-    d2=1.0,
+    d2=0.1,
     outputTan=True,
     systemOfODE=True,
     conditionalGAN=True,
     lr_schedule=True,
-    decay_start_epoch=5000,
+    decay_start_epoch=0,
     # weight_average=False,
     # weight_average_start=50000,
     # Inspect
-    savefig=False,
-    fname=None,
+    savefig=True,
+    fname='GAN_SHO.png',
     device=None,
-    check_every=100,
+    check_every=1000,
     logging=False,
-    realtime_plot=True,
+    realtime_plot=False,
     seed=42,
 ):
 
@@ -202,7 +202,7 @@ def train_GAN_SHO(
             if cuda:
               analytic.cuda()
 
-            x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t)
+            x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t, x0=x0, dx_dt0=dx_dt0)
 
             # FOR CONDITIONAL GAN:
             # input t with real/fake (to discriminator)
@@ -225,7 +225,7 @@ def train_GAN_SHO(
             # the generator wants to fool D both with X and X''
             g_loss1 = criterion(D(fake1), real_label_vec)
             g_loss2 = criterion(D2(fake2), real_label_vec)
-            if epoch > start_d2:
+            if epoch >= start_d2:
                 g_loss = d1 * g_loss1 + d2 * g_loss2
             else:
                 g_loss = d1 * g_loss1
@@ -322,7 +322,7 @@ def train_GAN_SHO(
             # either every time or on last epoch, show plots
             # if savefig is True, the figure will be saved
             # (only on last epoch), because we make sure both are not true
-            plot_SHO(G_losses, D_losses, t, analytic, G, _pred_fn, savefig=savefig, fname=fname, clear=True)
+            plot_SHO(G_losses, D_losses, t, analytic, G, _pred_fn, savefig=False, clear=True)
 
     # if weight_average:
     #     for e in range(len(ema_params)):
@@ -333,7 +333,14 @@ def train_GAN_SHO(
     #         # plot final result
     plot_SHO(G_losses, D_losses, t, analytic, G, _pred_fn, savefig=savefig, fname=fname, clear=False)
 
-    return {'G': G, 'D': D, 'G_loss': G_losses, 'D_loss': D_losses, 't': t_torch, 'analytic': analytic_oscillator}
+    x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t_torch, x0=x0, dx_dt0=dx_dt0)
+    analytic = analytic_oscillator(t_torch)
+    final_mse = mse_loss(x_adj, analytic).item()
+    result = {'G': G, 'D': D, 'G_loss': G_losses, 'D_loss': D_losses,
+            't': t_torch, 'analytic_soln': analytic, 'final_mse': final_mse,
+             'x_adj': x_adj, 'dx_dt': dx_dt, 'd2x_dt2':d2x_dt2}
+
+    return result
 
 if __name__ == '__main__':
     res = train_GAN_SHO(num_epochs=1000)
