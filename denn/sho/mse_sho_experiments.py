@@ -6,9 +6,10 @@ def collect_mse(obs_every, queue):
     mses = []
     for i in range(10)
         resnet = Generator(n_hidden_units=30, n_hidden_layers=7, residual=True)
-        result = train_MSE(resnet, niters=100000, seed=None) # random seed
+        result = train_MSE(resnet, niters=100000, observe_every=obs_every, seed=None) # random seed
         final_mse = result['final_mse']
-    queue.put({'obs_every': obs_every, 'mses': mses})
+    res = {'obs_every': obs_every, 'mses': mses}
+    queue.put(res)
 
 if __name__== "__main__":
     # queue used for shared memory
@@ -17,7 +18,7 @@ if __name__== "__main__":
     processes = []
     obs_every = [1, 2, 4, 8, 16, 25, 32, 50]
     for o in obs_every:
-        p = mp.Process(target=fun, args=(o,q))
+        p = mp.Process(target=collect_mse, args=(o,q))
         p.start()
         processes.append(p)
     # join will block until process exits
