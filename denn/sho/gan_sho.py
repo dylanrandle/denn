@@ -26,6 +26,14 @@ def train_GAN_SHO(
     g_betas=(0.0, 0.9),
     G_iters=1,
     D_iters=1,
+    # D2 params
+    d2_units=30,
+    d2_layers=3,
+    start_d2=0,
+    eq=False,
+    eq_k1 = 0,
+    eq_k = 0,
+    eq_lr = 0.001,
     # Problem
     t_low=0,
     t_high=4*np.pi,
@@ -93,7 +101,13 @@ def train_GAN_SHO(
                       residual=False) # no residual in D's
 
     # make D2 an exact (deep) copy of D
-    D2 = deepcopy(D)
+    # D2 = deepcopy(D)
+    D2 = Discriminator(in_dim=d_in_dim, out_dim=1,
+                      n_hidden_units=d2_units,
+                      n_hidden_layers=d2_layers,
+                      activation=activation,
+                      unbounded=wgan, # true for WGAN
+                      residual=False) # no residual in D's
     if cuda:
       D.cuda()
       D2.cuda()
@@ -211,7 +225,10 @@ def train_GAN_SHO(
             # the generator wants to fool D both with X and X''
             g_loss1 = criterion(D(fake1), real_label_vec)
             g_loss2 = criterion(D2(fake2), real_label_vec)
-            g_loss = d1 * g_loss1 + d2 * g_loss2
+            if epoch > start_d2:
+                g_loss = d1 * g_loss1 + d2 * g_loss2
+            else:
+                g_loss = d1 * g_loss1
             # Below: trying MSE loss
             # g_loss = d1 * mse_loss(fake, real) + d2_hyper * criterion(D2(fake2), real_label_vec)
             g_loss.backward(retain_graph=True)
@@ -263,16 +280,30 @@ def train_GAN_SHO(
             # D1: discriminating between true and pred
             real_loss = criterion(D(real[observers, :]), real_label_vec[observers, :])
             fake_loss = criterion(D(fake1), fake_label_vec)
+            # if eq:
+            #     d_loss1 = real_loss + eq_k1 * fake_loss + norm_penalty
+            # else:
             d_loss1 = real_loss + fake_loss + norm_penalty
             d_loss1.backward(retain_graph=True)
             optiD.step()
+            # if epoch > 0 and eq:
+            #     gamma = g_loss1.item() / d_loss1.item()
+            #     eq_k1 += eq_lr * (gamma * real_loss.item() - g_loss1.item())
+
 
             # D2: discriminating between pred and X''
             real_loss = criterion(D2(fake1), real_label_vec)
             fake_loss = criterion(D2(fake2), fake_label_vec)
-            d_loss2 = real_loss + fake_loss + norm_penalty2
-            d_loss2.backward(retain_graph=True)
-            optiD2.step()
+            if eq:
+                d_loss2 = real_loss + eq_k * fake_loss + norm_penalty2
+            else:
+                d_loss2 = real_loss + fake_loss + norm_penalty2
+            if epoch > start_d2:
+                d_loss2.backward(retain_graph=True)
+                optiD2.step()
+            if epoch > 0 and eq:
+                gamma = g_loss2.item() / d_loss2.item()
+                eq_k += eq_lr * (gamma * real_loss.item() - g_loss2.item())
 
         # Update learning rates
         if lr_schedule:

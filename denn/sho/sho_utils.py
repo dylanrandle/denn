@@ -69,13 +69,14 @@ def plot_SHO(g_loss, d_loss, t, analytic, G, pred_fn, clear=False, savefig=False
     ax[0].plot(epochs, [d[1] for d in d_loss], label='$D_{U}$')
 
     ax[0].legend()
+    # ax[0].set_yscale('log')
     ax[0].set_title('Loss Curve')
     ax[0].set_xlabel('Epoch')
     ax[0].set_ylabel('Loss')
 
     # Prediction
-    ax[1].plot(t, analytic, '--', label='$x$')
-    ax[1].plot(t, preds, label='$\hat{x}$')
+    ax[1].plot(t, analytic, label='$x$')
+    ax[1].plot(t, preds, '--', label='$\hat{x}$')
     ax[1].legend()
     ax[1].set_title('Prediction And Analytic Solution')
     ax[1].set_xlabel('$t$')
