@@ -6,7 +6,7 @@ from denn.sho.sho_utils import produce_SHO_preds_system
 
 def train_MSE(model, method='semisupervised', niters=1000, x0=0, dx_dt0=0.5, seed=42, n=100,
                     tmax=4*np.pi, perturb=True, lr=0.0002, betas=(0, 0.9), observe_every=1,
-                    d1=1, d2=1):
+                    d1=1, d2=1, make_plot=True):
     """
     Train/test Lagaris method (MSE loss) fully supervised
     """
@@ -47,38 +47,39 @@ def train_MSE(model, method='semisupervised', niters=1000, x0=0, dx_dt0=0.5, see
         loss.backward(retain_graph=True)
         opt.step()
 
-    fig, ax = plt.subplots(1,3,figsize=(15,5))
+    if make_plot:
+        fig, ax = plt.subplots(1,3,figsize=(15,5))
 
-    t = get_batch(perturb=False)
+        t = get_batch(perturb=False)
 
-    if not method == 'semisupervised':
-        ax[0].plot(np.arange(niters), loss_trace)
-    else:
-        ax[0].plot(np.arange(niters), [l[0] for l in loss_trace], label='$L_{S}$')
-        ax[0].plot(np.arange(niters), [l[1] for l in loss_trace], label='$L_{U}$')
-        ax[0].legend()
-    ax[0].set_yscale('log')
-    ax[0].set_title('Loss Curve')
-    ax[0].set_xlabel("Epoch")
-    ax[0].set_ylabel("Loss")
+        if not method == 'semisupervised':
+            ax[0].plot(np.arange(niters), loss_trace)
+        else:
+            ax[0].plot(np.arange(niters), [l[0] for l in loss_trace], label='$L_{S}$')
+            ax[0].plot(np.arange(niters), [l[1] for l in loss_trace], label='$L_{U}$')
+            ax[0].legend()
+        ax[0].set_yscale('log')
+        ax[0].set_title('Loss Curve')
+        ax[0].set_xlabel("Epoch")
+        ax[0].set_ylabel("Loss")
 
-    ax[1].plot(t.detach().numpy(), y.detach().numpy(), label='x')
-    xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t, x0=x0, dx_dt0=dx_dt0)
-    ax[1].plot(t.detach().numpy(), xadj.detach().numpy(), '--', label="$\hat{x}$")
-    ax[1].set_title('Prediction And Analytic Solution')
-    ax[1].set_xlabel('$t$')
-    ax[1].set_ylabel('$x$')
-    ax[1].legend()
+        ax[1].plot(t.detach().numpy(), y.detach().numpy(), label='x')
+        xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t, x0=x0, dx_dt0=dx_dt0)
+        ax[1].plot(t.detach().numpy(), xadj.detach().numpy(), '--', label="$\hat{x}$")
+        ax[1].set_title('Prediction And Analytic Solution')
+        ax[1].set_xlabel('$t$')
+        ax[1].set_ylabel('$x$')
+        ax[1].legend()
 
-    ax[2].plot(t.detach().numpy(), xadj.detach().numpy(), label="$\hat{x}$")
-    ax[2].plot(t.detach().numpy(), d2xdt2.detach().numpy(), '--', label="$\hat{x}''$")
-    ax[2].set_title('Prediction And Second Derivative')
-    ax[2].set_xlabel('$t$')
-    ax[2].set_ylabel("$x$")
-    ax[2].legend()
+        ax[2].plot(t.detach().numpy(), xadj.detach().numpy(), label="$\hat{x}$")
+        ax[2].plot(t.detach().numpy(), d2xdt2.detach().numpy(), '--', label="$\hat{x}''$")
+        ax[2].set_title('Prediction And Second Derivative')
+        ax[2].set_xlabel('$t$')
+        ax[2].set_ylabel("$x$")
+        ax[2].legend()
 
-    plt.tight_layout()
-    plt.show()
+        plt.tight_layout()
+        plt.show()
 
     xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t_torch, x0=x0, dx_dt0=dx_dt0)
     final_mse = mse(xadj, y)
