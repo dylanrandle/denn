@@ -26,6 +26,7 @@ if __name__== "__main__":
     for p in processes:
         p.join()
     # the results from each process are stored in the Queue
+    mse_results = []
     while not q.empty():
         mse_results.append(q.get())
     # write to CSV
