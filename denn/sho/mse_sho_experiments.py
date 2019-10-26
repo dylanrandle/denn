@@ -1,13 +1,15 @@
 from denn.sho.mse_sho import train_MSE
 from denn.utils import Generator
 import pandas as pd
+import multiprocessing as mp
 
 def collect_mse(obs_every, queue):
     mses = []
-    for i in range(10)
+    for i in range(10):
         resnet = Generator(n_hidden_units=30, n_hidden_layers=7, residual=True)
         result = train_MSE(resnet, niters=100000, observe_every=obs_every, seed=None) # random seed
         final_mse = result['final_mse']
+        mses.append(final_mse)
     res = {'obs_every': obs_every, 'mses': mses}
     queue.put(res)
 
@@ -29,4 +31,4 @@ if __name__== "__main__":
         mse_results.append(q.get())
     # write to CSV
     resdf = pd.DataFrame().from_records(mse_results)
-    resdf.to_csv('mse_results.csv')
+    resdf.to_csv('LAG_obsevery_mse_results.csv')
