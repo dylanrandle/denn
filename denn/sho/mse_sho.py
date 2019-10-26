@@ -11,8 +11,7 @@ def train_MSE(model, method='semisupervised', niters=1000, x0=0, dx_dt0=0.5, see
     Train/test Lagaris method (MSE loss) fully supervised
     """
     assert method in ['supervised', 'semisupervised', 'unsupervised']
-    if seed:
-        torch.manual_seed(seed)
+    torch.manual_seed(seed)
     analytic_oscillator = lambda t: x0*torch.cos(t) + dx_dt0*torch.sin(t)
     t_torch = torch.linspace(0, tmax, n, requires_grad=True).reshape(-1, 1)
     y = analytic_oscillator(t_torch)

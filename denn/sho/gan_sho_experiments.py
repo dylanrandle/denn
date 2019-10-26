@@ -1,11 +1,12 @@
 from denn.sho.gan_sho import train_GAN_SHO
 import pandas as pd
 import multiprocessing as mp
+import random
 
 def collect_mse(obs_every, queue):
     mses = []
     for i in range(10):
-        result = train_GAN_SHO(num_epochs=100000, observe_every=obs_every, seed=None)
+        result = train_GAN_SHO(num_epochs=100000, observe_every=obs_every, seed=i)
         final_mse = result['final_mse']
         mses.append(final_mse)
     res = {'obs_every': obs_every, 'mses': mses}
