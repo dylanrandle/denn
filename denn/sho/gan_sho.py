@@ -16,16 +16,15 @@ def train_GAN_SHO(
     # Architecture
     num_epochs=100000,
     activation=nn.Tanh(),
-    g_hidden_units=30,
-    g_hidden_layers=7,
-    d_hidden_units=30,
-    d_hidden_layers=3,
+    g_units=30,
+    g_layers=7,
+    d_units=30,
+    d_layers=3,
     # D2 params
     d2_units=30,
     d2_layers=3,
     start_d2=0,
-    eq=False,
-    eq_k1=0,
+    eq=True,
     eq_k=0,
     eq_lr=0.001,
     # optimizer
@@ -52,7 +51,7 @@ def train_GAN_SHO(
     wgan=True,
     gp=1.0,
     d1=1.0,
-    d2=0.1,
+    d2=1.0,
     outputTan=True,
     systemOfODE=True,
     conditionalGAN=True,
@@ -67,6 +66,7 @@ def train_GAN_SHO(
     check_every=1000,
     logging=False,
     realtime_plot=False,
+    final_plot=False,
     seed=42,
 ):
 
@@ -85,8 +85,8 @@ def train_GAN_SHO(
 
     # initialize nets
     G = Generator(in_dim=1, out_dim=1,
-                  n_hidden_units=g_hidden_units,
-                  n_hidden_layers=g_hidden_layers,
+                  n_hidden_units=g_units,
+                  n_hidden_layers=g_layers,
                   activation=activation, # twice diff'able activation
                   output_tan=outputTan, # true output range should be (-1,1) if True
                   residual=residual)
@@ -95,11 +95,11 @@ def train_GAN_SHO(
 
     d_in_dim = 2 if conditionalGAN else 1
     D = Discriminator(in_dim=d_in_dim, out_dim=1,
-                      n_hidden_units=d_hidden_units,
-                      n_hidden_layers=d_hidden_layers,
+                      n_hidden_units=d_units,
+                      n_hidden_layers=d_layers,
                       activation=activation,
                       unbounded=wgan, # true for WGAN
-                      residual=False) # no residual in D's
+                      residual=residual) # now using residual, before # no residual in D's
 
     # make D2 an exact (deep) copy of D
     # D2 = deepcopy(D)
@@ -108,7 +108,7 @@ def train_GAN_SHO(
                       n_hidden_layers=d2_layers,
                       activation=activation,
                       unbounded=wgan, # true for WGAN
-                      residual=False) # no residual in D's
+                      residual=residual) # now using residual, before # no residual in D's
     if cuda:
       D.cuda()
       D2.cuda()
@@ -332,16 +332,17 @@ def train_GAN_SHO(
     #         for p, a in zip(G.parameters(), average_params[e]):
     #             p.data = a.data
     #         # plot final result
-    plot_SHO(G_losses, D_losses, t, analytic, G, _pred_fn, savefig=savefig, fname=fname, clear=False)
+    if final_plot:
+        plot_SHO(G_losses, D_losses, t, analytic, G, _pred_fn, savefig=savefig, fname=fname, clear=False)
 
     x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t_torch, x0=x0, dx_dt0=dx_dt0)
     analytic = analytic_oscillator(t_torch)
     final_mse = mse_loss(x_adj, analytic).item()
-    result = {'G': G, 'D': D, 'G_loss': G_losses, 'D_loss': D_losses,
-            't': t_torch, 'analytic_soln': analytic, 'final_mse': final_mse,
-             'x_adj': x_adj, 'dx_dt': dx_dt, 'd2x_dt2':d2x_dt2}
-
-    return result
+    return {'final_mse': final_mse}
+    # result = {'G': G, 'D': D, 'G_loss': G_losses, 'D_loss': D_losses,
+    #         't': t_torch, 'analytic_soln': analytic,
+    #          'x_adj': x_adj, 'dx_dt': dx_dt, 'd2x_dt2':d2x_dt2}
+    # return result
 
 if __name__ == '__main__':
     res = train_GAN_SHO(num_epochs=1000)
