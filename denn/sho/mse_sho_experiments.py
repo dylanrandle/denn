@@ -7,7 +7,7 @@ def collect_mse(obs_every, queue):
     mses = []
     for i in range(10):
         resnet = Generator(n_hidden_units=30, n_hidden_layers=7, residual=True)
-        result = train_MSE(resnet, niters=100000, observe_every=obs_every, seed=i, make_plot=False) # random seed
+        result = train_MSE(resnet, niters=100000, n=1000, observe_every=obs_every, seed=i, make_plot=False) # random seed
         final_mse = result['final_mse']
         mses.append(final_mse)
     res = {'obs_every': obs_every, 'mses': mses}
