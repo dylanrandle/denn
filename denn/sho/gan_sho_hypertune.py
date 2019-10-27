@@ -8,7 +8,7 @@ def collect_results(args):
     """ k is tuple of dict from pool.Map"""
     print(args)
     mses = []
-    for i in range(5):
+    for i in range(3):
         result = train_GAN_SHO(num_epochs=10000, seed=i, **args)
         mses.append(result['final_mse'])
     res = {'kwargs': args, 'mean_mse': np.mean(mses), 'std_mse': np.std(mses)}
