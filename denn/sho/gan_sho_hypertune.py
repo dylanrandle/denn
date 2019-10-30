@@ -34,11 +34,13 @@ if __name__== "__main__":
     #     d_layers=[2, 4, 8],
     #     d2_units=[16, 32, 64],
     #     d2_layers=[2, 4, 8],
-    #     G_iters=[1, 2, 4],
-    #     D_iters=[1, 2, 4],
-    #     d1 = [0.1, 1, 10],
     #     d2 = [0.1, 1, 10],
     # )
+
+    # Not executed
+    # G_iters=[1, 2, 4],
+    # D_iters=[1, 2, 4],
+    # d1 = [0.1, 1, 10],
 
     hyper_space = dict(
         d2 = [0.001, 0.01, 0.1],
