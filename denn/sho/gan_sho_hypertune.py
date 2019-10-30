@@ -4,12 +4,12 @@ import multiprocessing as mp
 import itertools
 import numpy as np
 
-def collect_results(args):
+def collect_results(kwargs):
     """ k is tuple of dict from pool.Map"""
     print(args)
     mses = []
     for i in range(3):
-        result = train_GAN_SHO(num_epochs=10000, seed=i, **args)
+        result = train_GAN_SHO(seed=i, **kwargs)
         mses.append(result['final_mse'])
     res = {'kwargs': args, 'mean_mse': np.mean(mses), 'std_mse': np.std(mses)}
     return res
@@ -41,22 +41,19 @@ if __name__== "__main__":
     # )
 
     hyper_space = dict(
-        g_units=[32],
-        g_layers=[4],
-        d_units=[32],
-        d_layers=[8],
-        d2_units=[16],
-        d2_layers=[8],
-        G_iters=[1, 2, 4],
-        D_iters=[1, 2, 4],
         d2 = [0.001, 0.01, 0.1],
+        num_epochs = [10000, 20000, 50000],
+        gp = [0.1, 1, 10],
+        d_lr = [1e-4, 2e-4, 1e-3],
+        g_lr = [1e-4, 2e-4, 1e-3],
+        eq_lr = [1e-4, 2e-4, 1e-3]
     )
 
     n_iters = np.product([len(v) for k, v in hyper_space.items()])
-
     hyper_space = dict_product(hyper_space)
 
-    n_cpus = n_iters if n_iters < 256 else 256
+    max_cpus = 256
+    n_cpus = n_iters if n_iters < max_cpus else max_cpus
     p = mp.Pool(n_cpus)
     results = p.map(collect_results, hyper_space)
 
