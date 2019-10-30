@@ -26,22 +26,37 @@ def dict_product(dicts):
 
 if __name__== "__main__":
 
+    # Oct 30, done
+    # hyper_space = dict(
+    #     g_units=[16, 32, 64],
+    #     g_layers=[2, 4, 8],
+    #     d_units=[16, 32, 64],
+    #     d_layers=[2, 4, 8],
+    #     d2_units=[16, 32, 64],
+    #     d2_layers=[2, 4, 8],
+    #     G_iters=[1, 2, 4],
+    #     D_iters=[1, 2, 4],
+    #     d1 = [0.1, 1, 10],
+    #     d2 = [0.1, 1, 10],
+    # )
+
     hyper_space = dict(
-        g_units=[16, 32, 64],
-        g_layers=[2, 4, 8],
-        d_units=[16, 32, 64],
-        d_layers=[2, 4, 8],
-        d2_units=[16, 32, 64],
-        d2_layers=[2, 4, 8],
+        g_units=[32],
+        g_layers=[4],
+        d_units=[32],
+        d_layers=[8],
+        d2_units=[16],
+        d2_layers=[8],
         G_iters=[1, 2, 4],
         D_iters=[1, 2, 4],
-        d1 = [0.1, 1, 10],
-        d2 = [0.1, 1, 10],
+        d2 = [0.001, 0.01, 0.1],
     )
+
+    n_iters = np.product([len(v) for k, v in hyper_space.items()])
 
     hyper_space = dict_product(hyper_space)
 
-    n_cpus = 256
+    n_cpus = n_iters if n_iters < 256 else 256
     p = mp.Pool(n_cpus)
     results = p.map(collect_results, hyper_space)
 
