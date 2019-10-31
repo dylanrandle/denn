@@ -14,7 +14,7 @@ from denn.sho.sho_utils import produce_SHO_preds, produce_SHO_preds_system, plot
 
 def train_GAN_SHO(
     # Architecture
-    num_epochs=100000,
+    num_epochs=50000,
     activation=nn.Tanh(),
     g_units=32,
     g_layers=4,
@@ -28,7 +28,7 @@ def train_GAN_SHO(
     eq_k=0,
     eq_lr=0.001,
     # optimizer
-    d_lr=0.0002,
+    d_lr=0.001,
     g_lr=0.0002,
     d_betas=(0.0, 0.9),
     g_betas=(0.0, 0.9),
@@ -49,9 +49,9 @@ def train_GAN_SHO(
     residual=True,
     observe_every=1,
     wgan=True,
-    gp=1.0,
+    gp=0.1,
     d1=1.0,
-    d2=0.1,
+    d2=0.01,
     outputTan=True,
     systemOfODE=True,
     conditionalGAN=True,
@@ -67,7 +67,7 @@ def train_GAN_SHO(
     logging=False,
     realtime_plot=False,
     final_plot=False,
-    seed=42,
+    seed=0,
 ):
 
     """
