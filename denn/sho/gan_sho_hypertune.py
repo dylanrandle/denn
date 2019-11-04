@@ -42,13 +42,24 @@ if __name__== "__main__":
     # D_iters=[1, 2, 4],
     # d1 = [0.1, 1, 10],
 
+    # hyper_space = dict(
+    #     d2 = [0.001, 0.01, 0.1],
+    #     num_epochs = [10000, 20000, 50000],
+    #     gp = [0.1, 1, 10],
+    #     d_lr = [1e-4, 2e-4, 1e-3],
+    #     g_lr = [1e-4, 2e-4, 1e-3],
+    #     eq_lr = [1e-4, 2e-4, 1e-3]
+    # )
+
     hyper_space = dict(
-        d2 = [0.001, 0.01, 0.1],
-        num_epochs = [10000, 20000, 50000],
-        gp = [0.1, 1, 10],
+        d2 = [1000],
+        num_epochs = [10000],
         d_lr = [1e-4, 2e-4, 1e-3],
         g_lr = [1e-4, 2e-4, 1e-3],
-        eq_lr = [1e-4, 2e-4, 1e-3]
+        g_units=[16, 32, 64],
+        g_layers=[2, 4, 8],
+        d2_units=[16, 32, 64],
+        d2_layers=[2, 4, 8],
     )
 
     n_iters = np.product([len(v) for k, v in hyper_space.items()])
