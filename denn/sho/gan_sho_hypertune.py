@@ -53,7 +53,8 @@ if __name__== "__main__":
     # )
 
     hyper_space = dict(
-        d2 = [1000],
+        d1 = [1e-3],
+        d2 = [1],
         num_epochs = [10000],
         d_lr = [1e-4, 2e-4, 1e-3],
         g_lr = [1e-4, 2e-4, 1e-3],
