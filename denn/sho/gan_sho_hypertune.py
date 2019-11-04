@@ -6,12 +6,12 @@ import numpy as np
 
 def collect_results(kwargs):
     """ k is tuple of dict from pool.Map"""
-    print(args)
+    print(kwargs)
     mses = []
     for i in range(3):
         result = train_GAN_SHO(seed=i, **kwargs)
         mses.append(result['final_mse'])
-    res = {'kwargs': args, 'mean_mse': np.mean(mses), 'std_mse': np.std(mses)}
+    res = {'kwargs': kwargs, 'mean_mse': np.mean(mses), 'std_mse': np.std(mses)}
     return res
 
 def dict_product(dicts):
@@ -42,6 +42,7 @@ if __name__== "__main__":
     # D_iters=[1, 2, 4],
     # d1 = [0.1, 1, 10],
 
+    # Nov 1, done
     # hyper_space = dict(
     #     d2 = [0.001, 0.01, 0.1],
     #     num_epochs = [10000, 20000, 50000],
