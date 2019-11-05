@@ -225,7 +225,8 @@ def train_GAN_SHO(
             # second loss is used in our GAN sense
             # the generator wants to fool D both with X and X''
             g_loss1 = criterion(D(fake1), real_label_vec)
-            g_loss2 = criterion(D2(fake2), real_label_vec)
+            # g_loss2 = criterion(D2(fake2), real_label_vec)
+            g_loss2 = mse_loss(fake1, fake2)
             if epoch >= start_d2:
                 g_loss = d1 * g_loss1 + d2 * g_loss2
             else:
