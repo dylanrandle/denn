@@ -204,6 +204,7 @@ def train_GAN_SHO(
               analytic.cuda()
 
             x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t, x0=x0, dx_dt0=dx_dt0)
+            g_loss2 = mse_loss(x_adj, -(m/k) * d2x_dt2)
 
             # FOR CONDITIONAL GAN:
             # input t with real/fake (to discriminator)
@@ -226,7 +227,6 @@ def train_GAN_SHO(
             # the generator wants to fool D both with X and X''
             g_loss1 = criterion(D(fake1), real_label_vec)
             # g_loss2 = criterion(D2(fake2), real_label_vec)
-            g_loss2 = mse_loss(fake1, fake2)
             if epoch >= start_d2:
                 g_loss = d1 * g_loss1 + d2 * g_loss2
             else:
@@ -270,7 +270,7 @@ def train_GAN_SHO(
 
             if wgan:
                 norm_penalty = calc_gradient_penalty(D, real[observers, :], fake1[observers, :], gp, cuda=cuda)
-                norm_penalty2 = calc_gradient_penalty(D2, fake1, fake2, gp, cuda=cuda)
+                # norm_penalty2 = calc_gradient_penalty(D2, fake1, fake2, gp, cuda=cuda)
             else:
                 norm_penalty = null_norm_penalty
                 norm_penalty2 = null_norm_penalty
@@ -293,19 +293,19 @@ def train_GAN_SHO(
             #     eq_k1 += eq_lr * (gamma * real_loss.item() - g_loss1.item())
 
 
-            # D2: discriminating between pred and X''
-            real_loss = criterion(D2(fake1), real_label_vec)
-            fake_loss = criterion(D2(fake2), fake_label_vec)
-            if eq:
-                d_loss2 = real_loss + eq_k * fake_loss + norm_penalty2
-            else:
-                d_loss2 = real_loss + fake_loss + norm_penalty2
-            if epoch > start_d2:
-                d_loss2.backward(retain_graph=True)
-                optiD2.step()
-            if epoch > 0 and eq:
-                gamma = g_loss2.item() / d_loss2.item()
-                eq_k += eq_lr * (gamma * real_loss.item() - g_loss2.item())
+            # # D2: discriminating between pred and X''
+            # real_loss = criterion(D2(fake1), real_label_vec)
+            # fake_loss = criterion(D2(fake2), fake_label_vec)
+            # if eq:
+            #     d_loss2 = real_loss + eq_k * fake_loss + norm_penalty2
+            # else:
+            #     d_loss2 = real_loss + fake_loss + norm_penalty2
+            # if epoch > start_d2:
+            #     d_loss2.backward(retain_graph=True)
+            #     optiD2.step()
+            # if epoch > 0 and eq:
+            #     gamma = g_loss2.item() / d_loss2.item()
+            #     eq_k += eq_lr * (gamma * real_loss.item() - g_loss2.item())
 
         # Update learning rates
         if lr_schedule:
@@ -317,7 +317,7 @@ def train_GAN_SHO(
         ## Logging
         ## ========
 
-        D_losses.append((d_loss1.item(), d_loss2.item()))
+        D_losses.append((d_loss1.item(), 0))
         G_losses.append((g_loss1.item(), g_loss2.item()))
 
         if realtime_plot and (epoch % check_every) == 0:
