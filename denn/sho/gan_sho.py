@@ -339,7 +339,7 @@ def train_GAN_SHO(
     x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t_torch, x0=x0, dx_dt0=dx_dt0)
     analytic = analytic_oscillator(t_torch)
     final_mse = mse_loss(x_adj, analytic).item()
-    return {'final_mse': final_mse}
+    return {'final_mse': final_mse, 'model': G}
     # result = {'G': G, 'D': D, 'G_loss': G_losses, 'D_loss': D_losses,
     #         't': t_torch, 'analytic_soln': analytic,
     #          'x_adj': x_adj, 'dx_dt': dx_dt, 'd2x_dt2':d2x_dt2}
