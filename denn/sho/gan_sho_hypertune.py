@@ -53,15 +53,15 @@ if __name__== "__main__":
     # )
 
     hyper_space = dict(
-        d1 = [1e-3],
         d2 = [1],
         num_epochs = [10000],
+        d1 = [1e-3, 1e-2, 1e-1],
         d_lr = [1e-4, 2e-4, 1e-3],
         g_lr = [1e-4, 2e-4, 1e-3],
         g_units=[16, 32, 64],
         g_layers=[2, 4, 8],
-        d2_units=[16, 32, 64],
-        d2_layers=[2, 4, 8],
+        d_units=[16, 32, 64],
+        d_layers=[2, 4, 8],
     )
 
     n_iters = np.product([len(v) for k, v in hyper_space.items()])

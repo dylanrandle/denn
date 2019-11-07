@@ -66,7 +66,7 @@ def plot_SHO(g_loss, d_loss, t, analytic, G, pred_fn, clear=False, savefig=False
     ax[0].plot(epochs, [g[1] for g in g_loss], label='$G_{U}$')
 
     ax[0].plot(epochs, [d[0] for d in d_loss], label='$D_{S}$')
-    ax[0].plot(epochs, [d[1] for d in d_loss], label='$D_{U}$')
+    # ax[0].plot(epochs, [d[1] for d in d_loss], label='$D_{U}$')
 
     ax[0].legend()
     # ax[0].set_yscale('log')
