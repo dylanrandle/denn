@@ -221,7 +221,13 @@ def train_GAN_SHO(
             # first loss is used in the typical GAN sense where "real" is actually the x pred from G
             # second loss is used in our GAN sense
             # the generator wants to fool D both with X and X''
-            g_loss1 = criterion(D(fake1), real_label_vec)
+
+            x_adj_observers, _, _ = _pred_fn(G, t_observers, x0=x0, dx_dt0=dx_dt0)
+            fake1_observers = torch.cat((x_adj_observers, t_observers), 1)
+
+            ## TODO: should this be actually just at observers? like in D update
+            g_loss1 = criterion(D(fake1_observers), real_label_vec[observers, :])
+
             # g_loss2 = criterion(D2(fake2), real_label_vec)
             g_loss = d1 * g_loss1 + d2 * g_loss2
             g_loss.backward(retain_graph=True)
@@ -260,7 +266,7 @@ def train_GAN_SHO(
         for i in range(D_iters):
 
             if wgan:
-                norm_penalty = calc_gradient_penalty(D, real, fake1[observers, :], gp, cuda=cuda)
+                norm_penalty = calc_gradient_penalty(D, real, fake1_observers, gp, cuda=cuda)
                 # norm_penalty2 = calc_gradient_penalty(D2, fake1, fake2, gp, cuda=cuda)
             else:
                 norm_penalty = null_norm_penalty
@@ -272,7 +278,7 @@ def train_GAN_SHO(
 
             # D1: discriminating between real and fake1
             real_loss = criterion(D(real), real_label_vec[observers, :])
-            fake_loss = criterion(D(fake1), fake_label_vec)
+            fake_loss = criterion(D(fake1_observers), fake_label_vec[observers, :])
             if eq:
                 d_loss1 = real_loss + eq_k * fake_loss + norm_penalty
             else:

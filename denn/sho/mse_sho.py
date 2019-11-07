@@ -21,6 +21,8 @@ def train_MSE(model, method='semisupervised', niters=1000, x0=0, dx_dt0=0.5, see
     delta_t = t_torch[1]-t_torch[0]
     # this generates an index mask for our "observers"
     observers = torch.arange(0, n, observe_every)
+    t_observers = t_torch[observers, :]
+    y_observers = analytic_oscillator(t_observers)
     # batch getter
     def get_batch(perturb=False):
         """ perturb grid """
@@ -31,19 +33,30 @@ def train_MSE(model, method='semisupervised', niters=1000, x0=0, dx_dt0=0.5, see
 
     for i in range(niters):
         opt.zero_grad()
-        t = get_batch(perturb=perturb)
-        xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t, x0=x0, dx_dt0=dx_dt0)
+
         if method == 'supervised':
-            loss = mse(xadj, y)
+            xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t_observers, x0=x0, dx_dt0=dx_dt0)
+            loss = mse(xadj, y_observers)
             loss_trace.append(loss.item())
+
         elif method == 'semisupervised':
-            loss1 = mse(xadj[observers], y[observers])
+            # supervised part
+            xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t_observers, x0=x0, dx_dt0=dx_dt0)
+            loss1 = mse(xadj, y_observers)
+            # unsupervised part
+            t = get_batch(perturb=perturb)
+            xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t, x0=x0, dx_dt0=dx_dt0)
             loss2 = mse(xadj, -d2xdt2)
+            # combined
             loss = d1 * loss1 + d2 * loss2
             loss_trace.append((loss1.item(), loss2.item()))
+
         else: # unsupervised
+            t = get_batch(perturb=perturb)
+            xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t, x0=x0, dx_dt0=dx_dt0)
             loss = mse(xadj, -d2xdt2) # equation : x = -x''
             loss_trace.append(loss.item())
+
         loss.backward(retain_graph=True)
         opt.step()
 
