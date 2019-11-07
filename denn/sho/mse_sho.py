@@ -83,10 +83,8 @@ def train_MSE(model, method='semisupervised', niters=1000, x0=0, dx_dt0=0.5, see
 
     xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t_torch, x0=x0, dx_dt0=dx_dt0)
     final_mse = mse(xadj, y).item()
-    result = {'model': model, 'final_mse': final_mse, 'loss_trace': loss_trace,
-            'x_adj': xadj, 'dx_dt': dxdt, 'd2x_dt2': d2xdt2, 't_torch': t_torch}
-    return result
+    return {'final_mse': final_mse, 'model': model}
 
 if __name__=="__main__":
-    resgnet = Generator(n_hidden_units=30, n_hidden_layers=7, residual=True)
+    resgnet = Generator(n_hidden_units=32, n_hidden_layers=4, residual=True)
     train_MSE(resgnet, method='semisupervised', niters=500)
