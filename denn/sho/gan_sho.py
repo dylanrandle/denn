@@ -223,10 +223,7 @@ def train_GAN_SHO(
             # the generator wants to fool D both with X and X''
             g_loss1 = criterion(D(fake1), real_label_vec)
             # g_loss2 = criterion(D2(fake2), real_label_vec)
-            if epoch >= start_d2:
-                g_loss = d1 * g_loss1 + d2 * g_loss2
-            else:
-                g_loss = d1 * g_loss1
+            g_loss = d1 * g_loss1 + d2 * g_loss2
             g_loss.backward(retain_graph=True)
             optiG.step()
 

@@ -37,11 +37,6 @@ if __name__== "__main__":
     #     d2 = [0.1, 1, 10],
     # )
 
-    # Not executed
-    # G_iters=[1, 2, 4],
-    # D_iters=[1, 2, 4],
-    # d1 = [0.1, 1, 10],
-
     # Nov 1, done
     # hyper_space = dict(
     #     d2 = [0.001, 0.01, 0.1],
@@ -55,7 +50,7 @@ if __name__== "__main__":
     hyper_space = dict(
         d2 = [1],
         num_epochs = [10000],
-        d1 = [1e-3, 1e-2, 1e-1],
+        d1 = [1e-3, 1e-2, 1e-1, 1.0],
         d_lr = [1e-4, 2e-4, 1e-3],
         g_lr = [1e-4, 2e-4, 1e-3],
         g_units=[16, 32, 64],
