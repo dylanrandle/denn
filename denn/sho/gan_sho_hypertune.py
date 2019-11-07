@@ -48,9 +48,7 @@ if __name__== "__main__":
     # )
 
     hyper_space = dict(
-        d2 = [1],
         num_epochs = [10000],
-        d1 = [1e-3, 1e-2, 1e-1, 1.0],
         d_lr = [1e-4, 2e-4, 1e-3],
         g_lr = [1e-4, 2e-4, 1e-3],
         g_units=[16, 32, 64],
@@ -62,7 +60,7 @@ if __name__== "__main__":
     n_iters = np.product([len(v) for k, v in hyper_space.items()])
     hyper_space = dict_product(hyper_space)
 
-    max_cpus = 256
+    max_cpus = 32
     n_cpus = n_iters if n_iters < max_cpus else max_cpus
     p = mp.Pool(n_cpus)
     results = p.map(collect_results, hyper_space)

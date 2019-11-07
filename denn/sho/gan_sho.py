@@ -51,7 +51,7 @@ def train_GAN_SHO(
     observe_every=1,
     wgan=True,
     gp=0.1,
-    d1=1e-3,
+    d1=1.,
     d2=1.,
     output_tan=True,
     system_of_ODE=True,
