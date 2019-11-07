@@ -1,12 +1,13 @@
-from denn.sho.gan_sho import train_GAN_SHO
+from denn.sho.mse_sho import train_MSE
+from denn.utils import Generator
 import pandas as pd
 import multiprocessing as mp
-import random
 
 def collect_mse(obs_every, queue):
     mses = []
-    for i in range(3):
-        result = train_GAN_SHO(num_epochs=100000, n=1000, observe_every=obs_every, seed=i)
+    for i in range(10):
+        resnet = Generator(n_hidden_units=32, n_hidden_layers=4, residual=True)
+        result = train_MSE(resnet, method='supervised', niters=100000, n=100, observe_every=obs_every, seed=i, make_plot=False) # random seed
         final_mse = result['final_mse']
         mses.append(final_mse)
     res = {'obs_every': obs_every, 'mses': mses}
@@ -17,7 +18,7 @@ if __name__== "__main__":
     q = mp.Queue()
     # spawn processes and store them in a list
     processes = []
-    obs_every = [1, 2, 4, 8, 16, 25, 32, 50]
+    obs_every = [1, 2, 3, 4, 5, 10, 15, 20, 25]
     for o in obs_every:
         p = mp.Process(target=collect_mse, args=(o,q))
         p.start()
@@ -31,4 +32,4 @@ if __name__== "__main__":
         mse_results.append(q.get())
     # write to CSV
     resdf = pd.DataFrame().from_records(mse_results)
-    resdf.to_csv('GAN_obsevery_mse_results.csv')
+    resdf.to_csv('SUP_obsevery_mse_results.csv')
