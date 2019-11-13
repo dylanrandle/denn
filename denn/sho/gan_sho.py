@@ -14,10 +14,10 @@ from denn.sho.sho_utils import produce_SHO_preds, produce_SHO_preds_system, plot
 
 def train_GAN_SHO(
     # Architecture
-    num_epochs=100000,
+    num_epochs=10000,
     activation=nn.Tanh(),
-    g_units=32,
-    g_layers=4,
+    g_units=64,
+    g_layers=8,
     d_units=32,
     d_layers=8,
     # D2 params
@@ -30,7 +30,7 @@ def train_GAN_SHO(
     eq_lr=0.001,
     # optimizer
     d_lr=0.001,
-    g_lr=0.0002,
+    g_lr=0.001,
     d_betas=(0.0, 0.9),
     g_betas=(0.0, 0.9),
     G_iters=1,

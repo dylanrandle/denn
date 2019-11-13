@@ -4,9 +4,9 @@ import numpy as np
 from denn.utils import Generator
 from denn.sho.sho_utils import produce_SHO_preds_system
 
-def train_MSE(model, method='semisupervised', niters=1000, x0=0, dx_dt0=0.5, seed=42, n=100,
-                    tmax=4*np.pi, perturb=True, lr=0.0002, betas=(0, 0.9), observe_every=1,
-                    d1=1, d2=1, make_plot=True):
+def train_MSE(model, method='semisupervised', niters=10000, x0=0, dx_dt0=0.5, seed=0, n=100,
+                    tmax=4*np.pi, perturb=True, lr=0.001, betas=(0, 0.9), observe_every=1,
+                    d1=1, d2=1, make_plot=False):
     """
     Train/test Lagaris method (MSE loss) fully supervised
     """
