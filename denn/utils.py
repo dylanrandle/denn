@@ -9,6 +9,11 @@ from copy import deepcopy
 from IPython.display import clear_output
 import itertools
 
+# Global plot params
+plt.rc('axes', titlesize=15)
+plt.rc('axes', labelsize=12)
+plt.rc('legend', fontsize=12)
+
 def diff(x, t):
     """ wraps autograd to perform differentiation """
     dx_dt, = autograd.grad(x, t,
