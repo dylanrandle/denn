@@ -35,7 +35,7 @@ def train_MSE(model, method='semisupervised', niters=10000, x0=0, dx_dt0=0.5, se
         else:
           return t_torch
 
-    # lr schedulers
+    # lr scheduler
     start_epoch = 0
     if lr_schedule:
         lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=LambdaLR(niters, start_epoch, decay_start_epoch).step)
