@@ -1,28 +1,32 @@
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-from denn.utils import Generator
+from denn.utils import Generator, LambdaLR
 from denn.sho.sho_utils import produce_SHO_preds_system
 
 def train_MSE(model, method='semisupervised', niters=10000, x0=0, dx_dt0=0.5, seed=0, n=100,
-                    tmax=4*np.pi, perturb=True, lr=0.001, betas=(0, 0.9), observe_every=1,
-                    d1=1, d2=1, make_plot=False):
+    tmax=4*np.pi, perturb=True, lr=0.001, betas=(0, 0.9), observe_every=1,
+    d1=1, d2=1, make_plot=False, lr_schedule=True, decay_start_epoch=0):
     """
     Train/test Lagaris method (MSE loss) fully supervised
     """
     assert method in ['supervised', 'semisupervised', 'unsupervised']
+
     torch.manual_seed(seed)
     analytic_oscillator = lambda t: x0*torch.cos(t) + dx_dt0*torch.sin(t)
     t_torch = torch.linspace(0, tmax, n, requires_grad=True).reshape(-1, 1)
     y = analytic_oscillator(t_torch)
+
     opt = torch.optim.Adam(model.parameters(), lr=lr, betas=betas)
     mse = torch.nn.MSELoss()
     loss_trace = []
     delta_t = t_torch[1]-t_torch[0]
+
     # this generates an index mask for our "observers"
     observers = torch.arange(0, n, observe_every)
     t_observers = t_torch[observers, :]
     y_observers = analytic_oscillator(t_observers)
+
     # batch getter
     def get_batch(perturb=False):
         """ perturb grid """
@@ -31,9 +35,12 @@ def train_MSE(model, method='semisupervised', niters=10000, x0=0, dx_dt0=0.5, se
         else:
           return t_torch
 
-    for i in range(niters):
-        opt.zero_grad()
+    # lr schedulers
+    start_epoch = 0
+    if lr_schedule:
+        lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=LambdaLR(niters, start_epoch, decay_start_epoch).step)
 
+    for i in range(niters):
         if method == 'supervised':
             xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t_observers, x0=x0, dx_dt0=dx_dt0)
             loss = mse(xadj, y_observers)
@@ -46,7 +53,7 @@ def train_MSE(model, method='semisupervised', niters=10000, x0=0, dx_dt0=0.5, se
             # unsupervised part
             t = get_batch(perturb=perturb)
             xadj, dxdt, d2xdt2 = produce_SHO_preds_system(model, t, x0=x0, dx_dt0=dx_dt0)
-            loss2 = mse(xadj, -d2xdt2)
+            loss2 = mse(xadj, -d2xdt2) # equation : x = -x''
             # combined
             loss = d1 * loss1 + d2 * loss2
             loss_trace.append((loss1.item(), loss2.item()))
@@ -57,8 +64,12 @@ def train_MSE(model, method='semisupervised', niters=10000, x0=0, dx_dt0=0.5, se
             loss = mse(xadj, -d2xdt2) # equation : x = -x''
             loss_trace.append(loss.item())
 
+        opt.zero_grad()
         loss.backward(retain_graph=True)
         opt.step()
+
+        if lr_schedule:
+            lr_scheduler.step()
 
     if make_plot:
         fig, ax = plt.subplots(1,3,figsize=(15,5))
