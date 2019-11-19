@@ -1,12 +1,12 @@
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
-from denn.utils import Generator
+from denn.utils import Generator, LambdaLR
 from denn.nlo.nlo_utils import produce_preds, produce_preds_system, numerical_solution, nlo_eqn
 
 def train_MSE(model, method='semisupervised', niters=10000, seed=0, n=100,
                     nperiods=4, perturb=True, lr=0.001, betas=(0, 0.9), observe_every=1,
-                    d1=1, d2=1, make_plot=False):
+                    d1=1, d2=1, make_plot=False, lr_schedule=True, decay_start_epoch=0):
     """
     Train/test Lagaris method (MSE loss) fully supervised
     """
@@ -35,6 +35,11 @@ def train_MSE(model, method='semisupervised', niters=10000, seed=0, n=100,
           return t_torch + delta_t * torch.randn_like(t_torch) / 3
         else:
           return t_torch
+
+    # lr schedulers
+    start_epoch = 0
+    if lr_schedule:
+        lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=LambdaLR(niters, start_epoch, decay_start_epoch).step)
 
     # train model
     loss_trace = []
@@ -67,6 +72,9 @@ def train_MSE(model, method='semisupervised', niters=10000, seed=0, n=100,
         loss.backward(retain_graph=True)
         opt.step()
 
+        if lr_schedule:
+            lr_scheduler.step()
+
     if make_plot:
         fig, ax = plt.subplots(1,2,figsize=(10,5))
 
@@ -91,18 +99,12 @@ def train_MSE(model, method='semisupervised', niters=10000, seed=0, n=100,
         ax[1].set_ylabel('$x$')
         ax[1].legend()
 
-        # ax[2].plot(t.detach().numpy(), xadj.detach().numpy(), label="$\hat{x}$")
-        # ax[2].plot(t.detach().numpy(), d2xdt2.detach().numpy(), '--', label="$\hat{x}''$")
-        # ax[2].set_title('Prediction And Second Derivative')
-        # ax[2].set_xlabel('$t$')
-        # ax[2].set_ylabel("$x$")
-        # ax[2].legend()
-
         plt.tight_layout()
         plt.show()
 
     xadj, dxdt, d2xdt2 = produce_preds_system(model, t_torch)
     final_mse = mse(xadj, y_num).item()
+    print(f'Final MSE: {final_mse}')
     return {'final_mse': final_mse, 'model': model}
 
 if __name__=="__main__":

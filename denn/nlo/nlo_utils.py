@@ -3,6 +3,12 @@ import torch.functional as F
 from denn.utils import diff
 import numpy as np
 from scipy import optimize
+import matplotlib.pyplot as plt
+
+# Global plot params
+plt.rc('axes', titlesize=15)
+plt.rc('axes', labelsize=12)
+plt.rc('legend', fontsize=12)
 
 NLO_PARAMS = {
     'omega': 1,
@@ -33,7 +39,7 @@ def numerical_solution(t):
         return nlo_eqn(d2x, dx, x)
 
     opt_sol = optimize.root(get_diff, guess, method='lm')
-    print(f'Numerical solution succes: {opt_sol.success}')
+    print(f'Numerical solution success: {opt_sol.success}')
     return opt_sol.x
 
 def produce_preds(G, t):
@@ -57,3 +63,45 @@ def produce_preds_system(G, t):
     # compute du_dt = d2x_dt2
     d2x = diff(u_adj, t)
     return x_adj, u_adj, d2x
+
+def plot_NLO_GAN(g_loss, d_loss, t, x_true, G, pred_fn, clear=False, savefig=False, fname=None):
+    """ helpful plotting function for NLO for GAN """
+    if clear:
+        clear_output(True)
+
+    # get all preds/derivatives
+    x_adj, dx_dt, d2x_dt2 = pred_fn(G, t)
+
+    # convert to numpy
+    preds = x_adj.cpu().detach().numpy().reshape(-1)
+    t = t.cpu().detach().numpy().reshape(-1)
+    x_true = x_true.cpu().detach().numpy().reshape(-1)
+
+    # make plots
+    fig, ax = plt.subplots(1,2,figsize=(10,5))
+    steps = len(g_loss)
+    epochs = np.arange(steps)
+
+    # Losses
+    ax[0].plot(epochs, [g[0] for g in g_loss], label='$G_{S}$')
+    ax[0].plot(epochs, [g[1] for g in g_loss], label='$G_{U}$')
+    ax[0].plot(epochs, d_loss, label='$D_{S}$')
+    ax[0].legend()
+    ax[0].set_title('Loss Curve')
+    ax[0].set_xlabel('Epoch')
+    ax[0].set_ylabel('Loss')
+
+    # Prediction
+    ax[1].plot(t, x_true, label='$x$')
+    ax[1].plot(t, preds, '--', label='$\hat{x}$')
+    ax[1].legend()
+    ax[1].set_title('Prediction And Numerical Solution')
+    ax[1].set_xlabel('$t$')
+    ax[1].set_ylabel('$x$')
+
+    plt.tight_layout()
+
+    if not savefig:
+        plt.show()
+    else:
+        plt.savefig(fname)

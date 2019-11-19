@@ -66,7 +66,8 @@ class Generator(nn.Module):
     """
     Generalized generator function for MLP
     """
-    def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2, activation=nn.Tanh(), output_tan=True, residual=False):
+    def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2,
+        activation=nn.Tanh(), output_tan=True, residual=False):
 
         super(Generator, self).__init__()
 
@@ -95,7 +96,8 @@ class Generator(nn.Module):
 
 class Discriminator(nn.Module):
     """ Generalized discriminator """
-    def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2, activation=nn.Tanh(), unbounded=False, residual=False):
+    def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2,
+        activation=nn.Tanh(), unbounded=False, residual=False):
 
         super(Discriminator, self).__init__()
 
