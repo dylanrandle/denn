@@ -1,7 +1,7 @@
 import pandas as pd
 import multiprocessing as mp
 import numpy as np
-from denn.utils import Generator
+from denn.utils import Generator, Discriminator
 from denn.nlo.mse_nlo import train_MSE
 from denn.nlo.gan_nlo import train_GAN_NLO
 
