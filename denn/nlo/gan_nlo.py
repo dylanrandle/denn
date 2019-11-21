@@ -127,7 +127,7 @@ def train_GAN_NLO(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 
             else:
                 norm_penalty = null_norm_penalty
 
-            train D to discriminate between real and fake
+            # train D to discriminate between real and fake
             real_loss = criterion(D(real), real_label_vec)
             fake_loss = criterion(D(fake), fake_label_vec)
             if eq:
