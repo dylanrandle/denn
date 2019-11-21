@@ -90,8 +90,6 @@ def train_GAN_NLO(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 
     D_losses = []
     G_losses = []
 
-    zeros = torch.cat((zeros, t_torch), 1)
-
     for epoch in range(num_epochs):
 
         ## =========
@@ -107,8 +105,9 @@ def train_GAN_NLO(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 
             t = get_batch(perturb=perturb)
             x_adj, dx_dt, d2x_dt2 = produce_preds_system(G, t)
             eq_out = nlo_eqn(d2x_dt2, dx_dt, x_adj)
-            eq_out = torch.cat((eq_out, t_torch), 1)
-            g_loss = criterion(D(eq_out), real_label_vec)
+            fake = torch.cat((eq_out, t), 1)
+            real = torch.cat((zeros, t), 1)
+            g_loss = criterion(D(fake), real_label_vec)
 
             # optimize
             optiG.zero_grad() # zero grad before backprop
@@ -124,13 +123,13 @@ def train_GAN_NLO(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 
 
         for i in range(D_iters):
             if wgan:
-                norm_penalty = calc_gradient_penalty(D, zeros, eq_out, gp, cuda=cuda)
+                norm_penalty = calc_gradient_penalty(D, real, fake, gp, cuda=cuda)
             else:
                 norm_penalty = null_norm_penalty
 
-            # train D to discriminate between real and fake
-            real_loss = criterion(D(zeros), real_label_vec)
-            fake_loss = criterion(D(eq_out), fake_label_vec)
+            train D to discriminate between real and fake
+            real_loss = criterion(D(real), real_label_vec)
+            fake_loss = criterion(D(fake), fake_label_vec)
             if eq:
                 d_loss = real_loss + eq_k * fake_loss + norm_penalty
             else:
