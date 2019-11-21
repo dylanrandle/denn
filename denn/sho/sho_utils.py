@@ -40,7 +40,7 @@ def produce_SHO_preds_system(G, t, x0=0, dx_dt0=0.5):
 
     return x_adj, u_adj, du_dt
 
-def plot_SHO(g_loss, d_loss, t, analytic, G, pred_fn, clear=False, savefig=False, fname=None):
+def plot_SHO(g_loss, d_loss, t, analytic, G, pred_fn, D2_losses=None, clear=False, savefig=False, fname=None):
     """ helpful plotting function for Simple Harmonic Oscillator problem """
     # clear the cell
     if clear:
@@ -64,6 +64,8 @@ def plot_SHO(g_loss, d_loss, t, analytic, G, pred_fn, clear=False, savefig=False
     # Losses
     ax[0].plot(epochs, g_loss, label='$G$')
     ax[0].plot(epochs, d_loss, label='$D$')
+    if D2_losses:
+        ax[0].plot(epochs, D2_losses, label='$D_2$')
 
     ax[0].legend()
     # ax[0].set_yscale('log')
