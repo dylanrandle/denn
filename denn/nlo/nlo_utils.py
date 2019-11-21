@@ -4,6 +4,7 @@ from denn.utils import diff
 import numpy as np
 from scipy import optimize
 import matplotlib.pyplot as plt
+from IPython.display import clear_output
 
 # Global plot params
 plt.rc('axes', titlesize=15)
@@ -83,9 +84,8 @@ def plot_NLO_GAN(g_loss, d_loss, t, x_true, G, pred_fn, clear=False, savefig=Fal
     epochs = np.arange(steps)
 
     # Losses
-    ax[0].plot(epochs, [g[0] for g in g_loss], label='$G_{S}$')
-    ax[0].plot(epochs, [g[1] for g in g_loss], label='$G_{U}$')
-    ax[0].plot(epochs, d_loss, label='$D_{S}$')
+    ax[0].plot(epochs, g_loss, label='$G$')
+    ax[0].plot(epochs, d_loss, label='$D$')
     ax[0].legend()
     ax[0].set_title('Loss Curve')
     ax[0].set_xlabel('Epoch')

@@ -26,7 +26,6 @@ def train_GAN_NLO(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 
     cuda = torch.cuda.is_available()
 
     t_torch = torch.linspace(0, nperiods * np.pi, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
-    t_np = t_torch.cpu().detach().numpy()
     delta_t = t_torch[1]-t_torch[0]
     zeros = torch.zeros_like(t_torch)
 
@@ -91,6 +90,8 @@ def train_GAN_NLO(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 
     D_losses = []
     G_losses = []
 
+    zeros = torch.cat((zeros, t_torch), 1)
+
     for epoch in range(num_epochs):
 
         ## =========
@@ -101,26 +102,16 @@ def train_GAN_NLO(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 
             p.requires_grad = False # turn off computation for D
 
         for i in range(G_iters):
-            # supervised part: using observers and GAN as loss
-            x_adj_observers, _, _ = produce_preds_system(G, t_observers)
-            x_adj_observers = torch.cat((x_adj_observers, t_observers), 1)
 
-            # G try to make D think x_adj is real
-            g_loss1 = criterion(D(x_adj_observers), real_label_vec[observers, :])
-
-            # unsupervised part: using perturbed grid and MSE as loss
+            # unsupervised part
             t = get_batch(perturb=perturb)
             x_adj, dx_dt, d2x_dt2 = produce_preds_system(G, t)
-            g_loss2 = mse(nlo_eqn(d2x_dt2, dx_dt, x_adj), zeros)
-
-            # # conditional gan
-            # x_adj = torch.cat((x_adj, t), 1)
-            # dx_dt = torch.cat((dx_dt, t), 1)
-            # d2x_dt2 = torch.cat((d2x_dt2, t), 1)
+            eq_out = nlo_eqn(d2x_dt2, dx_dt, x_adj)
+            eq_out = torch.cat((eq_out, t_torch), 1)
+            g_loss = criterion(D(eq_out), real_label_vec)
 
             # optimize
             optiG.zero_grad() # zero grad before backprop
-            g_loss = d1 * g_loss1 + d2 * g_loss2
             g_loss.backward(retain_graph=True)
             optiG.step()
 
@@ -133,33 +124,33 @@ def train_GAN_NLO(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 
 
         for i in range(D_iters):
             if wgan:
-                norm_penalty = calc_gradient_penalty(D, y_observers, x_adj_observers, gp, cuda=cuda)
+                norm_penalty = calc_gradient_penalty(D, zeros, eq_out, gp, cuda=cuda)
             else:
                 norm_penalty = null_norm_penalty
 
             # train D to discriminate between real and fake
-            real_loss = criterion(D(y_observers), real_label_vec[observers, :])
-            fake_loss = criterion(D(x_adj_observers), fake_label_vec[observers, :])
+            real_loss = criterion(D(zeros), real_label_vec)
+            fake_loss = criterion(D(eq_out), fake_label_vec)
             if eq:
-                d_loss1 = real_loss + eq_k * fake_loss + norm_penalty
+                d_loss = real_loss + eq_k * fake_loss + norm_penalty
             else:
-                d_loss1 = real_loss + fake_loss + norm_penalty
+                d_loss = real_loss + fake_loss + norm_penalty
 
             # zero gradients
             optiD.zero_grad()
-            d_loss1.backward(retain_graph=True)
+            d_loss.backward(retain_graph=True)
             optiD.step()
 
             if epoch > 0 and eq:
-                gamma = g_loss1.item() / d_loss1.item()
-                eq_k += eq_lr * (gamma * real_loss.item() - g_loss1.item())
+                gamma = g_loss.item() / d_loss.item()
+                eq_k += eq_lr * (gamma * real_loss.item() - g_loss.item())
 
         if lr_schedule:
           lr_scheduler_G.step()
           lr_scheduler_D.step()
 
-        D_losses.append(d_loss1.item())
-        G_losses.append((g_loss1.item(), g_loss2.item()))
+        D_losses.append(d_loss.item())
+        G_losses.append(g_loss.item())
 
         if realtime_plot and (epoch % check_every) == 0:
             plot_NLO_GAN(G_losses, D_losses, t_torch, y_num, G, produce_preds_system, savefig=False, clear=True)
@@ -173,28 +164,18 @@ def train_GAN_NLO(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 
     return {'final_mse': final_mse, 'model': G}
 
 if __name__ == '__main__':
-    # activation=nn.Tanh()
-    # g_units=64
-    # g_layers=8
-    # d_units=32
-    # d_layers=8
-    # residual=True
-    # wgan=True
-    # output_tan=True
-    # d_in_dim = 2 if conditional_GAN else 1
-
     D = Discriminator(in_dim=2, out_dim=1,
                       n_hidden_units=32,
-                      n_hidden_layers=8,
+                      n_hidden_layers=4,
                       activation=nn.Tanh(),
                       unbounded=True,   # true for WGAN
                       residual=True)
 
     G = Generator(in_dim=1, out_dim=1,
-                  n_hidden_units=64,
-                  n_hidden_layers=8,
+                  n_hidden_units=32,
+                  n_hidden_layers=4,
                   activation=nn.Tanh(), # twice diff'able activation
                   output_tan=True,      # true output range should be (-1,1) if True
                   residual=True)
 
-    res = train_GAN_NLO(G, D, num_epochs=1000, final_plot=True)
+    res = train_GAN_NLO(G, D, num_epochs=10000, final_plot=True)
