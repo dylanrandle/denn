@@ -97,15 +97,16 @@ def train_GAN_SHO_unsupervised(G, D, num_epochs=10000, eq=False, eq_k=0, eq_lr=0
             p.requires_grad = False # turn off computation for D
 
         for i in range(G_iters):
-            # unsupervised: G try to fool D
             t = get_batch(perturb=perturb)
+            real = torch.cat((zeros, t), 1)
+
+            # unsupervised: G try to fool D
             x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t, x0=x0, dx_dt0=dx_dt0)
             eq_out = d2x_dt2 + x_adj
             fake = torch.cat((eq_out, t), 1)
-            real = torch.cat((zeros, t), 1)
             g_loss = criterion(D(fake), real_label_vec)
 
-            optiG.zero_grad() # zero grad before backprop
+            optiG.zero_grad()
             g_loss.backward(retain_graph=True)
             optiG.step()
 
@@ -259,14 +260,13 @@ def train_GAN_SHO_semisupervised(G, D, D2, num_epochs=10000, eq=False, eq_k=0,
             p.requires_grad = False # turn off computation for D2
 
         for i in range(G_iters):
-            # unsupervised
             t = get_batch(perturb=perturb)
             real = torch.cat((zeros, t), 1)
 
+            # unsupervised
             x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t, x0=x0, dx_dt0=dx_dt0)
             eq_out = d2x_dt2 + x_adj
             fake = torch.cat((eq_out, t), 1)
-
             g_loss1 = criterion(D(fake), real_label_vec)
 
             # supervised
@@ -297,19 +297,12 @@ def train_GAN_SHO_semisupervised(G, D, D2, num_epochs=10000, eq=False, eq_k=0,
             # D1: unsupervised
             real_loss = criterion(D(real), real_label_vec)
             fake_loss = criterion(D(fake), fake_label_vec)
-            # if eq:
-                # d_loss = real_loss + eq_k * fake_loss + norm_penalty
-            # else:
             d_loss = real_loss + fake_loss + norm_penalty
 
             # zero gradients and step
             optiD.zero_grad()
             d_loss.backward(retain_graph=True)
             optiD.step()
-
-            # if epoch > 0 and eq:
-            #     gamma = g_loss.item() / d_loss.item()
-            #     eq_k += eq_lr * (gamma * real_loss.item() - g_loss.item())
 
         ## =========
         ##  TRAIN D2
@@ -328,19 +321,12 @@ def train_GAN_SHO_semisupervised(G, D, D2, num_epochs=10000, eq=False, eq_k=0,
             # D1: unsupervised
             real_loss = criterion(D2(real_observers), real_label_vec[observers, :])
             fake_loss = criterion(D2(fake_observers), fake_label_vec[observers, :])
-            # if eq:
-            #     d_loss2 = real_loss + eq_k * fake_loss + norm_penalty
-            # else:
             d_loss2 = real_loss + fake_loss + norm_penalty
 
             # zero gradients and step
             optiD2.zero_grad()
             d_loss2.backward(retain_graph=True)
             optiD2.step()
-
-            # if epoch > 0 and eq:
-            #     gamma = g_loss.item() / d_loss2.item()
-            #     eq_k += eq_lr * (gamma * real_loss.item() - g_loss.item())
 
         # Update learning rates
         if lr_schedule:
@@ -385,5 +371,5 @@ if __name__ == '__main__':
                       unbounded=True, # true for WGAN
                       residual=True)
 
-    res = train_GAN_SHO_unsupervised(G, D, d_lr=2e-4, final_plot=True, num_epochs=1000)
-    res = train_GAN_SHO_semisupervised(G, D, D2, d_lr=2e-4, final_plot=True, num_epochs=1000, observe_every=10)
+    # res = train_GAN_SHO_unsupervised(G, D, G_iters=5, final_plot=True, num_epochs=1000)
+    res = train_GAN_SHO_semisupervised(G, D, D2, G_iters=5, final_plot=True, num_epochs=1000, observe_every=1)

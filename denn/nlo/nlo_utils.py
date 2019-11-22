@@ -65,7 +65,7 @@ def produce_preds_system(G, t):
     d2x = diff(u_adj, t)
     return x_adj, u_adj, d2x
 
-def plot_NLO_GAN(g_loss, d_loss, t, x_true, G, pred_fn, clear=False, savefig=False, fname=None):
+def plot_NLO_GAN(g_loss, d_loss, t, x_true, G, pred_fn, D2_losses=None, clear=False, savefig=False, fname=None):
     """ helpful plotting function for NLO for GAN """
     if clear:
         clear_output(True)
@@ -86,6 +86,8 @@ def plot_NLO_GAN(g_loss, d_loss, t, x_true, G, pred_fn, clear=False, savefig=Fal
     # Losses
     ax[0].plot(epochs, g_loss, label='$G$')
     ax[0].plot(epochs, d_loss, label='$D$')
+    if D2_losses:
+        ax[0].plot(epochs, D2_losses, label='$D_2$')
     ax[0].legend()
     ax[0].set_title('Loss Curve')
     ax[0].set_xlabel('Epoch')
