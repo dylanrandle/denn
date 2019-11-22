@@ -349,24 +349,24 @@ def train_GAN_NLO_semisupervised(G, D, D2, num_epochs=10000, d_lr=0.001, g_lr=0.
 if __name__ == '__main__':
     D = Discriminator(in_dim=2, out_dim=1,
                       n_hidden_units=32,
-                      n_hidden_layers=4,
+                      n_hidden_layers=8,
                       activation=nn.Tanh(),
                       unbounded=True,   # true for WGAN
                       residual=True)
 
     D2 = Discriminator(in_dim=2, out_dim=1,
                       n_hidden_units=32,
-                      n_hidden_layers=4,
+                      n_hidden_layers=8,
                       activation=nn.Tanh(),
                       unbounded=True,   # true for WGAN
                       residual=True)
 
     G = Generator(in_dim=1, out_dim=1,
                   n_hidden_units=32,
-                  n_hidden_layers=4,
+                  n_hidden_layers=8,
                   activation=nn.Tanh(), # twice diff'able activation
                   output_tan=True,      # true output range should be (-1,1) if True
                   residual=True)
 
-    # res = train_GAN_NLO_unsupervised(G, D, num_epochs=10000, final_plot=True)
-    res = train_GAN_NLO_semisupervised(G, D, D2, d_lr=2e-4, g_lr=2e-4, G_iters=2, num_epochs=10000, final_plot=True, observe_every=1)
+    res = train_GAN_NLO_unsupervised(G, D, d_lr=2e-4, g_lr=2e-4, num_epochs=10000, final_plot=True)
+    res = train_GAN_NLO_semisupervised(G, D, D2, d_lr=2e-4, g_lr=2e-4, num_epochs=10000, final_plot=True, observe_every=10)

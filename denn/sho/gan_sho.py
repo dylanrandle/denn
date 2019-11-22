@@ -351,7 +351,7 @@ def train_GAN_SHO_semisupervised(G, D, D2, num_epochs=10000, eq=False, eq_k=0,
 
 if __name__ == '__main__':
     G = Generator(in_dim=1, out_dim=1,
-                  n_hidden_units=64,
+                  n_hidden_units=32,
                   n_hidden_layers=8,
                   activation=nn.Tanh(), # twice diff'able activation
                   output_tan=True,      # true output range should be (-1,1) if True
@@ -371,5 +371,5 @@ if __name__ == '__main__':
                       unbounded=True, # true for WGAN
                       residual=True)
 
-    # res = train_GAN_SHO_unsupervised(G, D, G_iters=5, final_plot=True, num_epochs=1000)
-    res = train_GAN_SHO_semisupervised(G, D, D2, G_iters=5, final_plot=True, num_epochs=1000, observe_every=1)
+    res = train_GAN_SHO_unsupervised(G, D, d_lr=2e-4, g_lr=2e-4, final_plot=True, num_epochs=5000)
+    res = train_GAN_SHO_semisupervised(G, D, D2, d_lr=2e-4, g_lr=2e-4, final_plot=True, num_epochs=10000, observe_every=10)
