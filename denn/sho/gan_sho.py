@@ -12,12 +12,13 @@ from copy import deepcopy
 from denn.utils import Generator, Discriminator, diff, LambdaLR, calc_gradient_penalty, exponential_weight_average
 from denn.sho.sho_utils import produce_SHO_preds, produce_SHO_preds_system, plot_SHO
 
-def train_GAN_SHO_unsupervised(G, D, num_epochs=10000, eq=False, eq_k=0, eq_lr=0.001,
+def train_GAN_SHO_unsupervised(G, D, num_epochs=10000,
     d_lr=0.001, g_lr=0.001, d_betas=(0.0, 0.9), g_betas=(0.0, 0.9), G_iters=1,
-    D_iters=1, t_low=0, t_high=4*np.pi, x0=0, dx_dt0=.5, n=100, m=1., k=1.,
+    D_iters=1, t_low=0, t_high=4*np.pi, x0=0, dx_dt0=.5, n=100,
     real_label=1, fake_label=0, perturb=True, wgan=True, gp=0.1, d1=1., d2=1.,
-    system_of_ODE=True, lr_schedule=True, decay_start_epoch=0,
-    savefig=False, fname='GAN_SHO.png', check_every=1000, logging=False, realtime_plot=False,
+    system_of_ODE=False, eq=False, eq_k=0, eq_lr=0.001,
+    lr_schedule=True, decay_start_epoch=0, savefig=False,
+    fname='GAN_SHO.png', check_every=1000, logging=False, realtime_plot=False,
     final_plot=False, seed=0):
     """
     function to perform training of generator and discriminator for num_epochs
@@ -25,16 +26,15 @@ def train_GAN_SHO_unsupervised(G, D, num_epochs=10000, eq=False, eq_k=0, eq_lr=0
     """
     torch.manual_seed(seed) # reproducibility
     cuda = torch.cuda.is_available()
-
     if wgan:
         fake_label = -1
 
     # grid
     t_torch = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
     zeros = torch.zeros_like(t_torch)
+
     # analytical solution
-    omega = np.sqrt(k/m)
-    analytic_oscillator = lambda t: x0 * torch.cos(omega * t) + (dx_dt0/omega) * torch.sin(omega * t)
+    analytic_oscillator = lambda t: dx_dt0 * torch.sin(t)
     solution = analytic_oscillator(t_torch)
 
     # inter-point spacing
@@ -88,22 +88,21 @@ def train_GAN_SHO_unsupervised(G, D, num_epochs=10000, eq=False, eq_k=0, eq_lr=0
         fake_label_vec = fake_label_vec.cuda()
 
     for epoch in range(num_epochs):
-
         ## =========
         ##  TRAIN G
         ## =========
-
         for p in D.parameters():
             p.requires_grad = False # turn off computation for D
 
         for i in range(G_iters):
             t = get_batch(perturb=perturb)
             real = torch.cat((zeros, t), 1)
-
+            # real = zeros
             # unsupervised: G try to fool D
             x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t, x0=x0, dx_dt0=dx_dt0)
             eq_out = d2x_dt2 + x_adj
             fake = torch.cat((eq_out, t), 1)
+            # fake = eq_out
             g_loss = criterion(D(fake), real_label_vec)
 
             optiG.zero_grad()
@@ -113,12 +112,10 @@ def train_GAN_SHO_unsupervised(G, D, num_epochs=10000, eq=False, eq_k=0, eq_lr=0
         ## =========
         ##  TRAIN D
         ## =========
-
         for p in D.parameters():
             p.requires_grad = True # turn on computation for D
 
         for i in range(D_iters):
-
             if wgan:
                 norm_penalty = calc_gradient_penalty(D, real, fake, gp, cuda=cuda)
             else:
@@ -127,28 +124,24 @@ def train_GAN_SHO_unsupervised(G, D, num_epochs=10000, eq=False, eq_k=0, eq_lr=0
             # D1: discriminating between real and fake1
             real_loss = criterion(D(real), real_label_vec)
             fake_loss = criterion(D(fake), fake_label_vec)
-            if eq:
-                d_loss = real_loss + eq_k * fake_loss + norm_penalty
-            else:
-                d_loss = real_loss + fake_loss + norm_penalty
+            # if eq:
+            #     d_loss = real_loss + eq_k * fake_loss + norm_penalty
+            # else:
+            d_loss = real_loss + fake_loss + norm_penalty
 
             # zero gradients
             optiD.zero_grad()
             d_loss.backward(retain_graph=True)
             optiD.step()
 
-            if epoch > 0 and eq:
-                gamma = g_loss.item() / d_loss.item()
-                eq_k += eq_lr * (gamma * real_loss.item() - g_loss.item())
+            # if epoch > 0 and eq:
+            #     gamma = g_loss.item() / d_loss.item()
+            #     eq_k += eq_lr * (gamma * real_loss.item() - g_loss.item())
 
         # Update learning rates
         if lr_schedule:
           lr_scheduler_G.step()
           lr_scheduler_D.step()
-
-        ## ========
-        ## Logging
-        ## ========
 
         D_losses.append(d_loss.item())
         G_losses.append(g_loss.item())
@@ -164,11 +157,12 @@ def train_GAN_SHO_unsupervised(G, D, num_epochs=10000, eq=False, eq_k=0, eq_lr=0
     print(f'Final MSE: {final_mse}')
     return {'final_mse': final_mse, 'model': G}
 
-def train_GAN_SHO_semisupervised(G, D, D2, num_epochs=10000, eq=False, eq_k=0,
-    eq_lr=0.001, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 0.9), g_betas=(0.0, 0.9),
-    G_iters=1, D_iters=1, t_low=0, t_high=4*np.pi, x0=0, dx_dt0=.5, n=100, m=1., k=1.,
+def train_GAN_SHO_semisupervised(G, D, D2, num_epochs=10000, d_lr=0.001, g_lr=0.001,
+    d_betas=(0.0, 0.9), g_betas=(0.0, 0.9),
+    G_iters=1, D_iters=1, t_low=0, t_high=4*np.pi, x0=0, dx_dt0=.5, n=100,
     real_label=1, fake_label=0, perturb=True, observe_every=1, wgan=True, gp=0.1,
-    d1=1., d2=1., system_of_ODE=True, lr_schedule=True, decay_start_epoch=0,
+    d1=1., d2=1., eq=False, eq_k=0, eq_lr=0.001, system_of_ODE=False, lr_schedule=True,
+    decay_start_epoch=0,
     savefig=False, fname='GAN_SHO.png', check_every=1000, logging=False,
     realtime_plot=False, final_plot=False, seed=0):
     """
@@ -183,8 +177,7 @@ def train_GAN_SHO_semisupervised(G, D, D2, num_epochs=10000, eq=False, eq_k=0,
     zeros = torch.zeros_like(t_torch)
 
     # analytical solution
-    omega = np.sqrt(k/m)
-    analytic_oscillator = lambda t: x0 * torch.cos(omega * t) + (dx_dt0/omega) * torch.sin(omega * t)
+    analytic_oscillator = lambda t: dx_dt0 * torch.sin(t)
     solution = analytic_oscillator(t_torch)
 
     # this generates an index mask for our "observers"
