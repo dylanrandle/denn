@@ -4,7 +4,7 @@ import numpy as np
 from denn.utils import Generator, LambdaLR
 from denn.nlo.nlo_utils import produce_preds, produce_preds_system, numerical_solution, nlo_eqn
 
-def train_MSE(model, method='semisupervised', niters=10000, seed=0, n=100,
+def train_MSE(model, method='semisupervised', niters=10000, seed=0, n=100, system_of_ODE=False,
                     nperiods=4, perturb=True, lr=0.001, betas=(0, 0.9), observe_every=1,
                     d1=1, d2=1, make_plot=False, lr_schedule=True, decay_start_epoch=0):
     """
@@ -41,23 +41,25 @@ def train_MSE(model, method='semisupervised', niters=10000, seed=0, n=100,
     if lr_schedule:
         lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=LambdaLR(niters, start_epoch, decay_start_epoch).step)
 
+    _pred_fn = produce_preds_system if system_of_ODE else produce_preds
+
     # train model
     loss_trace = []
     for i in range(niters):
         opt.zero_grad()
 
         if method == 'supervised':
-            xadj, dxdt, d2xdt2 = produce_preds_system(model, t_observers)
+            xadj, dxdt, d2xdt2 = _pred_fn(model, t_observers)
             loss = mse(xadj, y_observers)
             loss_trace.append(loss.item())
 
         elif method == 'semisupervised':
             # supervised part
-            xadj, dxdt, d2xdt2 = produce_preds_system(model, t_observers)
+            xadj, dxdt, d2xdt2 = _pred_fn(model, t_observers)
             loss1 = mse(xadj, y_observers)
             # unsupervised part
             t = get_batch(perturb=perturb)
-            xadj, dxdt, d2xdt2 = produce_preds_system(model, t)
+            xadj, dxdt, d2xdt2 = _pred_fn(model, t)
             loss2 = mse(nlo_eqn(d2xdt2, dxdt, xadj), zeros)
             # combined
             loss = d1 * loss1 + d2 * loss2
@@ -65,7 +67,7 @@ def train_MSE(model, method='semisupervised', niters=10000, seed=0, n=100,
 
         else: # unsupervised
             t = get_batch(perturb=perturb)
-            xadj, dxdt, d2xdt2 = produce_preds_system(model, t)
+            xadj, dxdt, d2xdt2 = _pred_fn(model, t)
             loss = mse(nlo_eqn(d2xdt2, dxdt, xadj), zeros)
             loss_trace.append(loss.item())
 
@@ -91,7 +93,7 @@ def train_MSE(model, method='semisupervised', niters=10000, seed=0, n=100,
         ax[0].set_xlabel("Epoch")
         ax[0].set_ylabel("Loss")
 
-        xadj, dxdt, d2xdt2 = produce_preds_system(model, t)
+        xadj, dxdt, d2xdt2 = _pred_fn(model, t)
         ax[1].plot(t.detach().numpy(), y_num.detach().numpy(), label='x')
         ax[1].plot(t.detach().numpy(), xadj.detach().numpy(), '--', label="$\hat{x}$")
         ax[1].set_title('Prediction And Analytic Solution')
@@ -102,7 +104,7 @@ def train_MSE(model, method='semisupervised', niters=10000, seed=0, n=100,
         plt.tight_layout()
         plt.show()
 
-    xadj, dxdt, d2xdt2 = produce_preds_system(model, t_torch)
+    xadj, dxdt, d2xdt2 = _pred_fn(model, t_torch)
     final_mse = mse(xadj, y_num).item()
     print(f'Final MSE: {final_mse}')
     return {'final_mse': final_mse, 'model': model}

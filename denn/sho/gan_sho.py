@@ -97,12 +97,10 @@ def train_GAN_SHO_unsupervised(G, D, num_epochs=10000,
         for i in range(G_iters):
             t = get_batch(perturb=perturb)
             real = torch.cat((zeros, t), 1)
-            # real = zeros
             # unsupervised: G try to fool D
             x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t, x0=x0, dx_dt0=dx_dt0)
             eq_out = d2x_dt2 + x_adj
             fake = torch.cat((eq_out, t), 1)
-            # fake = eq_out
             g_loss = criterion(D(fake), real_label_vec)
 
             optiG.zero_grad()

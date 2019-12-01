@@ -14,7 +14,7 @@ from denn.nlo.nlo_utils import produce_preds, produce_preds_system, numerical_so
 
 def train_GAN_NLO_unsupervised(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d_betas=(0.0, 0.9),
     g_betas=(0.0, 0.9), G_iters=1, D_iters=1, eq=False, eq_k=0, eq_lr=0.001,
-    nperiods=4, n=100, real_label=1, fake_label=0, perturb=True, observe_every=1,
+    nperiods=4, n=100, real_label=1, fake_label=0, perturb=True, system_of_ODE=False,
     wgan=True, gp=0.1, d1=1., d2=1., lr_schedule=True, decay_start_epoch=0,
     savefig=False, fname='GAN_NLO.png', check_every=1000, realtime_plot=False,
     final_plot=False, seed=0):
@@ -66,14 +66,6 @@ def train_GAN_NLO_unsupervised(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d
         lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(optiG, lr_lambda=LambdaLR(num_epochs, start_epoch, decay_start_epoch).step)
         lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(optiD, lr_lambda=LambdaLR(num_epochs, start_epoch, decay_start_epoch).step)
 
-    # this generates an index mask for our "observers"
-    observers = torch.arange(0, n, observe_every)
-    t_observers = t_torch[observers, :]
-    y_observers = y_num[observers, :]
-
-    # conditional GAN
-    y_observers = torch.cat((y_observers, t_observers), 1)
-
     # WGAN - GP penalty placeholder
     null_norm_penalty = torch.zeros(1)
 
@@ -85,10 +77,11 @@ def train_GAN_NLO_unsupervised(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d
         real_label_vec = real_label_vec.cuda()
         fake_label_vec = fake_label_vec.cuda()
         null_norm_penalty = null_norm_penalty.cuda()
-        y_observers = y_observers.cuda()
 
     D_losses = []
     G_losses = []
+
+    _pred_fn = produce_preds_system if system_of_ODE else produce_preds
 
     for epoch in range(num_epochs):
 
@@ -104,7 +97,7 @@ def train_GAN_NLO_unsupervised(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d
             real = torch.cat((zeros, t), 1)
 
             # unsupervised
-            x_adj, dx_dt, d2x_dt2 = produce_preds_system(G, t)
+            x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t)
             eq_out = nlo_eqn(d2x_dt2, dx_dt, x_adj)
             fake = torch.cat((eq_out, t), 1)
             g_loss = criterion(D(fake), real_label_vec)
@@ -152,12 +145,12 @@ def train_GAN_NLO_unsupervised(G, D, num_epochs=10000, d_lr=0.001, g_lr=0.001, d
         G_losses.append(g_loss.item())
 
         if realtime_plot and (epoch % check_every) == 0:
-            plot_NLO_GAN(G_losses, D_losses, t_torch, y_num, G, produce_preds_system, savefig=False, clear=True)
+            plot_NLO_GAN(G_losses, D_losses, t_torch, y_num, G, _pred_fn, savefig=False, clear=True)
 
     if final_plot:
-        plot_NLO_GAN(G_losses, D_losses, t_torch, y_num, G, produce_preds_system, savefig=False, fname=fname, clear=False)
+        plot_NLO_GAN(G_losses, D_losses, t_torch, y_num, G, _pred_fn, savefig=False, fname=fname, clear=False)
 
-    x_adj, dx_dt, d2x_dt2 = produce_preds_system(G, t_torch)
+    x_adj, dx_dt, d2x_dt2 = _pred_fn(G, t_torch)
     final_mse = mse(x_adj, y_num).item()
     print(f'Final MSE: {final_mse}')
     return {'final_mse': final_mse, 'model': G}
