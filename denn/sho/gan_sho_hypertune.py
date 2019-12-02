@@ -100,24 +100,11 @@ if __name__== "__main__":
         d_iters = [1],
     )
 
-    # hyper_space = dict(
-    #     num_epochs = [1000],
-    #     d_lr = [2e-4],
-    #     g_lr = [2e-4],
-    #     g_units=[64],
-    #     g_layers=[6],
-    #     d_units=[64],
-    #     d_layers=[6],
-    #     gp=[0.01],
-    #     g_iters = [1],
-    #     d_iters = [1],
-    # )
-
     n_iters = np.product([len(v) for k, v in hyper_space.items()])
     print(f'Searching {n_iters} possibilities...')
     hyper_space = dict_product(hyper_space)
 
-    max_cpus = 1
+    max_cpus = 96
     n_cpus = n_iters if n_iters < max_cpus else max_cpus
     p = mp.Pool(n_cpus)
     results = p.map(collect_results, hyper_space)
