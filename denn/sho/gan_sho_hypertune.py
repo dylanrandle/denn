@@ -86,7 +86,21 @@ if __name__== "__main__":
     #     d_layers=[2, 4, 8],
     # )
 
-    # For new, working, unsupervised GAN method
+    # # For new, working, unsupervised GAN method
+    # hyper_space = dict(
+    #     num_epochs = [10000],
+    #     d_lr = [2e-4, 1e-3],
+    #     g_lr = [2e-4, 1e-3],
+    #     g_units=[64, 32],
+    #     g_layers=[6, 4],
+    #     d_units=[64, 32],
+    #     d_layers=[6, 4],
+    #     gp=[0.01, 0.1],
+    #     g_iters = [1],
+    #     d_iters = [1],
+    # )
+
+    # Trying to find better GAN
     hyper_space = dict(
         num_epochs = [10000],
         d_lr = [2e-4, 1e-3],
@@ -95,8 +109,8 @@ if __name__== "__main__":
         g_layers=[6, 4],
         d_units=[64, 32],
         d_layers=[6, 4],
-        gp=[0.01, 0.1],
-        g_iters = [1],
+        gp=[0.1],
+        g_iters = [1, 4, 9],
         d_iters = [1],
     )
 
