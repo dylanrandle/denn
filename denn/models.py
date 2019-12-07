@@ -1,30 +1,6 @@
 import torch
 import torch.nn as nn
 
-class Swish(nn.Module):
-    """
-    Swish activation function
-    """
-    def __init__(self, beta=1.0):
-        super(Swish, self).__init__()
-        self.beta = beta
-
-    def forward(self, input):
-        return input * torch.sigmoid(self.beta * input)
-
-    def extra_repr(self):
-        return 'beta={}'.format(self.beta)
-
-class TorchSin(nn.Module):
-    """
-    Sin activation function
-    """
-    def __init__(self):
-        super(TorchSin, self).__init__()
-
-    def forward(self, x):
-        return torch.sin(x)
-
 class ResidualBlock(nn.Module):
     """ Most basic residual block
         https://arxiv.org/pdf/1512.03385.pdf : Equation #1
@@ -83,3 +59,24 @@ class MLP(nn.Module):
         for i in range(len(self.layers)):
             x = self.layers[i](x)
         return x
+
+class Swish(nn.Module):
+    """
+    Swish activation function
+    """
+    def __init__(self, beta=1.0):
+        super(Swish, self).__init__()
+        self.beta = beta
+
+    def forward(self, input):
+        return input * torch.sigmoid(self.beta * input)
+
+class TorchSin(nn.Module):
+    """
+    Sin activation function
+    """
+    def __init__(self):
+        super(TorchSin, self).__init__()
+
+    def forward(self, x):
+        return torch.sin(x)

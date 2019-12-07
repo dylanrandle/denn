@@ -6,14 +6,13 @@ from denn.models import MLP
 from denn.utils import LambdaLR, plot_results
 from denn.problems import SimpleOscillator
 
-def train_MSE(model, problem, method='semisupervised', seed=0,
-    niters=10000, lr=0.001, betas=(0, 0.9), lr_schedule=True,
-    obs_every=1, d1=1, d2=1, plot=True, save=False, fname='train_MSE_plot.png'):
+def train_MSE(model, problem, method='unsupervised', seed=0, niters=10000,
+    lr=0.001, betas=(0, 0.9), lr_schedule=True, obs_every=1, d1=1, d2=1,
+    plot=True, save=False, fname='train_MSE_plot.png'):
     """
     Train/test Lagaris method: supervised/semisupervised/unsupervised
     """
     assert method in ['supervised', 'semisupervised', 'unsupervised']
-    torch.manual_seed(seed)
 
     t = problem.get_grid()
     y = problem.get_solution(t)
@@ -77,7 +76,7 @@ def train_MSE(model, problem, method='semisupervised', seed=0,
 
         pred_dict, diff_dict = problem.get_plot_dicts(model(t), t, y)
         plot_results(loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
-            save=save, fname=fname, logscale=True)
+            save=save, fname=fname, logloss=True, alpha=0.8)
 
     xhat = model(t)
     xadj = problem.adjust(xhat, t)[0]
