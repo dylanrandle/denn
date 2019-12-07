@@ -22,7 +22,7 @@ class MLP(nn.Module):
     """
     Multi-layer perceptron
 
-    Optionally use residual connections, output Tanh, or be unbounded.
+    Optionally use residual connections
     Default is sigmoid output
     """
     def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2,

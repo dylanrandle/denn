@@ -64,6 +64,7 @@ def plot_results(loss_dict, grid, pred_dict, diff_dict=None, clear=False,
 
     plt.tight_layout()
     if save:
+        print(f'Saving plot to {fname}')
         plt.savefig(fname)
     else:
         plt.show()

@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.functional as F
 from denn.utils import diff
 from scipy import optimize
 
