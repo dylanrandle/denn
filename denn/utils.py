@@ -1,13 +1,8 @@
-import pandas as pd
 import torch
-import torch.nn as nn
-from torch import tensor, autograd
-from collections import OrderedDict
+from torch import autograd
 import numpy as np
 import matplotlib.pyplot as plt
-from copy import deepcopy
 from IPython.display import clear_output
-import itertools
 
 # global plot params
 plt.rc('axes', titlesize=15)
@@ -38,7 +33,7 @@ def plot_results(loss_dict, grid, pred_dict, diff_dict=None, clear=False,
     # Losses
     for k, v in loss_dict.items():
         ax[0].plot(np.arange(len(v)), v, label=k, alpha=alpha)
-    ax[0].legend()
+    ax[0].legend(loc='upper right')
     ax[0].set_title('Losses')
     ax[0].set_xlabel('Epoch')
     ax[0].set_ylabel('Loss')
@@ -48,7 +43,7 @@ def plot_results(loss_dict, grid, pred_dict, diff_dict=None, clear=False,
     # Predictions
     for k, v in pred_dict.items():
         ax[1].plot(grid, v, label=k, alpha=alpha)
-    ax[1].legend()
+    ax[1].legend(loc='upper right')
     ax[1].set_title('Predictions')
     ax[1].set_xlabel('$t$')
     ax[1].set_ylabel('$x$')
@@ -57,7 +52,7 @@ def plot_results(loss_dict, grid, pred_dict, diff_dict=None, clear=False,
     if diff_dict:
         for k, v in diff_dict.items():
             ax[2].plot(grid, v, label=k, alpha=alpha)
-        ax[2].legend()
+        ax[2].legend(loc='upper right')
         ax[2].set_title('Derivatives')
         ax[2].set_xlabel('$t$')
         ax[2].set_ylabel('$x$')

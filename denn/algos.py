@@ -1,9 +1,10 @@
 import torch
 import torch.nn as nn
+
 from denn.utils import LambdaLR, plot_results, calc_gradient_penalty
 
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
-    g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
+    g_lr=2e-4, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
     lr_schedule=True, obs_every=1, d1=1., d2=1.,
     G_iters=1, D_iters=1, wgan=True, gp=0.1,
     plot=True, save=False, fname='train_GAN.png'):
@@ -60,6 +61,23 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 g_loss.backward(retain_graph=True)
                 optiG.step()
 
+            elif method == 'semisupervised':
+                raise NotImplementedError()
+
+            else: # supervised
+                xhat = G(t)
+                xadj = problem.adjust(xhat, t)[0]
+
+                # concat "real" (y) with t (conditional GAN)
+                # concat "fake" (xadj) with t (conditional GAN)
+                real = torch.cat((y, t), 1)
+                fake = torch.cat((xadj, t), 1)
+
+                g_loss = criterion(D(fake), real_labels)
+                optiG.zero_grad()
+                g_loss.backward(retain_graph=True)
+                optiG.step()
+
         # Train Discriminator
         for p in D.parameters():
             p.requires_grad = True # turn on computation for D
@@ -97,9 +115,9 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     print(f'Final MSE {final_mse}')
     return {'final_mse': final_mse, 'model': G}
 
-def train_MSE(model, problem, method='unsupervised', niters=100,
-    lr=1e-3, betas=(0, 0.9), lr_schedule=True, obs_every=1, d1=1, d2=1,
-    plot=True, save=False, fname='train_MSE.png'):
+def train_L2(model, problem, method='unsupervised', niters=100,
+    lr=2e-4, betas=(0, 0.9), lr_schedule=True, obs_every=1, d1=1, d2=1,
+    plot=True, save=False, fname='train_L2.png'):
     """
     Train/test Lagaris method: supervised/semisupervised/unsupervised
     """
@@ -120,11 +138,11 @@ def train_MSE(model, problem, method='unsupervised', niters=100,
 
     loss_trace = []
     for i in range(niters):
-        if method == 'supervised':
-
-            xhat = model(t_obs)
-            xadj = problem.adjust(xhat, t_obs)[0]
-            loss = mse(xadj, y_obs)
+        if method == 'unsupervised':
+            t_samp = problem.get_grid_sample()
+            xhat = model(t_samp)
+            residuals = problem.get_equation(xhat, t_samp)
+            loss = mse(residuals, torch.zeros_like(residuals))
             loss_trace.append(loss.item())
 
         elif method == 'semisupervised':
@@ -143,12 +161,10 @@ def train_MSE(model, problem, method='unsupervised', niters=100,
             loss = d1 * loss1 + d2 * loss2
             loss_trace.append((loss1.item(), loss2.item()))
 
-        else: # unsupervised
-
-            t_samp = problem.get_grid_sample()
-            xhat = model(t_samp)
-            residuals = problem.get_equation(xhat, t_samp)
-            loss = mse(residuals, torch.zeros_like(residuals))
+        else: # supervised
+            xhat = model(t_obs)
+            xadj = problem.adjust(xhat, t_obs)[0]
+            loss = mse(xadj, y_obs)
             loss_trace.append(loss.item())
 
         opt.zero_grad()

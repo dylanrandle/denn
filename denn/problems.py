@@ -1,11 +1,11 @@
 import numpy as np
 import torch
-from denn.utils import diff
 from scipy import optimize
+
+from denn.utils import diff
 
 class Problem():
     """ parent class for all problems
-        e.g. simple harmonic oscillator
     """
     def __init__(self, n = 100, perturb = True):
         """
@@ -25,13 +25,35 @@ class Problem():
         else:
             return grid
 
+    def get_grid(self):
+        """ return base grid """
+        raise NotImplementedError()
+
+    def get_grid_sample(self):
+        """ sample from grid (if perturb=False, returns grid) """
+        raise NotImplementedError()
+
     def get_solution(self):
+        """ return solution to problem """
         raise NotImplementedError()
 
     def get_equation(self, *args):
+        """ return equation output (i.e. residuals s.t. solved iff == 0) """
         raise NotImplementedError()
 
-    def adjust(self, pred):
+    def adjust(self, *args):
+        """ adjust a pred according to some IV/BC conditions
+            should return all components needed for equation
+            as they might be needed to be adjusted as well
+            e.g. adjusting dx_dt for SimpleOscillator as a system
+        """
+        raise NotImplementedError()
+
+    def get_plot_dicts(self, *args):
+        """ return pred_dict and optionall diff_dict (or None) to be used for plotting
+            depending on the problem we may want to plot different things, which is why
+            this method exists (and is required)
+        """
         raise NotImplementedError()
 
 class Exponential(Problem):
@@ -159,7 +181,7 @@ class NonlinearOscillator(Problem):
 
     $$ \ddot{x} + 2 \beta \dot{x} + \omega^{2} x + \phi x^{2} + \epsilon x^{3} = f(t) $$
     """
-    def __init__(self, t_min = 0, t_max = 4 * np.pi, dx_dt0 = 1., **kwargs):
+    def __init__(self, t_min = 0, t_max = 4 * np.pi, dx_dt0 = .5, **kwargs):
         """
         inputs:
             - t_min: start time
