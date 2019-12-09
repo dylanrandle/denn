@@ -39,6 +39,8 @@ if __name__ == '__main__':
         help='if training is semisupervised, default False (use unsupervised)')
     args.add_argument('--sup', action='store_true', default=False,
         help='if training is supervised, default False (use unsupervised)')
+    args.add_argument('--obs_every', type=int, default=1,
+        help='setting the observer frequency, default 1 (no missing)')
     args = args.parse_args()
 
     if args.exp:
@@ -71,10 +73,12 @@ if __name__ == '__main__':
         gan_kwargs['method'] = method
         gan_kwargs['fname'] = f'train_GAN_{method}_{problem_key}.png'
         gan_kwargs['niters'] = args.niters
-        gan_experiment(problem, seed=0, gen_kwargs=gen_kwargs, disc_kwargs=disc_kwargs, train_kwargs=gan_kwargs)
+        gan_kwargs['obs_every'] = args.obs_every
+        gan_experiment(problem, seed=args.seed, gen_kwargs=gen_kwargs, disc_kwargs=disc_kwargs, train_kwargs=gan_kwargs)
     else:
         print(f'Running L2 training for {args.niters} steps')
         L2_kwargs['method'] = method
         L2_kwargs['fname'] = f'train_L2_{method}_{problem_key}.png'
         L2_kwargs['niters'] = args.niters
-        L2_experiment(problem, seed=0, model_kwargs=L2_mlp_kwargs, train_kwargs=L2_kwargs)
+        L2_kwargs['obs_every'] = args.obs_every
+        L2_experiment(problem, seed=args.seed, model_kwargs=L2_mlp_kwargs, train_kwargs=L2_kwargs)
