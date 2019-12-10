@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
+import os
 
-from denn.utils import LambdaLR, plot_results, calc_gradient_penalty
+from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
 
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
     g_lr=2e-4, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
@@ -11,7 +12,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
-    assert method in ['supervised', 'semisupervised', 'unsupervised']
+    assert method in ['supervised', 'semisupervised', 'unsupervised'], f'Method {method} not understood!'
+
+    if save:
+        handle_overwrite(fname)
 
     t = problem.get_grid()
     y = problem.get_solution(t)
@@ -121,7 +125,10 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     """
     Train/test Lagaris method: supervised/semisupervised/unsupervised
     """
-    assert method in ['supervised', 'semisupervised', 'unsupervised']
+    assert method in ['supervised', 'semisupervised', 'unsupervised'], f'Method {method} not understood!'
+
+    if save:
+        handle_overwrite(fname)
 
     t = problem.get_grid()
     y = problem.get_solution(t)

@@ -1,3 +1,4 @@
+import os
 import torch
 from torch import autograd
 import numpy as np
@@ -63,6 +64,23 @@ def plot_results(loss_dict, grid, pred_dict, diff_dict=None, clear=False,
         plt.savefig(fname)
     else:
         plt.show()
+
+def handle_overwrite(fname):
+    """ helper to handle case where we might overwrite """
+    if os.path.exists(fname):
+        owrite = check_overwrite(fname)
+        if not owrite:
+            print('Quitting to prevent overwriting.')
+            exit(0)
+
+def check_overwrite(fname):
+    """ helper function to get user input for overwriting """
+    print(f'File found at {fname} and save=True.')
+    resp = input('Overwrite (y/n)? ').strip().lower()
+    if resp == 'y':
+        return True
+    else:
+        return False
 
 class LambdaLR():
     """ Simple linear decay schedule """

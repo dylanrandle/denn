@@ -105,6 +105,7 @@ venv.bak/
 
 # mac
 .DS_Store
+*.icloud
 
 # experimental results
 experiments/*
