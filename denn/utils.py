@@ -2,6 +2,7 @@ import os
 import torch
 from torch import autograd
 import numpy as np
+import itertools
 import matplotlib.pyplot as plt
 from IPython.display import clear_output
 
@@ -127,6 +128,16 @@ def calc_gradient_penalty(disc, real_data, generated_data, gp_lambda, cuda=False
 
     # Return gradient penalty
     return gp_lambda * ((gradients_norm - 1) ** 2).mean()
+
+def dict_product(dicts):
+    """
+    >>> list(dict_product(dict(number=[1,2], character='ab')))
+    [{'character': 'a', 'number': 1},
+     {'character': 'a', 'number': 2},
+     {'character': 'b', 'number': 1},
+     {'character': 'b', 'number': 2}]
+    """
+    return (dict(zip(dicts, x)) for x in itertools.product(*dicts.values()))
 
 def exponential_weight_average(prev_weights, curr_weights, beta=0.999):
     """ returns exponential moving average of prev_weights and curr_weights

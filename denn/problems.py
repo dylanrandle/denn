@@ -3,6 +3,23 @@ import torch
 from scipy import optimize
 
 from denn.utils import diff
+import denn.config as cfg
+
+def get_problem(pkey):
+    """ helper to parse problem key and return appropriate problem
+    """
+    if pkey.lower().strip() == 'sho':
+        print('Solving SimpleOscillator problem')
+        problem = SimpleOscillator(**cfg.problem_kwargs)
+    elif pkey.lower().strip() == 'nlo':
+        print('Solving NonlinearOscillator problem')
+        problem = NonlinearOscillator(**cfg.problem_kwargs)
+    elif pkey.lower().strip() == 'exp':
+        print('Solving Exponential problem')
+        problem = Exponential(**cfg.problem_kwargs)
+    else:
+        raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
+    return problem
 
 class Problem():
     """ parent class for all problems
@@ -64,7 +81,7 @@ class Exponential(Problem):
     Analytic Solution:
     x = exp(-Lt)
     """
-    def __init__(self, t_min = 0, t_max = 4 * np.pi, x0 = 1., L = 1, **kwargs):
+    def __init__(self, t_min = 0, t_max = 10, x0 = 1., L = 1, **kwargs):
         """
         inputs:
             - t_min: start time

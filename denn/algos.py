@@ -7,7 +7,7 @@ from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_ove
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
     g_lr=2e-4, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
     lr_schedule=True, obs_every=1, d1=1., d2=1.,
-    G_iters=1, D_iters=1, wgan=True, gp=0.1,
+    G_iters=1, D_iters=1, wgan=True, gp=0.1, conditional=True,
     plot=True, save=False, fname='train_GAN.png'):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
@@ -55,10 +55,14 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 xhat = G(t_samp)
                 residuals = problem.get_equation(xhat, t_samp)
 
-                # concat "real" (all zeros) with t (conditional GAN)
-                # concat "fake" (residuals) with t (conditional GAN)
-                real = torch.cat((torch.zeros_like(t_samp), t_samp), 1)
-                fake = torch.cat((residuals, t_samp), 1)
+                if conditional:
+                    # concat "real" (all zeros) with t (conditional GAN)
+                    # concat "fake" (residuals) with t (conditional GAN)
+                    real = torch.cat((torch.zeros_like(t_samp), t_samp), 1)
+                    fake = torch.cat((residuals, t_samp), 1)
+                else:
+                    real = torch.zeros_like(t_samp)
+                    fake = residuals
 
                 g_loss = criterion(D(fake), real_labels)
                 optiG.zero_grad()
@@ -72,10 +76,14 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 xhat = G(t)
                 xadj = problem.adjust(xhat, t)[0]
 
-                # concat "real" (y) with t (conditional GAN)
-                # concat "fake" (xadj) with t (conditional GAN)
-                real = torch.cat((y, t), 1)
-                fake = torch.cat((xadj, t), 1)
+                if conditional:
+                    # concat "real" (y) with t (conditional GAN)
+                    # concat "fake" (xadj) with t (conditional GAN)
+                    real = torch.cat((y, t), 1)
+                    fake = torch.cat((xadj, t), 1)
+                else:
+                    real = y
+                    fake = xadj
 
                 g_loss = criterion(D(fake), real_labels)
                 optiG.zero_grad()
