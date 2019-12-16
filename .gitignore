@@ -112,3 +112,9 @@ experiments/*
 
 # data dir
 data/*
+
+# figs dir
+figs/*
+
+# csvs dir
+csvs/*
