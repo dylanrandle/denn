@@ -18,7 +18,7 @@ def diff(x, t):
                            create_graph=True)
     return dx_dt
 
-def plot_results(loss_dict, grid, pred_dict, diff_dict=None, clear=False,
+def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=False,
     save=False, fname=None, logloss=False, alpha=0.8):
     """ helpful plotting function """
     if clear:
@@ -27,37 +27,44 @@ def plot_results(loss_dict, grid, pred_dict, diff_dict=None, clear=False,
     if save and not fname:
         raise RuntimeError('Please provide a file name `fname` when `save=True`.')
 
-    if pred_dict and diff_dict:   # plot losses, preds, and derivatives
-        fig, ax = plt.subplots(1, 3, figsize=(15, 5))
-    else:                         # plot losses and preds only
-        fig, ax = plt.subplots(1, 2, figsize=(10, 5))
+    if diff_dict:   # add derivatives plot
+        fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+    else:
+        fig, ax = plt.subplots(1, 3, figsize=(12, 4))
+
+    # MSEs (Pred vs Actual)
+    ax[0].plot(np.arange(len(mse_arr)), mse_arr, alpha=alpha)
+    ax[0].set_title('Mean Squared Error')
+    ax[0].set_ylabel('MSE (Pred vs Actual)')
+    ax[0].set_xlabel('Step')
+    ax[0].set_yscale('log')
 
     # Losses
     for k, v in loss_dict.items():
-        ax[0].plot(np.arange(len(v)), v, label=k, alpha=alpha)
-    ax[0].legend(loc='upper right')
-    ax[0].set_title('Losses')
-    ax[0].set_xlabel('Epoch')
-    ax[0].set_ylabel('Loss')
+        ax[1].plot(np.arange(len(v)), v, label=k, alpha=alpha)
+    ax[1].legend(loc='upper right')
+    ax[1].set_title('Loss')
+    ax[1].set_xlabel('Step')
+    ax[1].set_ylabel('Loss')
     if logloss:
-        ax[0].set_yscale('log')
+        ax[1].set_yscale('log')
 
     # Predictions
     for k, v in pred_dict.items():
-        ax[1].plot(grid, v, label=k, alpha=alpha)
-    ax[1].legend(loc='upper right')
-    ax[1].set_title('Predictions')
-    ax[1].set_xlabel('$t$')
-    ax[1].set_ylabel('$x$')
+        ax[2].plot(grid, v, label=k, alpha=alpha)
+    ax[2].legend(loc='upper right')
+    ax[2].set_title('Prediction')
+    ax[2].set_xlabel('$t$')
+    ax[2].set_ylabel('$x$')
 
     # Derivatives
     if diff_dict:
         for k, v in diff_dict.items():
-            ax[2].plot(grid, v, label=k, alpha=alpha)
-        ax[2].legend(loc='upper right')
-        ax[2].set_title('Derivatives')
-        ax[2].set_xlabel('$t$')
-        ax[2].set_ylabel('$x$')
+            ax[3].plot(grid, v, label=k, alpha=alpha)
+        ax[3].legend(loc='upper right')
+        ax[3].set_title('Derivative')
+        ax[3].set_xlabel('$t$')
+        ax[3].set_ylabel('$x$')
 
     plt.tight_layout()
     if save:

@@ -31,7 +31,7 @@ if __name__ == '__main__':
     args.add_argument('--seed', type=int, default=0,
         help='value of random seed set for reproducibility (default: 0)')
     args.add_argument('--fname', type=str, default=None,
-        help='file name to save figure (default None: constructed from args)')
+        help='file name to save figure (default None: use function default)')
     args = args.parse_args()
 
     problem = get_problem(args.pkey)

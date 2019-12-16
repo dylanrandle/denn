@@ -14,11 +14,18 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     """
     assert method in ['supervised', 'semisupervised', 'unsupervised'], f'Method {method} not understood!'
 
-    if save:
+    if plot and save:
         handle_overwrite(fname)
 
+    if method == 'unsupervised' and obs_every != 1:
+        # if unsupervised we use all points, always
+        print('Setting obs_every = 1 because method is unsupervised.')
+        obs_every = 1
+
+    # full grid/solution (t/y)
     t = problem.get_grid()
     y = problem.get_solution(t)
+    # observer mask and masked grid/solution (t_obs/y_obs)
     observers = torch.arange(0, len(t), obs_every)
     t_obs = t[observers, :]
     y_obs = y[observers, :]
@@ -28,6 +35,9 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     fake_label = -1 if wgan else 0
     real_labels = torch.full((len(t),), real_label).reshape(-1,1)
     fake_labels = torch.full((len(t),), fake_label).reshape(-1,1)
+    # mask labels vectors
+    real_labels = real_labels[observers, :]
+    fake_labels = fake_labels[observers, :]
 
     # optimization
     optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
@@ -43,6 +53,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
     null_norm_penalty = torch.zeros(1)
     losses = {'G': [], 'D': []}
+    mses = []
 
     for epoch in range(niters):
         # Train Generator
@@ -70,19 +81,42 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 optiG.step()
 
             elif method == 'semisupervised':
-                raise NotImplementedError()
+                # unsupervised part (use L2)
+                t_samp = problem.get_grid_sample()
+                xhat = G(t_samp)
+                residuals = problem.get_equation(xhat, t_samp)
+                g_loss1 = mse(residuals, torch.zeros_like(residuals))
+
+                # supervised part (use GAN)
+                xhat = G(t_obs)
+                xadj = problem.adjust(xhat, t_obs)[0]
+                if conditional:
+                    # concat "real" (y) with t (conditional GAN)
+                    # concat "fake" (xadj) with t (conditional GAN)
+                    real = torch.cat((y_obs, t_obs), 1)
+                    fake = torch.cat((xadj, t_obs), 1)
+                else:
+                    real = y_obs
+                    fake = xadj
+                g_loss2 = criterion(D(fake), real_labels)
+
+                # combine losses
+                g_loss = d1 * g_loss1 + d2 * g_loss2
+                optiG.zero_grad()
+                g_loss.backward(retain_graph=True)
+                optiG.step()
 
             else: # supervised
-                xhat = G(t)
-                xadj = problem.adjust(xhat, t)[0]
+                xhat = G(t_obs)
+                xadj = problem.adjust(xhat, t_obs)[0]
 
                 if conditional:
                     # concat "real" (y) with t (conditional GAN)
                     # concat "fake" (xadj) with t (conditional GAN)
-                    real = torch.cat((y, t), 1)
-                    fake = torch.cat((xadj, t), 1)
+                    real = torch.cat((y_obs, t_obs), 1)
+                    fake = torch.cat((xadj, t_obs), 1)
                 else:
-                    real = y
+                    real = y_obs
                     fake = xadj
 
                 g_loss = criterion(D(fake), real_labels)
@@ -98,7 +132,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             norm_penalty = calc_gradient_penalty(D, real, fake, gp, cuda=False) if wgan else null_norm_penalty
             real_loss = criterion(D(real), real_labels)
             fake_loss = criterion(D(fake), fake_labels)
-            d_loss = real_loss + fake_loss + norm_penalty
+            d_loss = (real_loss + fake_loss)/2 + norm_penalty
             optiD.zero_grad()
             d_loss.backward(retain_graph=True)
             optiD.step()
@@ -110,6 +144,12 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         losses['D'].append(d_loss.item())
         losses['G'].append(g_loss.item())
 
+        # track current MSE on ground truth
+        xhat = G(t)
+        xadj = problem.adjust(xhat, t)[0]
+        curr_mse = mse(xadj, y).item()
+        mses.append(curr_mse)
+
         # if realtime_plot and (epoch % check_every) == 0:
             # plot_NLO_GAN(G_losses, D_losses, t_torch, y_num, G, _pred_fn, savefig=False, clear=True)
 
@@ -118,8 +158,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         loss_dict['$D$'] = losses['D']
         loss_dict['$G$'] = losses['G']
         pred_dict, diff_dict = problem.get_plot_dicts(G(t), t, y)
-        plot_results(loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
-            save=save, fname=fname, logloss=False, alpha=0.8)
+        plot_results(mses, loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
+            save=save, fname=fname, logloss=False, alpha=0.7)
 
     xhat = G(t)
     xadj = problem.adjust(xhat, t)[0]
@@ -135,7 +175,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     """
     assert method in ['supervised', 'semisupervised', 'unsupervised'], f'Method {method} not understood!'
 
-    if save:
+    if plot and save:
         handle_overwrite(fname)
 
     t = problem.get_grid()
@@ -152,6 +192,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=LambdaLR(niters, 0, 0).step)
 
     loss_trace = []
+    mses = []
     for i in range(niters):
         if method == 'unsupervised':
             t_samp = problem.get_grid_sample()
@@ -182,6 +223,12 @@ def train_L2(model, problem, method='unsupervised', niters=100,
             loss = mse(xadj, y_obs)
             loss_trace.append(loss.item())
 
+        # track current MSE on ground truth
+        xhat = model(t)
+        xadj = problem.adjust(xhat, t)[0]
+        curr_mse = mse(xadj, y).item()
+        mses.append(curr_mse)
+
         opt.zero_grad()
         loss.backward(retain_graph=True)
         opt.step()
@@ -199,8 +246,8 @@ def train_L2(model, problem, method='unsupervised', niters=100,
             loss_dict['$L_U$'] = loss_trace
 
         pred_dict, diff_dict = problem.get_plot_dicts(model(t), t, y)
-        plot_results(loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
-            save=save, fname=fname, logloss=True, alpha=0.8)
+        plot_results(mses, loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
+            save=save, fname=fname, logloss=True, alpha=0.7)
 
     xhat = model(t)
     xadj = problem.adjust(xhat, t)[0]

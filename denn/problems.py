@@ -198,7 +198,7 @@ class NonlinearOscillator(Problem):
 
     $$ \ddot{x} + 2 \beta \dot{x} + \omega^{2} x + \phi x^{2} + \epsilon x^{3} = f(t) $$
     """
-    def __init__(self, t_min = 0, t_max = 4 * np.pi, dx_dt0 = .5, **kwargs):
+    def __init__(self, t_min = 0, t_max = 4 * np.pi, dx_dt0 = 1., **kwargs):
         """
         inputs:
             - t_min: start time
