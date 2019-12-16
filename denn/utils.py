@@ -1,15 +1,12 @@
-import pandas as pd
+import os
 import torch
-import torch.nn as nn
-from torch import tensor, autograd
-from collections import OrderedDict
+from torch import autograd
 import numpy as np
-import matplotlib.pyplot as plt
-from copy import deepcopy
-from IPython.display import clear_output
 import itertools
+import matplotlib.pyplot as plt
+from IPython.display import clear_output
 
-# Global plot params
+# global plot params
 plt.rc('axes', titlesize=15)
 plt.rc('axes', labelsize=12)
 plt.rc('legend', fontsize=12)
@@ -21,112 +18,80 @@ def diff(x, t):
                            create_graph=True)
     return dx_dt
 
-class Swish(torch.nn.Module):
-    """
-    Swish activation function
-    """
-    def __init__(self, beta=1.0):
-        super(Swish, self).__init__()
-        self.beta = beta
+def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=False,
+    save=False, fname=None, logloss=False, alpha=0.8):
+    """ helpful plotting function """
+    if clear:
+      clear_output(True)
 
-    def forward(self, input):
-        return input * torch.sigmoid(self.beta * input)
+    if save and not fname:
+        raise RuntimeError('Please provide a file name `fname` when `save=True`.')
 
-    def extra_repr(self):
-        return 'beta={}'.format(self.beta)
+    if diff_dict:   # add derivatives plot
+        fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+    else:
+        fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 
-class TorchSin(torch.nn.Module):
-    """
-    Sin activation function
-    """
-    def __init__(self):
-        super(TorchSin, self).__init__()
+    # MSEs (Pred vs Actual)
+    ax[0].plot(np.arange(len(mse_arr)), mse_arr, alpha=alpha)
+    ax[0].set_title('Mean Squared Error')
+    ax[0].set_ylabel('MSE (Pred vs Actual)')
+    ax[0].set_xlabel('Step')
+    ax[0].set_yscale('log')
 
-    def forward(self, x):
-        return torch.sin(x)
+    # Losses
+    for k, v in loss_dict.items():
+        ax[1].plot(np.arange(len(v)), v, label=k, alpha=alpha)
+    ax[1].legend(loc='upper right')
+    ax[1].set_title('Loss')
+    ax[1].set_xlabel('Step')
+    ax[1].set_ylabel('Loss')
+    if logloss:
+        ax[1].set_yscale('log')
 
-class ResidualBlock(nn.Module):
-    # Most basic residual block
-    # https://arxiv.org/pdf/1512.03385.pdf
-    # ^ Equation #1
+    # Predictions
+    for k, v in pred_dict.items():
+        ax[2].plot(grid, v, label=k, alpha=alpha)
+    ax[2].legend(loc='upper right')
+    ax[2].set_title('Prediction')
+    ax[2].set_xlabel('$t$')
+    ax[2].set_ylabel('$x$')
 
-    def __init__(self, n_units, activation):
-        super(ResidualBlock, self).__init__()
+    # Derivatives
+    if diff_dict:
+        for k, v in diff_dict.items():
+            ax[3].plot(grid, v, label=k, alpha=alpha)
+        ax[3].legend(loc='upper right')
+        ax[3].set_title('Derivative')
+        ax[3].set_xlabel('$t$')
+        ax[3].set_ylabel('$x$')
 
-        self.activation = activation
-        self.l1 = nn.Linear(n_units, n_units)
-        self.l2 = nn.Linear(n_units, n_units)
+    plt.tight_layout()
+    if save:
+        print(f'Saving plot to {fname}')
+        plt.savefig(fname)
+    else:
+        plt.show()
 
-    def forward(self, x):
-        return self.activation(
-            self.l2(self.activation(self.l1(x))) + x
-        )
+def handle_overwrite(fname):
+    """ helper to handle case where we might overwrite """
+    if os.path.exists(fname):
+        owrite = check_overwrite(fname)
+        if not owrite:
+            print('Quitting to prevent overwriting.')
+            exit(0)
 
-class Generator(nn.Module):
-    """
-    Generalized generator function for MLP
-    """
-    def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2,
-        activation=nn.Tanh(), output_tan=True, residual=False):
-
-        super(Generator, self).__init__()
-
-        # input
-        self.layers = nn.ModuleList()
-        self.layers.append(nn.Linear(in_dim, n_hidden_units))
-        self.layers.append(activation)
-
-        # hidden
-        for l in range(n_hidden_layers):
-            if residual:
-                self.layers.append(ResidualBlock(n_hidden_units, activation))
-            else:
-                self.layers.append(nn.Linear(n_hidden_units, n_hidden_units))
-                self.layers.append(activation)
-
-        # output
-        self.layers.append(nn.Linear(n_hidden_units, out_dim))
-        if output_tan:
-            self.layers.append(nn.Tanh())
-
-    def forward(self, x):
-        for i in range(len(self.layers)):
-            x = self.layers[i](x)
-        return x
-
-class Discriminator(nn.Module):
-    """ Generalized discriminator """
-    def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2,
-        activation=nn.Tanh(), unbounded=False, residual=False):
-
-        super(Discriminator, self).__init__()
-
-        # input
-        self.layers = nn.ModuleList()
-        self.layers.append(nn.Linear(in_dim, n_hidden_units))
-        self.layers.append(activation)
-
-        # hidden
-        for l in range(n_hidden_layers):
-            if residual:
-                self.layers.append(ResidualBlock(n_hidden_units, activation))
-            else:
-                self.layers.append(nn.Linear(n_hidden_units, n_hidden_units))
-                self.layers.append(activation)
-
-        # output
-        self.layers.append(nn.Linear(n_hidden_units, out_dim))
-        if not unbounded:
-            # unbounded for WGAN (no sigmoid)
-            self.layers.append(nn.Sigmoid())
-
-    def forward(self, x):
-        # x = x.reshape(1,-1)
-        for i in range(len(self.layers)):
-            x = self.layers[i](x)
-        return x
+def check_overwrite(fname):
+    """ helper function to get user input for overwriting """
+    print(f'File found at {fname} and save=True.')
+    resp = input('Overwrite (y/n)? ').strip().lower()
+    if resp == 'y':
+        return True
+    else:
+        return False
 
 class LambdaLR():
+    """ Simple linear decay schedule """
     def __init__(self, n_epochs, offset, decay_start_epoch):
         assert ((n_epochs - decay_start_epoch) > 0), "Decay must start before the training session ends!"
         self.n_epochs = n_epochs
@@ -137,6 +102,7 @@ class LambdaLR():
         return 1.0 - max(0, epoch + self.offset - self.decay_start_epoch)/(self.n_epochs - self.decay_start_epoch)
 
 def calc_gradient_penalty(disc, real_data, generated_data, gp_lambda, cuda=False):
+    """ helper method for gradient penalty (WGAN-GP) """
     batch_size = real_data.size()[0]
 
     # Calculate interpolation
@@ -169,6 +135,16 @@ def calc_gradient_penalty(disc, real_data, generated_data, gp_lambda, cuda=False
 
     # Return gradient penalty
     return gp_lambda * ((gradients_norm - 1) ** 2).mean()
+
+def dict_product(dicts):
+    """
+    >>> list(dict_product(dict(number=[1,2], character='ab')))
+    [{'character': 'a', 'number': 1},
+     {'character': 'a', 'number': 2},
+     {'character': 'b', 'number': 1},
+     {'character': 'b', 'number': 2}]
+    """
+    return (dict(zip(dicts, x)) for x in itertools.product(*dicts.values()))
 
 def exponential_weight_average(prev_weights, curr_weights, beta=0.999):
     """ returns exponential moving average of prev_weights and curr_weights

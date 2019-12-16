@@ -1,0 +1,221 @@
+,final_mse,model
+0,4.363346306490712e-08,"MLP(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=16, bias=True)
+    (1): Tanh()
+    (2): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (3): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (4): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (5): Linear(in_features=16, out_features=1, bias=True)
+  )
+)"
+1,1.2407205929321208e-07,"MLP(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=16, bias=True)
+    (1): Tanh()
+    (2): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (3): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (4): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (5): Linear(in_features=16, out_features=1, bias=True)
+  )
+)"
+2,3.3275835420454314e-08,"MLP(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=16, bias=True)
+    (1): Tanh()
+    (2): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (3): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (4): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (5): Linear(in_features=16, out_features=1, bias=True)
+  )
+)"
+3,7.027428949868408e-08,"MLP(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=16, bias=True)
+    (1): Tanh()
+    (2): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (3): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (4): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (5): Linear(in_features=16, out_features=1, bias=True)
+  )
+)"
+4,2.687080814212095e-05,"MLP(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=16, bias=True)
+    (1): Tanh()
+    (2): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (3): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (4): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (5): Linear(in_features=16, out_features=1, bias=True)
+  )
+)"
+5,3.4348662580896416e-08,"MLP(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=16, bias=True)
+    (1): Tanh()
+    (2): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (3): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (4): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (5): Linear(in_features=16, out_features=1, bias=True)
+  )
+)"
+6,1.0138730885955738e-06,"MLP(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=16, bias=True)
+    (1): Tanh()
+    (2): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (3): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (4): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (5): Linear(in_features=16, out_features=1, bias=True)
+  )
+)"
+7,9.760094599187141e-07,"MLP(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=16, bias=True)
+    (1): Tanh()
+    (2): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (3): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (4): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (5): Linear(in_features=16, out_features=1, bias=True)
+  )
+)"
+8,1.31362511979205e-07,"MLP(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=16, bias=True)
+    (1): Tanh()
+    (2): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (3): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (4): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (5): Linear(in_features=16, out_features=1, bias=True)
+  )
+)"
+9,0.0002947418252006173,"MLP(
+  (layers): ModuleList(
+    (0): Linear(in_features=1, out_features=16, bias=True)
+    (1): Tanh()
+    (2): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (3): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (4): ResidualBlock(
+      (activation): Tanh()
+      (l1): Linear(in_features=16, out_features=16, bias=True)
+      (l2): Linear(in_features=16, out_features=16, bias=True)
+    )
+    (5): Linear(in_features=16, out_features=1, bias=True)
+  )
+)"
