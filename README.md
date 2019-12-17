@@ -1,41 +1,31 @@
-# Neural Networks for Differential Equations
+# Neural Networks for *Solving* Differential Equations
 
-Solutions to differential equations are of significant scientific and engineering interest. However,
-many differential equations admit no analytic solutions and must be numerically approximated. Classic
-numerical algorithms solve the equation at a set of points (called a grid or mesh); if we want results
-at new points, we are forced to re-run the entire analysis.
+We aspire to solve differential equations (i.e. equations described by differences, such as derivatives) as they are of significant engineering and scientific interest. We take a (somewhat) new approach and employ neural networks (universal function approximators) to the problem of *learning the solution* as a function. This is in contrast to numerical methods (such as finite differences or finite elements) which solve the system at a set of points. Indeed, since the solutions to differential equations *are functions*, we believe that this is altogether not an entirely unreasonable idea.
 
-Neural networks, on the other hand, have emerged as universal function-approximators. Since the solution
-to differential equations *are functions*, we are motivated to apply neural networks to solving differential
-equations.
+# Installation
 
-Our main goal is to train neural networks (once) that can accurately approximate the solution to a complex
-differential equation of choice with high resolution and generalization. We surmise that having access to an
-accurate *functional form* will provide many uses in the scientific and engineering communities.
+**On Mac OS:**
+- `conda env create -f environment.yml`
+- `conda activate denn`
+- `python setup.py install`
 
-## Contents of this Repository
+**On Linux:**
+- `conda env create -f linux_environment.yml`
+- `conda activate denn`
+- `python setup.py install`
 
-This repo is a collection of research code that was developed by Dylan Randle at Harvard University. The core
-routines are contained in `denn`. There are a few modules to explain:
-1. `rans`: Module implementing unsupervised methods for solving Reynolds-Averaged Navier Stokes equations
-2. `exp`: Module implementing unsupervised Generative Adversarial Network methods for solving exponential decay; \
-also includes the simpler mean-square error method for comparison
-3. `sho`: Module for Simple Harmonic Oscillator; includes updated approach using semi-supervised learning
+# Organization
 
-`notebooks` contains a large collection of Jupyter notebooks with experimental results, as well as some additional nuggets of insight and small implementations. Particular highlights:
-- `channel_flow_nb.ipynb`: initial experiments on the RANS equations
-- `analytical_bcs.ipynb`: use of analytical (physics-constrained) transformation for boundary conditions
-- `CV_Kappa.ipynb`: investigates the effect of mixing length in the RANS model
-- `Analysis_of_Sampling.ipynb`: shows the effect of different grid sampling strategies
-- `GAN.ipynb`: shows the setup and results of GANs and MSE-based method on exponential decay
-- `GAN_Paper_Results.ipynb`: shows concise results for examples in paper
+This is primarily a *research code* which I have developed to investigate and solve a variety of problems. It includes:
+1. Investigations into classic L2 norm-based neural network methods on Reynolds-Averaged Navier Stokes equations (specifically targeting channel flow). This work can be referenced in `notebooks/rans` and the associated source code in `denn/rans`.
+2. The development (and plethora of divergences due to unexpected behavior) of a Generative Adversarial Network (GAN)-based approach applied to a variety of problems, e.g. exponential decay (`exp`), harmonic oscillator (`sho`), nonlinear oscillator (`nlo`). GANs are very hard to train and, in fact, have no guarantee of convergence (unlike normal neural networks trained with gradient descent). This is meant to be an investigation into an idea rather than a highly performant code for solving differential equations.
 
-## Description of GAN Setup
-Below is a pictorial representation of our propose unsupervised GAN training scheme for solving the exponential decay equation.
+# GAN Approach (tentatively: ODEGAN)
+
+Here is a diagram that describes the high-level idea behind the approach we employ for training the GAN to solve the equation.
+
 ![gan_diagram](img/gan_diagram.png)
 
-Here are some images of the neural networks actually used in our experiment (mainly for fun):
-- Discriminator: \
-![discriminator](img/discriminator.png)
-- Generator: \
-![generator](img/generator.png)
+The idea is that we use a discriminator to "learn the loss function" used to evaluate the generator's solutions. We found that this can often lead to orders of magnitude increases in accuracy, but at the cost of instability/variability (some random initializations perform much worse than a standard method).
+
+Paper is in progress.
