@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from scipy import optimize
+from scipy.integrate import odeint
 
 from denn.utils import diff
 import denn.config as cfg
@@ -246,19 +246,13 @@ class NonlinearOscillator(Problem):
             pass
 
         t = t.reshape(-1)
-        dt = t[1] - t[0]
-        guess = np.ones_like(t)
+        sol = odeint(self._nlo_system, [self.x0, self.dx_dt0], t, tfirst=True)
+        return torch.tensor(sol[:,0], dtype=torch.float).reshape(-1, 1)
 
-        def get_diff(x):
-            x[0] = self.x0
-            dx = np.gradient(x, dt, edge_order = 2)
-            dx[0] = self.dx_dt0
-            d2x = np.gradient(dx, dt, edge_order = 2)
-            return self._nlo_eqn(x, dx, d2x)
-
-        opt_sol = optimize.root(get_diff, guess, method='lm')
-        print(f'Numerical solution success: {opt_sol.success}')
-        return torch.tensor(opt_sol.x, dtype=torch.float).reshape(-1, 1)
+    def _nlo_system(self, t, z):
+        """ NLO decomposed as system of first order equations """
+        x, y = z   # y = x'
+        return np.array([y, -(2 * self.beta * y + (self.omega**2) * x + self.phi * (x**2) + self.epsilon * (x**3))])
 
     def _nlo_eqn(self, x, dx, d2x):
         return d2x + 2 * self.beta * dx + (self.omega ** 2) * x + self.phi * (x ** 2) \
