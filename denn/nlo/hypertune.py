@@ -17,6 +17,8 @@ def gan_exp_with_hypers(hypers):
     gan_kwargs = cfg.gan_kwargs
     gen_kwargs = cfg.gen_kwargs
 
+    gan_kwargs['plot'] = False # ensure plotting is off
+
     for k, v in hypers.items():
         if k.startswith('gan_'):
             gan_kwargs[k.replace('gan_', '')] = v
@@ -43,6 +45,8 @@ def L2_exp_with_hypers(hypers):
     """
     model_kwargs = cfg.L2_mlp_kwargs
     train_kwargs = cfg.L2_kwargs
+
+    train_kwargs['plot'] = False # ensure plotting is off
 
     for k, v in hypers.items():
         if k.startswith('model_'):
