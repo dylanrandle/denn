@@ -22,6 +22,14 @@ def gan_experiment(problem, seed=0, gen_kwargs={}, disc_kwargs={}, train_kwargs=
     res = train_GAN(gen, disc, problem, **train_kwargs)
     return res
 
+def gan_experiment_semi(problem, seed=0, gen_kwargs={}, disc_kwargs={}, train_kwargs={}):
+    torch.manual_seed(seed)
+    gen = MLP(**gen_kwargs)
+    disc = MLP(**disc_kwargs)
+    disc2 = MLP(**disc_kwargs_2)
+    res = train_GAN(gen, disc, problem, D2=disc2, **train_kwargs)
+    return res
+
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
     args.add_argument('--gan', action='store_true', default=False,
@@ -40,7 +48,10 @@ if __name__ == '__main__':
         print('Running GAN training...')
         if args.fname:
             gan_kwargs['fname'] = args.fname
-        gan_experiment(problem, seed=args.seed, gen_kwargs=gen_kwargs, disc_kwargs=disc_kwargs, train_kwargs=gan_kwargs)
+        if gan_kwargs['method'] == 'semisupervised':
+            gan_experiment_semi(problem, seed=args.seed, gen_kwargs=gen_kwargs, disc_kwargs=disc_kwargs, train_kwargs=gan_kwargs)
+        else:
+            gan_experiment(problem, seed=args.seed, gen_kwargs=gen_kwargs, disc_kwargs=disc_kwargs, train_kwargs=gan_kwargs)
     else:
         print('Running L2 training...')
         if args.fname:

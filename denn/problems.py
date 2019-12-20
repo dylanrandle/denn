@@ -185,6 +185,18 @@ class SimpleOscillator(Problem):
         d2x_dt2 = diff(dx_dt, t)
         return x_adj, dx_dt, d2x_dt2
 
+    # def adjust(self, x, t):
+    #     """ perform initial value adjustment using coupled equations """
+    #     dx_dt = diff(x, t)
+    #
+    #     x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
+    #
+    #     nn_adj = (1 - torch.exp(-t)) * dx_dt + 2 * torch.exp(-t) * x
+    #     dx_dt_adj = self.dx_dt0 + (1 - torch.exp(-t)) * nn_adj
+    #
+    #     d2x_dt2 = diff(dx_dt_adj, t)
+    #     return x_adj, dx_dt_adj, d2x_dt2
+
     def get_plot_dicts(self, x, t, y):
         """ return appropriate pred_dict and diff_dict used for plotting """
         xadj, dx, d2x = self.adjust(x, t)
