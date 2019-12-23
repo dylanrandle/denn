@@ -118,3 +118,7 @@ figs/*
 
 # csvs dir
 csvs/*
+
+# all pngs/csvs
+*.png
+*.csv
