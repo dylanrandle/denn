@@ -4,8 +4,6 @@ import os
 
 from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
 
-torch.set_default_dtype(torch.float)
-
 def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
     g_lr=2e-4, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
     lr_schedule=True, obs_every=1, d1=1., d2=1.,
@@ -101,46 +99,29 @@ def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
 
                 g_loss1 = criterion(D(fake), real_labels)
 
-                # supervised part (use GAN)
-                xhat = G(t_obs)
-                xadj = problem.adjust(xhat, t_obs)[0]
-
-                real_obs = y_obs
-                fake_obs = xadj
-
-                # residuals = y_obs - xadj
-                # real_obs = torch.zeros_like(t_obs)
-                # fake_obs = residuals
-
-                if conditional:
-                    real_obs = torch.cat((real_obs, t_obs), 1)
-                    fake_obs = torch.cat((fake_obs, t_obs), 1)
-
-                g_loss2 = criterion(D2(fake_obs), real_labels_obs)
-
-                # # supervised part (use L2)
-                # xhat = G(t_obs)
-                # x_adj = problem.adjust(xhat, t_obs)[0]
-                # g_loss2 = mse(x_adj, y_obs)
-
                 # # unsupervised part (use L2)
                 # t_samp = problem.get_grid_sample()
                 # xhat = G(t_samp)
                 # residuals = problem.get_equation(xhat, t_samp)
                 # g_loss1 = mse(residuals, torch.zeros_like(residuals))
-                #
+
+                # supervised part (use L2)
+                xhat = G(t_obs)
+                x_adj = problem.adjust(xhat, t_obs)[0]
+                g_loss2 = mse(x_adj, y_obs)
+
                 # # supervised part (use GAN)
                 # xhat = G(t_obs)
                 # xadj = problem.adjust(xhat, t_obs)[0]
+                #
+                # real_obs = y_obs
+                # fake_obs = xadj
+                #
                 # if conditional:
-                #     # concat "real" (y) with t (conditional GAN)
-                #     # concat "fake" (xadj) with t (conditional GAN)
-                #     real = torch.cat((y_obs, t_obs), 1)
-                #     fake = torch.cat((xadj, t_obs), 1)
-                # else:
-                #     real = y_obs
-                #     fake = xadj
-                # g_loss2 = criterion(D(fake), real_labels)
+                #     real_obs = torch.cat((real_obs, t_obs), 1)
+                #     fake_obs = torch.cat((fake_obs, t_obs), 1)
+                #
+                # g_loss2 = criterion(D2(fake_obs), real_labels_obs)
 
                 # combine losses
                 g_loss = d1 * g_loss1 + d2 * g_loss2

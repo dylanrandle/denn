@@ -3,7 +3,6 @@ import multiprocessing as mp
 import numpy as np
 import argparse
 
-from denn.problems import SimpleOscillator
 from denn.experiments import gan_experiment
 import denn.config as cfg
 from denn.utils import handle_overwrite, dict_product
@@ -17,6 +16,8 @@ def gan_exp_with_hypers(hypers):
     gan_kwargs = cfg.gan_kwargs
     gen_kwargs = cfg.gen_kwargs
 
+    gan_kwargs['plot'] = False # ensure plotting is off
+
     for k, v in hypers.items():
         if k.startswith('gan_'):
             gan_kwargs[k.replace('gan_', '')] = v
@@ -26,7 +27,7 @@ def gan_exp_with_hypers(hypers):
             disc_kwargs[k.replace('disc_', '')] = v
 
     exp_res = gan_experiment(
-        problem = SimpleOscillator(**cfg.problem_kwargs),
+        problem = cfg.sho_problem,
         seed = 0,
         gen_kwargs = gen_kwargs,
         disc_kwargs = disc_kwargs,
@@ -47,16 +48,7 @@ if __name__== "__main__":
 
     handle_overwrite(args.fname)
 
-    # define search space
-    hyper_space = dict(
-        # disc_kwargs
-        disc_n_hidden_units = [32, 16],
-        disc_n_hidden_layers = [2],
-        # gen_kwargs
-        gen_n_hidden_units = [16, 8],
-        gen_n_hidden_layers = [3],
-    )
-
+    hyper_space = cfg.gan_sho_hyper_space
     hyper_space = dict_product(hyper_space)
 
     pool = mp.Pool(args.ncpu)

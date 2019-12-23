@@ -1,25 +1,7 @@
 import numpy as np
 import torch
 from scipy.integrate import odeint
-
 from denn.utils import diff
-import denn.config as cfg
-
-def get_problem(pkey):
-    """ helper to parse problem key and return appropriate problem
-    """
-    if pkey.lower().strip() == 'sho':
-        print('Solving SimpleOscillator problem')
-        problem = SimpleOscillator(**cfg.problem_kwargs)
-    elif pkey.lower().strip() == 'nlo':
-        print('Solving NonlinearOscillator problem')
-        problem = NonlinearOscillator(**cfg.problem_kwargs)
-    elif pkey.lower().strip() == 'exp':
-        print('Solving Exponential problem')
-        problem = Exponential(**cfg.problem_kwargs)
-    else:
-        raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
-    return problem
 
 class Problem():
     """ parent class for all problems

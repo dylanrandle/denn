@@ -5,9 +5,24 @@ import numpy as np
 
 from denn.algos import train_L2, train_GAN
 from denn.models import MLP
-from denn.problems import get_problem
 from denn.config import *
 from denn.utils import handle_overwrite
+
+def get_problem(pkey):
+    """ helper to parse problem key and return appropriate problem
+    """
+    if pkey.lower().strip() == 'sho':
+        print('Solving SimpleOscillator problem')
+        problem = sho_problem
+    elif pkey.lower().strip() == 'nlo':
+        print('Solving NonlinearOscillator problem')
+        problem = nlo_problem
+    elif pkey.lower().strip() == 'exp':
+        print('Solving Exponential problem')
+        problem = exp_problem
+    else:
+        raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
+    return problem
 
 def L2_experiment(problem, seed=0, model_kwargs={}, train_kwargs={}):
     torch.manual_seed(seed)
@@ -26,8 +41,7 @@ def gan_experiment_semi(problem, seed=0, gen_kwargs={}, disc_kwargs={}, train_kw
     torch.manual_seed(seed)
     gen = MLP(**gen_kwargs)
     disc = MLP(**disc_kwargs)
-    disc2 = MLP(**disc_kwargs_2)
-    res = train_GAN(gen, disc, problem, D2=disc2, **train_kwargs)
+    res = train_GAN(gen, disc, problem, D2=None, **train_kwargs)
     return res
 
 if __name__ == '__main__':

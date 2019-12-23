@@ -3,7 +3,6 @@ import multiprocessing as mp
 import numpy as np
 import argparse
 
-from denn.problems import NonlinearOscillator
 from denn.experiments import gan_experiment, L2_experiment
 import denn.config as cfg
 from denn.utils import handle_overwrite, dict_product
@@ -28,7 +27,7 @@ def gan_exp_with_hypers(hypers):
             disc_kwargs[k.replace('disc_', '')] = v
 
     exp_res = gan_experiment(
-        problem = NonlinearOscillator(**cfg.problem_kwargs),
+        problem = cfg.nlo_problem,
         seed = 0,
         gen_kwargs = gen_kwargs,
         disc_kwargs = disc_kwargs,
@@ -55,7 +54,7 @@ def L2_exp_with_hypers(hypers):
             train_kwargs[k.replace('train_', '')] = v
 
     exp_res = L2_experiment(
-        problem = NonlinearOscillator(**cfg.problem_kwargs),
+        problem = cfg.nlo_problem,
         seed = 0,
         model_kwargs = model_kwargs,
         train_kwargs = train_kwargs,
@@ -77,7 +76,7 @@ if __name__== "__main__":
 
     handle_overwrite(args.fname)
 
-    hyper_space = cfg.hyper_space
+    hyper_space = cfg.gan_nlo_hyper_space if args.gan else cfg.L2_nlo_hyper_space
     hyper_space = dict_product(hyper_space)
 
     pool = mp.Pool(args.ncpu)

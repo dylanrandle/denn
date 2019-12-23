@@ -1,5 +1,6 @@
 import torch.nn as nn
 import numpy as np
+import denn.problems as pb
 
 # ==========================
 # Setup of the problem
@@ -7,18 +8,21 @@ import numpy as np
 
 ## EXP PARAMS
 ## n=100 | perturb = True | t_max = 10
+exp_problem = pb.Exponential(n=100, perturb=True, t_max=10)
 
 ## SHO PARAMS
 ## n=100 | perturb = True | t_max = 4 * np.pi
+sho_problem = pb.SimpleOscillator(n=100, perturb=True, t_max=4*np.pi)
 
 ## NLO PARAMS
 ## n=1000 | perturb = True | t_max = 8 * np.pi
+nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
 
-problem_kwargs = dict(
-    n=100,
-    perturb=True,
-    t_max=4*np.pi,
-)
+# problem_kwargs = dict(
+#     n=100,
+#     perturb=True,
+#     t_max=4*np.pi,
+# )
 
 # ==========================
 # GAN
@@ -67,6 +71,7 @@ gen_kwargs = dict(
     residual=True,
     regress=True,
 )
+
 # Discriminator MLP
 disc_kwargs = dict(
     in_dim=2,
@@ -78,7 +83,7 @@ disc_kwargs = dict(
     regress=True, # true for WGAN, false otherwise
 )
 
-# Discriminator MLP #2 (for semi-supervised)
+# Discriminator MLP #2 (for semi-supervised with two Ds)
 disc_kwargs_2 = dict(
     in_dim=2,
     out_dim=1,
@@ -106,13 +111,14 @@ L2_kwargs = dict(
     lr=1e-3,
     betas=(0., 0.9),
     lr_schedule=True,
-    obs_every=10,
+    obs_every=1,
     d1=1,
     d2=1,
     plot=True,
     save=True,
     fname='train_L2.png',
 )
+
 # L2 MLP
 L2_mlp_kwargs = dict(
     in_dim=1,
@@ -128,23 +134,35 @@ L2_mlp_kwargs = dict(
 # Hyper tuning
 # ==========================
 
-# GAN: NLO
-hyper_space = dict(
+# GAN SHO
+gan_sho_hyper_space = dict(
      # gan_kwargs
-     gan_niters = [100000],
+     gan_niters = [10000],
      # disc_kwargs
-     disc_n_hidden_units = [32],
-     disc_n_hidden_layers = [4, 6, 8, 10],
+     disc_n_hidden_units = [16, 24, 32],
+     disc_n_hidden_layers = [2, 3, 4, 5],
      # gen_kwargs
-     gen_n_hidden_units = [32],
-     gen_n_hidden_layers = [4, 6, 8, 10],
+     gen_n_hidden_units = [16, 24, 32],
+     gen_n_hidden_layers = [2, 3, 4, 5],
 )
 
-# L2: NLO
-# hyper_space = dict(
-#    # model_kwargs
-#    model_n_hidden_units=[32, 64],
-#    model_n_hidden_layers=[4, 6, 8],
-#    # train_kwargs
-#    train_niters=[10000, 50000, 100000],
-#)
+# GAN NLO
+gan_nlo_hyper_space = dict(
+     # gan_kwargs
+     gan_niters = [100],
+     # disc_kwargs
+     disc_n_hidden_units = [16, 24, 32],
+     disc_n_hidden_layers = [3, 4, 5, 6, 7, 8],
+     # gen_kwargs
+     gen_n_hidden_units = [16, 24, 32],
+     gen_n_hidden_layers = [3, 4, 5, 6, 7, 8],
+)
+
+# L2 NLO
+L2_nlo_hyper_space = dict(
+   # model_kwargs
+   model_n_hidden_units=[32, 64],
+   model_n_hidden_layers=[4, 6, 8],
+   # train_kwargs
+   train_niters=[10000, 50000, 100000],
+)
