@@ -5,7 +5,7 @@ import pandas as pd
 import multiprocessing as mp
 import numpy as np
 
-N_REPS = 5
+N_REPS = 10
 N_ITERS = 10000
 OBS_EVERY = [1, 2, 4, 8, 10, 20]
 

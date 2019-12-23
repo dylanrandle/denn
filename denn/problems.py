@@ -1,25 +1,7 @@
 import numpy as np
 import torch
 from scipy.integrate import odeint
-
 from denn.utils import diff
-import denn.config as cfg
-
-def get_problem(pkey):
-    """ helper to parse problem key and return appropriate problem
-    """
-    if pkey.lower().strip() == 'sho':
-        print('Solving SimpleOscillator problem')
-        problem = SimpleOscillator(**cfg.problem_kwargs)
-    elif pkey.lower().strip() == 'nlo':
-        print('Solving NonlinearOscillator problem')
-        problem = NonlinearOscillator(**cfg.problem_kwargs)
-    elif pkey.lower().strip() == 'exp':
-        print('Solving Exponential problem')
-        problem = Exponential(**cfg.problem_kwargs)
-    else:
-        raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
-    return problem
 
 class Problem():
     """ parent class for all problems
@@ -184,6 +166,18 @@ class SimpleOscillator(Problem):
         dx_dt = diff(x_adj, t)
         d2x_dt2 = diff(dx_dt, t)
         return x_adj, dx_dt, d2x_dt2
+
+    # def adjust(self, x, t):
+    #     """ perform initial value adjustment using coupled equations """
+    #     dx_dt = diff(x, t)
+    #
+    #     x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
+    #
+    #     nn_adj = (1 - torch.exp(-t)) * dx_dt + 2 * torch.exp(-t) * x
+    #     dx_dt_adj = self.dx_dt0 + (1 - torch.exp(-t)) * nn_adj
+    #
+    #     d2x_dt2 = diff(dx_dt_adj, t)
+    #     return x_adj, dx_dt_adj, d2x_dt2
 
     def get_plot_dicts(self, x, t, y):
         """ return appropriate pred_dict and diff_dict used for plotting """
