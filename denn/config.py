@@ -149,13 +149,13 @@ gan_sho_hyper_space = dict(
 # GAN NLO
 gan_nlo_hyper_space = dict(
      # gan_kwargs
-     gan_niters = [100000],
+     gan_niters = [10000],
      # disc_kwargs
-     disc_n_hidden_units = [16, 24, 32],
-     disc_n_hidden_layers = [3, 4, 5, 6, 7, 8],
+     disc_n_hidden_units = [32, 64],
+     disc_n_hidden_layers = [6, 8, 10, 12, 14],
      # gen_kwargs
-     gen_n_hidden_units = [16, 24, 32],
-     gen_n_hidden_layers = [3, 4, 5, 6, 7, 8],
+     gen_n_hidden_units = [32, 64],
+     gen_n_hidden_layers = [6, 8, 10, 12, 14],
 )
 
 # L2 NLO
