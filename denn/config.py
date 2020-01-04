@@ -18,12 +18,6 @@ sho_problem = pb.SimpleOscillator(n=100, perturb=True, t_max=4*np.pi)
 ## n=1000 | perturb = True | t_max = 8 * np.pi
 nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
 
-# problem_kwargs = dict(
-#     n=100,
-#     perturb=True,
-#     t_max=4*np.pi,
-# )
-
 # ==========================
 # GAN
 # ==========================
@@ -33,11 +27,12 @@ nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
 ## G_iters = 9 | wgan = False | conditional = False
 
 ## SHO PARAMS
-## niters: 10K | Gen: 16x3 | Disc: 32x2
+## niters: 10K | Gen: 32x2 | Disc: 24x4
 ## wgan = True | conditional = True
 
 ## NLO PARAMS
-## ??
+## niters: 10K | Gen: 64x12 | Disc: 64x14
+## wgan = True | conditional = True
 
 # GAN Algorithm
 gan_kwargs = dict(
@@ -65,8 +60,8 @@ gan_kwargs = dict(
 gen_kwargs = dict(
     in_dim=1,
     out_dim=1,
-    n_hidden_units=16,
-    n_hidden_layers=3,
+    n_hidden_units=64,
+    n_hidden_layers=12,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
@@ -76,8 +71,8 @@ gen_kwargs = dict(
 disc_kwargs = dict(
     in_dim=2,
     out_dim=1,
-    n_hidden_units=32,
-    n_hidden_layers=2,
+    n_hidden_units=64,
+    n_hidden_layers=14,
     activation=nn.Tanh(),
     residual=True,
     regress=True, # true for WGAN, false otherwise
@@ -99,10 +94,10 @@ disc_kwargs_2 = dict(
 # ==========================
 
 ## SHO PARAMS
-## niters: 10K | MLP: 16x3
+## niters: 10K | MLP: 32x2
 
 ## NLO PARAMS
-## niters: 200K | MLP: 32x8
+## niters: 10K | MLP: 64x12
 
 # L2 Algorithm
 L2_kwargs = dict(
@@ -123,8 +118,8 @@ L2_kwargs = dict(
 L2_mlp_kwargs = dict(
     in_dim=1,
     out_dim=1,
-    n_hidden_units=16,
-    n_hidden_layers=3,
+    n_hidden_units=64,
+    n_hidden_layers=12,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
