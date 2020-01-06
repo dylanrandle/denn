@@ -72,7 +72,7 @@ gan_kwargs = dict(
 gen_kwargs = dict(
     in_dim=1,
     out_dim=1,
-    n_hidden_units=32,
+    n_hidden_units=64,
     n_hidden_layers=2,
     activation=nn.Tanh(),
     residual=True,
@@ -83,8 +83,8 @@ gen_kwargs = dict(
 disc_kwargs = dict(
     in_dim=2,
     out_dim=1,
-    n_hidden_units=24,
-    n_hidden_layers=4,
+    n_hidden_units=64,
+    n_hidden_layers=8,
     activation=nn.Tanh(),
     residual=True,
     regress=True, # true for WGAN, false otherwise
@@ -128,7 +128,7 @@ L2_kwargs = dict(
 L2_mlp_kwargs = dict(
     in_dim=1,
     out_dim=1,
-    n_hidden_units=32,
+    n_hidden_units=64,
     n_hidden_layers=2,
     activation=nn.Tanh(),
     residual=True,
@@ -139,16 +139,37 @@ L2_mlp_kwargs = dict(
 # Hyper tuning
 # ==========================
 
-# GAN SHO
+# GAN SHO (model specs)
+# gan_sho_hyper_space = dict(
+#      # gan_kwargs
+#      gan_niters = [10000],
+#      # disc_kwargs
+#      disc_n_hidden_units = [16, 32, 64],
+#      disc_n_hidden_layers = [2, 4, 6, 8],
+#      # gen_kwargs
+#      gen_n_hidden_units = [16, 32, 64],
+#      gen_n_hidden_layers = [2, 4, 6, 8],
+# )
+
+# GAN SHO (niters)
 gan_sho_hyper_space = dict(
      # gan_kwargs
-     gan_niters = [10000],
+     gan_niters = [10, 50, 100, 200, 500, 1000],
      # disc_kwargs
-     disc_n_hidden_units = [16, 32, 64],
-     disc_n_hidden_layers = [2, 4, 6, 8],
+     disc_n_hidden_units = [64],
+     disc_n_hidden_layers = [8],
      # gen_kwargs
-     gen_n_hidden_units = [16, 32, 64],
-     gen_n_hidden_layers = [2, 4, 6, 8],
+     gen_n_hidden_units = [64],
+     gen_n_hidden_layers = [2],
+)
+
+# L2 SHO (niters)
+L2_sho_hyper_space = dict(
+   # model_kwargs
+   model_n_hidden_units=[64],
+   model_n_hidden_layers=[2],
+   # train_kwargs
+   train_niters=[10, 50, 100, 200, 500, 1000],
 )
 
 # GAN NLO (model specs)
