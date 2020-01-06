@@ -126,6 +126,8 @@ def train_GAN(num_epochs,
           d_hidden_layers=2,
           d_lr=0.001,
           g_lr=0.001,
+          g_betas=(0.9, 0.999),
+          d_betas=(0.9, 0.999),
           t_low=0,
           t_high=10,
           n=100,
@@ -167,8 +169,8 @@ def train_GAN(num_epochs,
 
     # optimization
     cross_entropy = nn.BCELoss()
-    optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=(0.9, 0.999))
-    optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=(0.9, 0.999))
+    optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
+    optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
 
     # logging
     D_losses = []

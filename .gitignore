@@ -112,13 +112,3 @@ experiments/*
 
 # data dir
 data/*
-
-# figs dir
-figs/*
-
-# csvs dir
-csvs/*
-
-# all pngs/csvs
-*.png
-*.csv
