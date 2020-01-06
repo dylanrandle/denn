@@ -151,23 +151,44 @@ gan_sho_hyper_space = dict(
      gen_n_hidden_layers = [2, 4, 6, 8],
 )
 
-# GAN NLO
+# GAN NLO (model specs)
+# gan_nlo_hyper_space = dict(
+#      # gan_kwargs
+#      gan_niters = [10000],
+#      # disc_kwargs
+#      disc_n_hidden_units = [32, 64],
+#      disc_n_hidden_layers = [6, 8, 10, 12, 14],
+#      # gen_kwargs
+#      gen_n_hidden_units = [32, 64],
+#      gen_n_hidden_layers = [6, 8, 10, 12, 14],
+# )
+
+# GAN NLO (niters)
 gan_nlo_hyper_space = dict(
      # gan_kwargs
-     gan_niters = [10000],
+     gan_niters = [1000, 5000, 10000, 20000, 50000, 100000],
      # disc_kwargs
-     disc_n_hidden_units = [32, 64],
-     disc_n_hidden_layers = [6, 8, 10, 12, 14],
+     disc_n_hidden_units = [64],
+     disc_n_hidden_layers = [14],
      # gen_kwargs
-     gen_n_hidden_units = [32, 64],
-     gen_n_hidden_layers = [6, 8, 10, 12, 14],
+     gen_n_hidden_units = [64],
+     gen_n_hidden_layers = [12],
 )
 
-# L2 NLO
+# L2 NLO (model specs)
+# L2_nlo_hyper_space = dict(
+#    # model_kwargs
+#    model_n_hidden_units=[32, 64],
+#    model_n_hidden_layers=[4, 6, 8],
+#    # train_kwargs
+#    train_niters=[10000, 50000, 100000],
+# )
+
+# L2 NLO (niters)
 L2_nlo_hyper_space = dict(
    # model_kwargs
-   model_n_hidden_units=[32, 64],
-   model_n_hidden_layers=[4, 6, 8],
+   model_n_hidden_units=[64],
+   model_n_hidden_layers=[12],
    # train_kwargs
-   train_niters=[10000, 50000, 100000],
+   train_niters=[1000, 5000, 10000, 20000, 50000, 100000],
 )
