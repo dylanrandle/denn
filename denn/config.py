@@ -7,7 +7,7 @@ FIG_DIR = '/Users/dylanrandle/Documents/Harvard/research/denn/experiments/figs/'
 CSV_DIR = '/Users/dylanrandle/Documents/Harvard/research/denn/experiments/csvs/'
 
 # ==========================
-# Setup of the problem
+# Problem
 # ==========================
 
 ## EXP PARAMS
@@ -30,34 +30,39 @@ nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
 ## EXP PARAMS (unsupervised)
 ## niters: 500 | Gen: 20x2 | Disc: 20x2
 ## g_lr: 1e-2 | d_lr: 1e-2 | g_betas = d_betas = (0.9, 0.999)
-## G:D iters : 1:1 | wgan = False | conditional = False | lr_schedule = True
-## activations : Tanh | residual connections = True
+## G:D iters : 1:1 | wgan = False | conditional = False
+## lr_schedule = True | activations : Tanh
+## residual connections = True
 
 ## SHO PARAMS
-## niters: 10K | Gen: 32x2 | Disc: 24x4
-## wgan = True | conditional = True
+## niters = 10K | Gen = 32x2 | Disc = 24x4
+## wgan = True | conditional = True | g_lr = d_lr = 1e-3
+## g_betas = d_betas = (0., 0.9) | lr_schedule = True
+## G:D iters = 1:1 | gp = 0.1
 
 ## NLO PARAMS
 ## niters: 10K | Gen: 64x12 | Disc: 64x14
-## wgan = True | conditional = True
+## wgan = True | conditional = True | g_lr = d_lr = 1e-3
+## g_betas = d_betas = (0., 0.9) | lr_schedule = True
+## G:D iters = 1:1 | gp = 0.1
 
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=500,
-    g_lr=1e-2,
-    g_betas=(0.9, 0.999),
-    d_lr=1e-2,
-    d_betas=(0.9, 0.999),
+    niters=10000,
+    g_lr=1e-3,
+    g_betas=(0., 0.9),
+    d_lr=1e-3,
+    d_betas=(0., 0.9),
     lr_schedule=True,
     obs_every=1,
     d1=1.,
     d2=1.,
     G_iters=1,
     D_iters=1,
-    wgan=False,
+    wgan=True,
     gp=0.1,
-    conditional=False,
+    conditional=True,
     plot=True,
     save=True,
     fname=os.path.join(FIG_DIR, 'train_GAN.png'),
@@ -67,7 +72,7 @@ gan_kwargs = dict(
 gen_kwargs = dict(
     in_dim=1,
     out_dim=1,
-    n_hidden_units=20,
+    n_hidden_units=32,
     n_hidden_layers=2,
     activation=nn.Tanh(),
     residual=True,
@@ -76,13 +81,13 @@ gen_kwargs = dict(
 
 # Discriminator MLP
 disc_kwargs = dict(
-    in_dim=1,
+    in_dim=2,
     out_dim=1,
-    n_hidden_units=20,
-    n_hidden_layers=2,
+    n_hidden_units=24,
+    n_hidden_layers=4,
     activation=nn.Tanh(),
     residual=True,
-    regress=False, # true for WGAN, false otherwise
+    regress=True, # true for WGAN, false otherwise
 )
 
 # # Discriminator MLP #2 (for semi-supervised with two Ds)
@@ -97,19 +102,19 @@ disc_kwargs = dict(
 # )
 
 # ==========================
-# L2 (Lagaris)
+# L2 (a.k.a. Lagaris)
 # ==========================
 
 # == PARAMS ==
-# model: same as generator from associated GAN
-# learning: same as associated GAN
+# model: same as GENERATOR from associated GAN
+# learning: same as associated GAN (where applicable)
 
 # L2 Algorithm
 L2_kwargs = dict(
     method='unsupervised',
-    niters=500,
-    lr=1e-2,
-    betas=(0.9, 0.999),
+    niters=10000,
+    lr=1e-3,
+    betas=(0., 0.9),
     lr_schedule=True,
     obs_every=1,
     d1=1,
@@ -123,7 +128,7 @@ L2_kwargs = dict(
 L2_mlp_kwargs = dict(
     in_dim=1,
     out_dim=1,
-    n_hidden_units=20,
+    n_hidden_units=32,
     n_hidden_layers=2,
     activation=nn.Tanh(),
     residual=True,
@@ -139,11 +144,11 @@ gan_sho_hyper_space = dict(
      # gan_kwargs
      gan_niters = [10000],
      # disc_kwargs
-     disc_n_hidden_units = [16, 24, 32],
-     disc_n_hidden_layers = [2, 3, 4, 5],
+     disc_n_hidden_units = [16, 32, 64],
+     disc_n_hidden_layers = [2, 4, 6, 8],
      # gen_kwargs
-     gen_n_hidden_units = [16, 24, 32],
-     gen_n_hidden_layers = [2, 3, 4, 5],
+     gen_n_hidden_units = [16, 32, 64],
+     gen_n_hidden_layers = [2, 4, 6, 8],
 )
 
 # GAN NLO

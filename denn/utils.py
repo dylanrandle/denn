@@ -42,7 +42,8 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
     # Losses
     for k, v in loss_dict.items():
         ax[1].plot(np.arange(len(v)), v, label=k, alpha=alpha)
-    ax[1].legend(loc='upper right')
+    if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
+        ax[1].legend(loc='upper right')
     ax[1].set_title('Loss')
     ax[1].set_xlabel('Step')
     ax[1].set_ylabel('Loss')
