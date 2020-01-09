@@ -35,16 +35,18 @@ nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
 ## residual connections = True
 
 ## SHO PARAMS
-## niters = 10K | Gen = 32x2 | Disc = 24x4
+## niters = 10K | Gen = 64x2 | Disc = 64x8
 ## wgan = True | conditional = True | g_lr = d_lr = 1e-3
 ## g_betas = d_betas = (0., 0.9) | lr_schedule = True
-## G:D iters = 1:1 | gp = 0.1
+## G:D iters = 1:1 | gp = 0.1 | activations : Tanh 
+## residual connections = True
 
 ## NLO PARAMS
 ## niters: 10K | Gen: 64x12 | Disc: 64x14
 ## wgan = True | conditional = True | g_lr = d_lr = 1e-3
 ## g_betas = d_betas = (0., 0.9) | lr_schedule = True
-## G:D iters = 1:1 | gp = 0.1
+## G:D iters = 1:1 | gp = 0.1 | activations : Tanh
+## residual connections = True
 
 # GAN Algorithm
 gan_kwargs = dict(
@@ -154,7 +156,7 @@ L2_mlp_kwargs = dict(
 # GAN SHO (niters)
 gan_sho_hyper_space = dict(
      # gan_kwargs
-     gan_niters = [10, 50, 100, 200, 500, 1000],
+     gan_niters = [1000, 5000, 10000, 20000, 50000, 100000],
      # disc_kwargs
      disc_n_hidden_units = [64],
      disc_n_hidden_layers = [8],
@@ -169,7 +171,7 @@ L2_sho_hyper_space = dict(
    model_n_hidden_units=[64],
    model_n_hidden_layers=[2],
    # train_kwargs
-   train_niters=[10, 50, 100, 200, 500, 1000],
+   train_niters=[1000, 5000, 10000, 20000, 50000, 100000],
 )
 
 # GAN NLO (model specs)
