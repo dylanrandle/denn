@@ -24,7 +24,7 @@ This is primarily a *research code* which I have developed to investigate and so
 
 Here is a diagram that describes the high-level idea behind the approach we employ for training the GAN to solve the equation.
 
-![gan_diagram](img/gan_diagram.png)
+![gan_diagram](img/gan_diagram_new.png)
 
 The idea is that we use a discriminator to "learn the loss function" used to evaluate the generator's solutions. We found that this can often lead to orders of magnitude increases in accuracy, but at the cost of instability/variability (some random initializations perform much worse than a standard method).
 
