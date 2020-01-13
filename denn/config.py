@@ -38,7 +38,7 @@ nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
 ## niters = 10K | Gen = 64x2 | Disc = 64x8
 ## wgan = True | conditional = True | g_lr = d_lr = 1e-3
 ## g_betas = d_betas = (0., 0.9) | lr_schedule = True
-## G:D iters = 1:1 | gp = 0.1 | activations : Tanh 
+## G:D iters = 1:1 | gp = 0.1 | activations : Tanh
 ## residual connections = True
 
 ## NLO PARAMS
@@ -51,7 +51,7 @@ nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=100000,
+    niters=1000,
     g_lr=1e-3,
     g_betas=(0., 0.9),
     d_lr=1e-3,
@@ -86,7 +86,7 @@ disc_kwargs = dict(
     in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=14,
+    n_hidden_layers=6,
     activation=nn.Tanh(),
     residual=True,
     regress=True, # true for WGAN, false otherwise
