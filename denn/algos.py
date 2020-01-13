@@ -38,8 +38,10 @@ def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
     optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
     optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
     if lr_schedule:
-        lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(optiG, lr_lambda=LambdaLR(niters, 0, 0).step)
-        lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(optiD, lr_lambda=LambdaLR(niters, 0, 0).step)
+        #lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(optiG, lr_lambda=LambdaLR(niters, 0, 0).step)
+        #lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(optiD, lr_lambda=LambdaLR(niters, 0, 0).step)
+        lr_scheduler_G = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=0.999)
+        lr_scheduler_D = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=0.999)
 
     # losses
     mse = nn.MSELoss()
@@ -231,7 +233,8 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     mse = torch.nn.MSELoss()
     # lr scheduler
     if lr_schedule:
-        lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=LambdaLR(niters, 0, 0).step)
+        # lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=LambdaLR(niters, 0, 0).step)
+        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=0.999)
 
     loss_trace = []
     mses = []
