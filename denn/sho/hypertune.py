@@ -26,14 +26,17 @@ def gan_exp_with_hypers(hypers):
         elif k.startswith('disc_'):
             disc_kwargs[k.replace('disc_', '')] = v
 
-    exp_res = gan_experiment(
-        problem = cfg.sho_problem,
-        seed = 0,
-        gen_kwargs = gen_kwargs,
-        disc_kwargs = disc_kwargs,
-        train_kwargs = gan_kwargs,
-    )
-    res = {'mse': exp_res['final_mse'], 'hypers': hypers}
+    reps=[]
+    for i in range(5):
+        exp_res = gan_experiment(
+            problem = cfg.sho_problem,
+            seed = i,
+            gen_kwargs = gen_kwargs,
+            disc_kwargs = disc_kwargs,
+            train_kwargs = gan_kwargs,
+        )
+        reps.append(exp_res['final_mse'])
+    res = {'mse': reps, 'hypers': hypers}
     print(f'Result: {res}')
     return res
 
@@ -53,13 +56,16 @@ def L2_exp_with_hypers(hypers):
         elif k.startswith('train_'):
             train_kwargs[k.replace('train_', '')] = v
 
-    exp_res = L2_experiment(
-        problem = cfg.sho_problem,
-        seed = 0,
-        model_kwargs = model_kwargs,
-        train_kwargs = train_kwargs,
-    )
-    res = {'mse': exp_res['final_mse'], 'hypers': hypers}
+    reps = []
+    for i in range(5):
+        exp_res = L2_experiment(
+            problem = cfg.sho_problem,
+            seed = i,
+            model_kwargs = model_kwargs,
+            train_kwargs = train_kwargs,
+        )
+        reps.append(exp_res['final_mse'])
+    res = {'mse': reps, 'hypers': hypers}
     print(f'Result: {res}')
     return res
 
