@@ -26,17 +26,17 @@ def gan_exp_with_hypers(hypers):
         elif k.startswith('disc_'):
             disc_kwargs[k.replace('disc_', '')] = v
 
-    reps=[]
-    for i in range(5):
-        exp_res = gan_experiment(
-            problem = cfg.sho_problem,
-            seed = i,
-            gen_kwargs = gen_kwargs,
-            disc_kwargs = disc_kwargs,
-            train_kwargs = gan_kwargs,
-        )
-        reps.append(exp_res['final_mse'])
-    res = {'mse': reps, 'hypers': hypers}
+    # reps=[]
+    # for i in range(5):
+    exp_res = gan_experiment(
+        problem = cfg.sho_problem,
+        seed = 0,
+        gen_kwargs = gen_kwargs,
+        disc_kwargs = disc_kwargs,
+        train_kwargs = gan_kwargs,
+    )
+    # reps.append(exp_res['final_mse'])
+    res = {'mse': exp_res['final_mse'], 'hypers': hypers}
     print(f'Result: {res}')
     return res
 

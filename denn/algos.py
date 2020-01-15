@@ -6,7 +6,7 @@ from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_ove
 
 def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
     g_lr=2e-4, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
-    lr_schedule=True, obs_every=1, d1=1., d2=1.,
+    lr_schedule=True, gamma=0.9999, obs_every=1, d1=1., d2=1.,
     G_iters=1, D_iters=1, wgan=True, gp=0.1, conditional=True,
     plot=True, save=False, fname='train_GAN.png'):
     """
@@ -38,10 +38,10 @@ def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
     optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
     optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
     if lr_schedule:
-        #lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(optiG, lr_lambda=LambdaLR(niters, 0, 0).step)
-        #lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(optiD, lr_lambda=LambdaLR(niters, 0, 0).step)
-        lr_scheduler_G = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=0.999)
-        lr_scheduler_D = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=0.999)
+        # lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(optiG, lr_lambda=LambdaLR(niters, 0, 0).step)
+        # lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(optiD, lr_lambda=LambdaLR(niters, 0, 0).step)
+        lr_scheduler_G = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=gamma)
+        lr_scheduler_D = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=gamma)
 
     # losses
     mse = nn.MSELoss()
@@ -212,7 +212,8 @@ def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
     return {'final_mse': final_mse, 'model': G}
 
 def train_L2(model, problem, method='unsupervised', niters=100,
-    lr=2e-4, betas=(0, 0.9), lr_schedule=True, obs_every=1, d1=1, d2=1,
+    lr=2e-4, betas=(0, 0.9), lr_schedule=True, gamma=0.9999,
+    obs_every=1, d1=1, d2=1,
     plot=True, save=False, fname='train_L2.png'):
     """
     Train/test Lagaris method: supervised/semisupervised/unsupervised
@@ -234,7 +235,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     # lr scheduler
     if lr_schedule:
         # lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=LambdaLR(niters, 0, 0).step)
-        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=0.999)
+        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=gamma)
 
     loss_trace = []
     mses = []
