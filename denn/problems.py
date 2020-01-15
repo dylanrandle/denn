@@ -270,3 +270,12 @@ class NonlinearOscillator(Problem):
         pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
         diff_dict = None     # the derivatives here are less meaningful, so dont plot them
         return pred_dict, diff_dict
+
+class PoissonEquation(Problem):
+    """
+    Poisson Equation:
+
+    $$ \nabla^{2} \varphi=f $$
+    """
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
