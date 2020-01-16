@@ -1,7 +1,0 @@
-,mse,hypers
-0,"[0.1891838014125824, 0.20131973922252655, 0.18700216710567474, 0.24832504987716675, 0.22633421421051025]","{'gan_niters': 1000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 8, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 2}"
-1,"[3.096386791412442e-08, 2.6667001051805528e-08, 1.0961034746514997e-07, 2.8014703445933264e-08, 6.325901580339632e-08]","{'gan_niters': 5000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 8, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 2}"
-2,"[6.0907257015685445e-09, 2.0279339096873628e-08, 6.314778744354044e-08, 7.050037886813243e-09, 4.688489241289062e-08]","{'gan_niters': 10000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 8, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 2}"
-3,"[3.267293768871582e-09, 2.8852687350422457e-08, 8.44515923859035e-09, 3.751581711952667e-09, 6.167888955133094e-08]","{'gan_niters': 20000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 8, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 2}"
-4,"[9.881341300754798e-10, 2.614183092219946e-09, 1.1658408682890808e-09, 2.950570454629542e-09, 2.5270918690978306e-09]","{'gan_niters': 50000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 8, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 2}"
-5,"[6.245898111956194e-05, 3.0679845330894295e-09, 6.533290020094285e-10, 1.5844103806728072e-09, 4.4567335932832464e-10]","{'gan_niters': 100000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 8, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 2}"

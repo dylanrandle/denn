@@ -1,7 +1,0 @@
-,mse,hypers
-0,0.11291784048080444,"{'model_n_hidden_units': 64, 'model_n_hidden_layers': 12, 'train_niters': 1000}"
-1,0.812748908996582,"{'model_n_hidden_units': 64, 'model_n_hidden_layers': 12, 'train_niters': 5000}"
-2,0.07442836463451385,"{'model_n_hidden_units': 64, 'model_n_hidden_layers': 12, 'train_niters': 10000}"
-3,0.028806626796722412,"{'model_n_hidden_units': 64, 'model_n_hidden_layers': 12, 'train_niters': 20000}"
-4,0.0029854332096874714,"{'model_n_hidden_units': 64, 'model_n_hidden_layers': 12, 'train_niters': 50000}"
-5,1.118676573241828e-05,"{'model_n_hidden_units': 64, 'model_n_hidden_layers': 12, 'train_niters': 100000}"

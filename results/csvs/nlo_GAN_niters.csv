@@ -1,7 +1,0 @@
-,mse,hypers
-0,0.2306138575077057,"{'gan_niters': 1000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 14, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 12}"
-1,0.8127395510673523,"{'gan_niters': 5000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 14, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 12}"
-2,5.6299413699889556e-06,"{'gan_niters': 10000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 14, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 12}"
-3,0.8127599954605103,"{'gan_niters': 20000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 14, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 12}"
-4,4.684543455368839e-05,"{'gan_niters': 50000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 14, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 12}"
-5,0.8131290674209595,"{'gan_niters': 100000, 'disc_n_hidden_units': 64, 'disc_n_hidden_layers': 14, 'gen_n_hidden_units': 64, 'gen_n_hidden_layers': 12}"
