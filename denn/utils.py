@@ -100,7 +100,10 @@ class LambdaLR():
         self.decay_start_epoch = decay_start_epoch
 
     def step(self, epoch):
-        return 1.0 - max(0, epoch + self.offset - self.decay_start_epoch)/(self.n_epochs - self.decay_start_epoch)
+        # max(0,_) ensures never < 0
+        # min(1,_) ensures never > 1
+        # ==> 0 < 1 - min(1,max(0,_)) < 1
+        return 1.0 - min(0.99, max(0, epoch + self.offset - self.decay_start_epoch)/(self.n_epochs - self.decay_start_epoch))
 
 def calc_gradient_penalty(disc, real_data, generated_data, gp_lambda, cuda=False):
     """ helper method for gradient penalty (WGAN-GP) """
