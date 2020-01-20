@@ -4,9 +4,9 @@ import os
 
 from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
 
-def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
-    g_lr=2e-4, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
-    lr_schedule=True, gamma=0.9999, obs_every=1, d1=1., d2=1.,
+def train_GAN(G, D, problem, method='unsupervised', niters=100,
+    g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
+    lr_schedule=True, gamma=0.999, obs_every=1, d1=1., d2=1.,
     G_iters=1, D_iters=1, wgan=True, gp=0.1, conditional=True,
     plot=True, save=False, fname='train_GAN.png'):
     """
@@ -53,20 +53,10 @@ def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
     losses = {'G': [], 'D': []}
     mses = []
 
-    if D2 and method == 'semisupervised':
-        optiD2 = torch.optim.Adam(D2.parameters(), lr=d_lr, betas=d_betas)
-        if lr_schedule:
-            lr_scheduler_D2 = torch.optim.lr_scheduler.LambdaLR(optiD2, lr_lambda=LambdaLR(niters, 0, 0).step)
-        losses['D2'] = []
-
     for epoch in range(niters):
         # Train Generator
         for p in D.parameters():
             p.requires_grad = False # turn off computation for D
-
-        if D2:
-            for p in D2.parameters():
-                p.requires_grade = False
 
         for i in range(G_iters):
             if method == 'unsupervised':
@@ -101,29 +91,10 @@ def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
 
                 g_loss1 = criterion(D(fake), real_labels)
 
-                # # unsupervised part (use L2)
-                # t_samp = problem.get_grid_sample()
-                # xhat = G(t_samp)
-                # residuals = problem.get_equation(xhat, t_samp)
-                # g_loss1 = mse(residuals, torch.zeros_like(residuals))
-
                 # supervised part (use L2)
                 xhat = G(t_obs)
                 x_adj = problem.adjust(xhat, t_obs)[0]
                 g_loss2 = mse(x_adj, y_obs)
-
-                # # supervised part (use GAN)
-                # xhat = G(t_obs)
-                # xadj = problem.adjust(xhat, t_obs)[0]
-                #
-                # real_obs = y_obs
-                # fake_obs = xadj
-                #
-                # if conditional:
-                #     real_obs = torch.cat((real_obs, t_obs), 1)
-                #     fake_obs = torch.cat((fake_obs, t_obs), 1)
-                #
-                # g_loss2 = criterion(D2(fake_obs), real_labels_obs)
 
                 # combine losses
                 g_loss = d1 * g_loss1 + d2 * g_loss2
@@ -132,7 +103,13 @@ def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
                 optiG.step()
 
             else: # supervised
+                # @note: Why removed for now?
+                # the discriminator below uses real_labels/fake_labels
+                # and NOT real_labels_obs/fake_labels_obs such that it is
+                # compatible both with unsupervised and semi-supervised (in
+                # the case where the GAN is used for the unsupervised portion)
                 raise NotImplementedError()
+
                 # xhat = G(t_obs)
                 # xadj = problem.adjust(xhat, t_obs)[0]
                 # residuals = y_obs - xadj
@@ -178,29 +155,10 @@ def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
         curr_mse = mse(xadj, y).item()
         mses.append(curr_mse)
 
-        if D2 and method == 'semisupervised':
-            # Train Discriminator #2
-            for p in D2.parameters():
-                p.requires_grad = True # turn on computation for D
-
-            for i in range(D_iters):
-                norm_penalty = calc_gradient_penalty(D2, real_obs, fake_obs, gp, cuda=False) if wgan else null_norm_penalty
-                real_loss = criterion(D2(real_obs), real_labels_obs)
-                fake_loss = criterion(D2(fake_obs), fake_labels_obs)
-                d_loss2 = (real_loss + fake_loss)/2 + norm_penalty
-                optiD2.zero_grad()
-                d_loss2.backward(retain_graph=True)
-                optiD2.step()
-
-            lr_scheduler_D2.step()
-            losses['D2'].append(d_loss2.item())
-
     if plot:
         loss_dict = {}
         loss_dict['$D$'] = losses['D']
         loss_dict['$G$'] = losses['G']
-        if 'D2' in losses:
-            loss_dict['$D_2$'] = losses['D2']
         pred_dict, diff_dict = problem.get_plot_dicts(G(t), t, y)
         plot_results(mses, loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
             save=save, fname=fname, logloss=False, alpha=0.7)
@@ -212,7 +170,7 @@ def train_GAN(G, D, problem, method='unsupervised', D2=None, niters=100,
     return {'final_mse': final_mse, 'model': G}
 
 def train_L2(model, problem, method='unsupervised', niters=100,
-    lr=2e-4, betas=(0, 0.9), lr_schedule=True, gamma=0.9999,
+    lr=1e-3, betas=(0, 0.9), lr_schedule=True, gamma=0.999,
     obs_every=1, d1=1, d2=1,
     plot=True, save=False, fname='train_L2.png'):
     """
