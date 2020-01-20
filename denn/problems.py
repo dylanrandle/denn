@@ -275,7 +275,71 @@ class PoissonEquation(Problem):
     """
     Poisson Equation:
 
-    $$ \nabla^{2} \varphi=f $$
+    $$ \nabla^{2} \varphi = f $$
+
+    -Laplace(u) = f    in the unit square
+              u = u_D  on the boundary
+
+    u_D = 1 + x^2 + 2y^2
+      f = -6
     """
-    def __init__(self, **kwargs):
+    def __init__(self, xmin=0, xmax=1, ymin=0, ymax=1, f=-6, **kwargs):
         super().__init__(**kwargs)
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
+        self.f = f
+        self.xgrid = torch.linspace(
+            xmin,
+            xmax,
+            self.n,
+            dtype=torch.float,
+            requires_grad=True
+        ).reshape(-1)
+        self.ygrid = torch.linspace(
+            ymin,
+            ymax,
+            self.n,
+            dtype=torch.float,
+            requires_grad=True
+        ).reshape(-1)
+        # set up our grid as just the set of all point tuples
+        self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
+        # take minimum spacing, which is equal to spacing along an axis
+        self.spacing = self.xgrid[1] - self.xgrid[0]
+
+    def get_grid(self):
+        return self.grid
+
+    def get_grid_sample(self):
+        return self.sample_grid(self.grid, self.spacing)
+
+    def get_solution(self, t):
+        """ use Fenics (finite elements)"""
+        raise NotImplementedError()
+
+    def _poisson_eqn(self, d2x, d2y):
+        """ return RHS of equation """
+        return d2x + d2y + self.f
+
+    def get_equation(self, u, x, y):
+        """ return value of residuals of equation (i.e. LHS) """
+        d2x, d2y = self.adjust(u, x, y)
+        return self._poisson_eqn(d2x, d2y)
+
+    def adjust(self, u, x, y):
+        """ perform boundary value adjustment """
+        # u_adj =
+        # x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
+        # dx = diff(x_adj, t)
+        # d2x = diff(dx, t)
+        # return x_adj, dx, d2x
+
+
+if __name__ == '__main__':
+    print('testing poisson object')
+    ps = PoissonEquation(n=100)
+    samp = ps.get_grid_sample()
+    print(samp)
+    print(samp.shape)

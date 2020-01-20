@@ -13,7 +13,7 @@ from __future__ import print_function
 from fenics import *
 
 # Create mesh and define function space
-mesh = UnitSquareMesh(8, 8)
+mesh = UnitSquareMesh(100, 100)
 V = FunctionSpace(mesh, 'P', 1)
 
 # Define boundary condition
