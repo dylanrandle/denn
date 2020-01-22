@@ -85,7 +85,9 @@ if __name__== "__main__":
     hyper_space = cfg.gan_nlo_hyper_space if args.gan else cfg.L2_nlo_hyper_space
     hyper_space = dict_product(hyper_space)
 
-    pool = mp.Pool(args.ncpu)
+    avail_cpu = mp.cpu_count()
+    print(f'num cpus: {avail_cpu}')
+    pool = mp.Pool(avail_cpu)
     if args.gan:
         results = pool.map(gan_exp_with_hypers, hyper_space)
     else:
