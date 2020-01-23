@@ -27,7 +27,7 @@ def gan_exp_with_hypers(hypers):
             disc_kwargs[k.replace('disc_', '')] = v
 
     # reps = []
-    # for i in range(5):
+    # for i in range(10):
     exp_res = gan_experiment(
         problem = cfg.nlo_problem,
         seed = 0,
@@ -35,7 +35,8 @@ def gan_exp_with_hypers(hypers):
         disc_kwargs = disc_kwargs,
         train_kwargs = gan_kwargs,
     )
-        # reps.append(exp_res['final_mse'])
+    # reps.append(exp_res['final_mse'])
+    # res = {'mse': reps, 'hypers': hypers}
     res = {'mse': exp_res['final_mse'], 'hypers': hypers}
     print(f'Result: {res}')
     return res

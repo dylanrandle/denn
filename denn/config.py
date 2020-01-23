@@ -51,13 +51,13 @@ nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=50000,
-    g_lr=2e-5,
+    niters=10000,
+    g_lr=1e-3,
     g_betas=(0., 0.9),
     d_lr=1e-3,
     d_betas=(0., 0.9),
     lr_schedule=True,
-    gamma=0.9999,
+    gamma=0.999,
     obs_every=1,
     d1=1.,
     d2=1.,
@@ -75,8 +75,8 @@ gan_kwargs = dict(
 gen_kwargs = dict(
     in_dim=1,
     out_dim=1,
-    n_hidden_units=32,
-    n_hidden_layers=10,
+    n_hidden_units=64,
+    n_hidden_layers=2,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
@@ -87,7 +87,7 @@ disc_kwargs = dict(
     in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=12,
+    n_hidden_layers=10,
     activation=nn.Tanh(),
     residual=True,
     regress=True, # true for WGAN, false otherwise
@@ -183,18 +183,23 @@ L2_sho_hyper_space = dict(
 
 # GAN NLO (model specs)
 gan_nlo_hyper_space = dict(
-    # gan_kwargs
-    gan_niters = [100000],
-    gan_d_lr = [1e-2, 1e-3, 2e-4, 2e-5],
-    gan_g_lr = [1e-3, 2e-4, 2e-5, 2e-6],
-    gan_gamma = [0.999, 0.9999, 0.99999],
-    # disc_kwargs
-    disc_n_hidden_units = [64],
-    disc_n_hidden_layers = [12],
-    # gen_kwargs
-    gen_n_hidden_units = [32],
-    gen_n_hidden_layers = [10],
+     # gan_kwargs
+     gan_niters = [10000],
+     gan_d_lr = [1e-3],
+     gan_g_lr = [1e-3],
+     gan_gamma = [0.999, 0.9999],
+     # disc_kwargs
+     disc_n_hidden_units = [64],
+     disc_n_hidden_layers = [16, 18, 20, 22, 24, 32],
+     # gen_kwargs
+     gen_n_hidden_units = [64],
+     gen_n_hidden_layers = [6, 8, 10, 12],
 )
+
+# gan_nlo_hyper_space = dict(
+#     # gan_kwargs
+#     gan_niters = [10],
+# )
 
 # GAN NLO (niters)
 # gan_nlo_hyper_space = dict(

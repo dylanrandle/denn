@@ -38,8 +38,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
     optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
     if lr_schedule:
-        # lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(optiG, lr_lambda=LambdaLR(10000, 0, 0).step)
-        # lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(optiD, lr_lambda=LambdaLR(10000, 0, 0).step)
+        # lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(optiG, lr_lambda=LambdaLR(niters, 0, 0).step)
+        # lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(optiD, lr_lambda=LambdaLR(niters, 0, 0).step)
         lr_scheduler_G = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=gamma)
         lr_scheduler_D = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=gamma)
 
