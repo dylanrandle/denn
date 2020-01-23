@@ -2,6 +2,7 @@ import numpy as np
 import torch
 from scipy.integrate import odeint
 from denn.utils import diff
+from denn.poisson.poisson import compute_solution as poisson_compute_solution
 
 class Problem():
     """ parent class for all problems
@@ -280,32 +281,37 @@ class PoissonEquation(Problem):
     -Laplace(u) = f    in the unit square
               u = u_D  on the boundary
 
-    u_D = 1 + x^2 + 2y^2
-      f = -6
+    u_D = 0
+      f = 1
     """
-    def __init__(self, xmin=0, xmax=1, ymin=0, ymax=1, f=-6, **kwargs):
+    def __init__(self, nx=100, ny=100, xmin=0, xmax=1, ymin=0, ymax=1, f=1, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
         self.ymin = ymin
         self.ymax = ymax
+        self.nx = nx
+        self.ny = ny
         self.f = f
         self.xgrid = torch.linspace(
             xmin,
             xmax,
-            self.n,
+            self.nx,
             dtype=torch.float,
             requires_grad=True
         ).reshape(-1)
         self.ygrid = torch.linspace(
             ymin,
             ymax,
-            self.n,
+            self.ny,
             dtype=torch.float,
             requires_grad=True
         ).reshape(-1)
         # set up our grid as just the set of all point tuples
+        # self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
         self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
+        # to match Fenics Mesh order
+        self.grid = torch.flip(self.grid, [1])
         # take minimum spacing, which is equal to spacing along an axis
         self.spacing = self.xgrid[1] - self.xgrid[0]
 
@@ -315,12 +321,14 @@ class PoissonEquation(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
-    def get_solution(self, t):
-        """ use Fenics (finite elements)"""
-        raise NotImplementedError()
+    def get_solution(self):
+        """ use Fenics (finite elements) to compute solution
+        """
+        u_np, mesh_np = poisson_compute_solution(self.nx, self.ny, self.f)
+        return u_np, mesh_np
 
     def _poisson_eqn(self, d2x, d2y):
-        """ return RHS of equation """
+        """ return RHS of equation (should equal 0) """
         return d2x + d2y + self.f
 
     def get_equation(self, u, x, y):
@@ -329,17 +337,59 @@ class PoissonEquation(Problem):
         return self._poisson_eqn(d2x, d2y)
 
     def adjust(self, u, x, y):
-        """ perform boundary value adjustment """
-        # u_adj =
-        # x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
-        # dx = diff(x_adj, t)
-        # d2x = diff(dx, t)
-        # return x_adj, dx, d2x
+        """ perform boundary value adjustment
+
+        thanks to Feiyu Chen for this:
+        https://github.com/odegym/neurodiffeq/blob/master/neurodiffeq/pde.py
+        """
+        x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
+        y_tilde = (y-self.ymin) / (self.ymax-self.ymin)
+
+        # TODO: generalize the boundary conditions to some functions
+        # @note: here we have just 0 everywhere
+        self.x_min_val = lambda y: 0
+        self.x_max_val = lambda y: 0
+        self.y_min_val = lambda x: 0
+        self.y_max_val = lambda x: 0
+
+        Axy = (1-x_tilde)*self.x_min_val(y) + x_tilde*self.x_max_val(y) + \
+              (1-y_tilde)*( self.y_min_val(x) - ((1-x_tilde)*self.y_min_val(self.xmin * torch.ones_like(x_tilde))
+                                                  + x_tilde *self.y_min_val(self.xmax * torch.ones_like(x_tilde))) ) + \
+                 y_tilde *( self.y_max_val(x) - ((1-x_tilde)*self.y_max_val(self.xmin * torch.ones_like(x_tilde))
+                                                  + x_tilde *self.y_max_val(self.xmax * torch.ones_like(x_tilde))) )
+        return Axy + x_tilde*(1-x_tilde)*y_tilde*(1-y_tilde)*u
 
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
     print('testing poisson object')
     ps = PoissonEquation(n=100)
     samp = ps.get_grid_sample()
+    print('samp')
     print(samp)
     print(samp.shape)
+    sol, mesh = ps.get_solution()
+    print('sol')
+    print(sol)
+    print(sol.shape)
+    print('mesh')
+    print(mesh)
+    print(mesh.shape)
+    grid = ps.get_grid()
+    print('grid')
+    print(grid)
+    print(grid.shape)
+    grid = grid.detach().numpy()
+    print('grid np')
+    print(grid)
+    print(grid.shape)
+
+    assert np.allclose(grid, mesh)
+    plt.scatter(grid[:,0], grid[:,1], c=sol)
+    plt.show()
+
+    print('sol_adj')
+    grid = ps.get_grid()
+    sol = torch.tensor(sol)
+    sol_adj = ps.adjust(sol, grid[:,0], grid[:,1])
+    print(sol_adj)
