@@ -18,18 +18,18 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         handle_overwrite(fname)
 
     # full grid/solution (t/y)
-    t = problem.get_grid()
-    y = problem.get_solution(t)
+    grid = problem.get_grid()
+    soln = problem.get_solution(grid)
     # observer mask and masked grid/solution (t_obs/y_obs)
-    observers = torch.arange(0, len(t), obs_every)
-    t_obs = t[observers, :]
-    y_obs = y[observers, :]
+    observers = torch.arange(0, len(grid), obs_every)
+    grid_obs = grid[observers, :]
+    soln_obs = soln[observers, :]
 
     # labels
     real_label = 1
     fake_label = -1 if wgan else 0
-    real_labels = torch.full((len(t),), real_label).reshape(-1,1)
-    fake_labels = torch.full((len(t),), fake_label).reshape(-1,1)
+    real_labels = torch.full((len(grid),), real_label).reshape(-1,1)
+    fake_labels = torch.full((len(grid),), fake_label).reshape(-1,1)
     # masked label vectors
     real_labels_obs = real_labels[observers, :]
     fake_labels_obs = fake_labels[observers, :]
@@ -60,16 +60,16 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
         for i in range(G_iters):
             if method == 'unsupervised':
-                t_samp = problem.get_grid_sample()
-                xhat = G(t_samp)
-                residuals = problem.get_equation(xhat, t_samp)
+                grid_samp = problem.get_grid_sample()
+                pred = G(grid_samp)
+                residuals = problem.get_equation(pred, grid_samp)
 
-                real = torch.zeros_like(t_samp)
+                real = torch.zeros_like(residuals)
                 fake = residuals
 
                 if conditional:
-                    real = torch.cat((real, t_samp), 1)
-                    fake = torch.cat((fake, t_samp), 1)
+                    real = torch.cat((real, grid_samp), 1)
+                    fake = torch.cat((fake, grid_samp), 1)
 
                 optiG.zero_grad()
                 g_loss = criterion(D(fake), real_labels)
@@ -78,23 +78,23 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
             elif method == 'semisupervised':
                 # unsupervised part (use GAN)
-                t_samp = problem.get_grid_sample()
-                xhat = G(t_samp)
-                residuals = problem.get_equation(xhat, t_samp)
+                grid_samp = problem.get_grid_sample()
+                pred = G(grid_samp)
+                residuals = problem.get_equation(pred, grid_samp)
 
-                real = torch.zeros_like(t_samp)
+                real = torch.zeros_like(residuals)
                 fake = residuals
 
                 if conditional:
-                    real = torch.cat((real, t_samp), 1)
-                    fake = torch.cat((fake, t_samp), 1)
+                    real = torch.cat((real, grid_samp), 1)
+                    fake = torch.cat((fake, grid_samp), 1)
 
                 g_loss1 = criterion(D(fake), real_labels)
 
                 # supervised part (use L2)
-                xhat = G(t_obs)
-                x_adj = problem.adjust(xhat, t_obs)[0]
-                g_loss2 = mse(x_adj, y_obs)
+                pred = G(grid_obs)
+                pred_adj = problem.adjust(pred, grid_obs)[0]
+                g_loss2 = mse(pred_adj, soln_obs)
 
                 # combine losses
                 g_loss = d1 * g_loss1 + d2 * g_loss2
@@ -117,10 +117,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 # if conditional:
                 #     # concat "real" (y) with t (conditional GAN)
                 #     # concat "fake" (xadj) with t (conditional GAN)
-                #     real = torch.cat((torch.zeros_like(t_obs), t_obs), 1)
+                #     real = torch.cat((torch.zeros_like(residuals), t_obs), 1)
                 #     fake = torch.cat((residuals, t_obs), 1)
                 # else:
-                #     real = torch.zeros_like(t_obs)
+                #     real = torch.zeros_like(residuals)
                 #     fake = residuals
                 #
                 # g_loss = criterion(D(fake), real_labels_obs)
@@ -150,22 +150,24 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
           lr_scheduler_D.step()
 
         # track current MSE on ground truth
-        xhat = G(t)
-        xadj = problem.adjust(xhat, t)[0]
-        curr_mse = mse(xadj, y).item()
+        pred = G(grid)
+        pred_adj = problem.adjust(pred, grid)[0]
+        curr_mse = mse(pred_adj, soln).item()
         mses.append(curr_mse)
+
+        print(f'Step {epoch} MSE {curr_mse}')
 
     if plot:
         loss_dict = {}
         loss_dict['$D$'] = losses['D']
         loss_dict['$G$'] = losses['G']
-        pred_dict, diff_dict = problem.get_plot_dicts(G(t), t, y)
-        plot_results(mses, loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
+        pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, soln)
+        plot_results(mses, loss_dict, grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, fname=fname, logloss=False, alpha=0.7)
 
-    xhat = G(t)
-    xadj = problem.adjust(xhat, t)[0]
-    final_mse = mse(xadj, y).item()
+    pred = G(grid)
+    pred_adj = problem.adjust(pred, grid)[0]
+    final_mse = mse(pred_adj, soln).item()
     print(f'Final MSE {final_mse}')
     return {'final_mse': final_mse, 'model': G}
 
@@ -239,7 +241,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         if lr_schedule:
             lr_scheduler.step()
 
-        print(f'Step {i} Loss {loss}')
+        print(f'Step {i} MSE {curr_mse}')
 
     if plot:
         loss_dict = {}

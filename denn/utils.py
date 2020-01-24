@@ -52,8 +52,13 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
 
     # Predictions
     if grid.shape[1] == 2: # PDE
+        xx, yy = np.meshgrid(grid[:,0], grid[:,1])
         for k, v in pred_dict.items():
-            ax[2].scatter(grid[:,0], grid[:,1], c=v, label=k, alpha=alpha)
+            sct1 = ax[2].scatter(grid[:,0], grid[:,1], c=v, label=k,
+                alpha=alpha, cmap='coolwarm')
+            # print(xx.shape, v.shape)
+            # ctr1 = ax[2].contourf(xx, yy, v, cmap='coolwarm', label=k)
+            cbar1 = fig.colorbar(sct1, format='%.0e', ax=ax[2])
         ax[2].set_xlabel('$x$')
         ax[2].set_ylabel('$y$')
     else: # ODE

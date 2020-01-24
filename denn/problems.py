@@ -365,13 +365,14 @@ class PoissonEquation(Problem):
         dy = diff(u_adj, y)
         d2x = diff(dx, x)
         d2y = diff(dy, y)
-        return u_adj, d2x, d2y
+        return u_adj.reshape(-1,1), d2x.reshape(-1,1), d2y.reshape(-1,1)
 
     def get_plot_dicts(self, pred, grid, sol):
         """ return appropriate pred_dict / diff_dict used for plotting """
         pred_adj, d2x, d2y = self.adjust(pred, grid)
         pred_adj = pred_adj.reshape(-1)
-        pred_dict = {'$\hat{u}$': pred_adj.detach()}
+        sol = sol.reshape(-1)
+        pred_dict = {'$(\hat{u}-u)^2$': ((pred_adj-sol)**2).detach()}
         diff_dict = None
         return pred_dict, diff_dict
 

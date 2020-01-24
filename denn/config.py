@@ -22,7 +22,7 @@ CSV_DIR = '/Users/dylanrandle/Documents/Harvard/research/denn/experiments/csvs/'
 exp_problem = pb.Exponential(n=100, perturb=True, t_max=10)
 sho_problem = pb.SimpleOscillator(n=100, perturb=True, t_max=4*np.pi)
 nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
-pos_problem = pb.PoissonEquation(nx=100, ny=100, perturb=False)
+pos_problem = pb.PoissonEquation(nx=10, ny=10, perturb=True)
 
 # ==========================
 # GAN
@@ -52,7 +52,7 @@ pos_problem = pb.PoissonEquation(nx=100, ny=100, perturb=False)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=50000,
+    niters=200,
     g_lr=1e-3,
     g_betas=(0., 0.9),
     d_lr=1e-3,
@@ -68,16 +68,16 @@ gan_kwargs = dict(
     gp=0.1,
     conditional=True,
     plot=True,
-    save=True,
+    save=False,
     fname=os.path.join(FIG_DIR, 'train_GAN.png'),
 )
 
 # Generator MLP
 gen_kwargs = dict(
-    in_dim=1,
+    in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=12,
+    n_hidden_layers=4,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
@@ -85,25 +85,14 @@ gen_kwargs = dict(
 
 # Discriminator MLP
 disc_kwargs = dict(
-    in_dim=2,
+    in_dim=3,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=16,
+    n_hidden_layers=8,
     activation=nn.Tanh(),
     residual=True,
     regress=True, # true for WGAN, false otherwise
 )
-
-# # Discriminator MLP #2 (for semi-supervised with two Ds)
-# disc_kwargs_2 = dict(
-#     in_dim=2,
-#     out_dim=1,
-#     n_hidden_units=16,
-#     n_hidden_layers=2,
-#     activation=nn.Tanh(),
-#     residual=True,
-#     regress=True, # true for WGAN, false otherwise
-# )
 
 # ==========================
 # L2 (a.k.a. Lagaris)
@@ -116,7 +105,7 @@ disc_kwargs = dict(
 # L2 Algorithm
 L2_kwargs = dict(
     method='unsupervised',
-    niters=50000,
+    niters=200,
     lr=1e-3,
     betas=(0., 0.9),
     lr_schedule=True,
@@ -134,7 +123,7 @@ L2_mlp_kwargs = dict(
     in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=12,
+    n_hidden_layers=4,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
