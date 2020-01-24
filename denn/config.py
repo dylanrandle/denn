@@ -22,7 +22,7 @@ CSV_DIR = '/Users/dylanrandle/Documents/Harvard/research/denn/experiments/csvs/'
 exp_problem = pb.Exponential(n=100, perturb=True, t_max=10)
 sho_problem = pb.SimpleOscillator(n=100, perturb=True, t_max=4*np.pi)
 nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
-pos_problem = pb.PoissonEquation(nx=10, ny=10, perturb=True)
+pos_problem = pb.PoissonEquation(nx=100, ny=100, perturb=True)
 
 # ==========================
 # GAN
@@ -52,7 +52,7 @@ pos_problem = pb.PoissonEquation(nx=10, ny=10, perturb=True)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=200,
+    niters=20,
     g_lr=1e-3,
     g_betas=(0., 0.9),
     d_lr=1e-3,
@@ -68,7 +68,7 @@ gan_kwargs = dict(
     gp=0.1,
     conditional=True,
     plot=True,
-    save=False,
+    save=True,
     fname=os.path.join(FIG_DIR, 'train_GAN.png'),
 )
 
@@ -105,7 +105,7 @@ disc_kwargs = dict(
 # L2 Algorithm
 L2_kwargs = dict(
     method='unsupervised',
-    niters=200,
+    niters=20,
     lr=1e-3,
     betas=(0., 0.9),
     lr_schedule=True,
@@ -114,7 +114,7 @@ L2_kwargs = dict(
     d1=1,
     d2=1,
     plot=True,
-    save=False,
+    save=True,
     fname=os.path.join(FIG_DIR, 'train_L2.png'),
 )
 
