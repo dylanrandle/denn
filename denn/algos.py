@@ -181,11 +181,11 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     if plot and save:
         handle_overwrite(fname)
 
-    t = problem.get_grid()
-    y = problem.get_solution(t)
-    observers = torch.arange(0, len(t), obs_every)
-    t_obs = t[observers, :]
-    y_obs = y[observers, :]
+    grid = problem.get_grid()
+    sol = problem.get_solution(grid)
+    observers = torch.arange(0, len(grid), obs_every)
+    grid_obs = grid[observers, :]
+    sol_obs = sol[observers, :]
 
     # optimizers & loss functions
     opt = torch.optim.Adam(model.parameters(), lr=lr, betas=betas)
@@ -199,22 +199,22 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     mses = []
     for i in range(niters):
         if method == 'unsupervised':
-            t_samp = problem.get_grid_sample()
-            xhat = model(t_samp)
-            residuals = problem.get_equation(xhat, t_samp)
+            grid_samp = problem.get_grid_sample()
+            pred = model(grid_samp)
+            residuals = problem.get_equation(pred, grid_samp)
             loss = mse(residuals, torch.zeros_like(residuals))
             loss_trace.append(loss.item())
 
         elif method == 'semisupervised':
             # supervised part
-            xhat = model(t_obs)
-            xadj = problem.adjust(xhat, t_obs)[0]
-            loss1 = mse(xadj, y_obs)
+            pred = model(grid_obs)
+            pred_adj = problem.adjust(pred, grid_obs)[0]
+            loss1 = mse(pred_adj, sol_obs)
 
             # unsupervised part
-            t_samp = problem.get_grid_sample()
-            xhat = model(t_samp)
-            residuals = problem.get_equation(xhat, t_samp)
+            grid_samp = problem.get_grid_sample()
+            pred = model(grid_samp)
+            residuals = problem.get_equation(pred, grid_samp)
             loss2 = mse(residuals, torch.zeros_like(residuals))
 
             # combine together
@@ -222,15 +222,15 @@ def train_L2(model, problem, method='unsupervised', niters=100,
             loss_trace.append((loss1.item(), loss2.item()))
 
         else: # supervised
-            xhat = model(t_obs)
-            xadj = problem.adjust(xhat, t_obs)[0]
-            loss = mse(xadj, y_obs)
+            pred = model(grid_obs)
+            pred_adj = problem.adjust(pred, grid_obs)[0]
+            loss = mse(pred_adj, sol_obs)
             loss_trace.append(loss.item())
 
         # track current MSE on ground truth
-        xhat = model(t)
-        xadj = problem.adjust(xhat, t)[0]
-        curr_mse = mse(xadj, y).item()
+        pred = model(grid)
+        pred_adj = problem.adjust(pred, grid)[0]
+        curr_mse = mse(pred_adj, sol).item()
         mses.append(curr_mse)
 
         opt.zero_grad()
@@ -238,6 +238,8 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         opt.step()
         if lr_schedule:
             lr_scheduler.step()
+
+        print(f'Step {i} Loss {loss}')
 
     if plot:
         loss_dict = {}
@@ -249,12 +251,12 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         else:
             loss_dict['$L_U$'] = loss_trace
 
-        pred_dict, diff_dict = problem.get_plot_dicts(model(t), t, y)
-        plot_results(mses, loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
+        pred_dict, diff_dict = problem.get_plot_dicts(model(grid), grid, sol)
+        plot_results(mses, loss_dict, grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, fname=fname, logloss=True, alpha=0.7)
 
-    xhat = model(t)
-    xadj = problem.adjust(xhat, t)[0]
-    final_mse = mse(xadj, y).item()
+    pred = model(grid)
+    pred_adj = problem.adjust(pred, grid)[0]
+    final_mse = mse(pred_adj, sol).item()
     print(f'Final MSE {final_mse}')
     return {'final_mse': final_mse, 'model': model}

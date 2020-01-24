@@ -51,12 +51,18 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
         ax[1].set_yscale('log')
 
     # Predictions
-    for k, v in pred_dict.items():
-        ax[2].plot(grid, v, label=k, alpha=alpha)
+    if grid.shape[1] == 2: # PDE
+        for k, v in pred_dict.items():
+            ax[2].scatter(grid[:,0], grid[:,1], c=v, label=k, alpha=alpha)
+        ax[2].set_xlabel('$x$')
+        ax[2].set_ylabel('$y$')
+    else: # ODE
+        for k, v in pred_dict.items():
+            ax[2].plot(grid, v, label=k, alpha=alpha)
+        ax[2].set_xlabel('$t$')
+        ax[2].set_ylabel('$x$')
     ax[2].legend(loc='upper right')
     ax[2].set_title('Prediction')
-    ax[2].set_xlabel('$t$')
-    ax[2].set_ylabel('$x$')
 
     # Derivatives
     if diff_dict:

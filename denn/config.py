@@ -22,6 +22,7 @@ CSV_DIR = '/Users/dylanrandle/Documents/Harvard/research/denn/experiments/csvs/'
 exp_problem = pb.Exponential(n=100, perturb=True, t_max=10)
 sho_problem = pb.SimpleOscillator(n=100, perturb=True, t_max=4*np.pi)
 nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
+pos_problem = pb.PoissonEquation(nx=100, ny=100, perturb=False)
 
 # ==========================
 # GAN
@@ -124,13 +125,13 @@ L2_kwargs = dict(
     d1=1,
     d2=1,
     plot=True,
-    save=True,
+    save=False,
     fname=os.path.join(FIG_DIR, 'train_L2.png'),
 )
 
 # L2 MLP
 L2_mlp_kwargs = dict(
-    in_dim=1,
+    in_dim=2,
     out_dim=1,
     n_hidden_units=64,
     n_hidden_layers=12,

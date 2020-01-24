@@ -321,27 +321,30 @@ class PoissonEquation(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
-    def get_solution(self):
+    def get_solution(self, grid):
         """ use Fenics (finite elements) to compute solution
+            TODO: calculate at `grid` instead of the current fixed mesh
         """
         u_np, mesh_np = poisson_compute_solution(self.nx, self.ny, self.f)
-        return u_np, mesh_np
+        return torch.tensor(u_np, dtype=torch.float).reshape(-1,1) #, mesh_np
 
     def _poisson_eqn(self, d2x, d2y):
         """ return RHS of equation (should equal 0) """
         return d2x + d2y + self.f
 
-    def get_equation(self, u, x, y):
+    def get_equation(self, u, grid):
         """ return value of residuals of equation (i.e. LHS) """
-        d2x, d2y = self.adjust(u, x, y)
+        u_adj, d2x, d2y = self.adjust(u, grid)
         return self._poisson_eqn(d2x, d2y)
 
-    def adjust(self, u, x, y):
+    def adjust(self, u, grid):
         """ perform boundary value adjustment
 
         thanks to Feiyu Chen for this:
         https://github.com/odegym/neurodiffeq/blob/master/neurodiffeq/pde.py
         """
+        u = u.reshape(-1)
+        x, y = grid[:,0], grid[:, 1]
         x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
         y_tilde = (y-self.ymin) / (self.ymax-self.ymin)
 
@@ -357,7 +360,20 @@ class PoissonEquation(Problem):
                                                   + x_tilde *self.y_min_val(self.xmax * torch.ones_like(x_tilde))) ) + \
                  y_tilde *( self.y_max_val(x) - ((1-x_tilde)*self.y_max_val(self.xmin * torch.ones_like(x_tilde))
                                                   + x_tilde *self.y_max_val(self.xmax * torch.ones_like(x_tilde))) )
-        return Axy + x_tilde*(1-x_tilde)*y_tilde*(1-y_tilde)*u
+        u_adj = Axy + x_tilde*(1-x_tilde)*y_tilde*(1-y_tilde)*u
+        dx = diff(u_adj, x)
+        dy = diff(u_adj, y)
+        d2x = diff(dx, x)
+        d2y = diff(dy, y)
+        return u_adj, d2x, d2y
+
+    def get_plot_dicts(self, pred, grid, sol):
+        """ return appropriate pred_dict / diff_dict used for plotting """
+        pred_adj, d2x, d2y = self.adjust(pred, grid)
+        pred_adj = pred_adj.reshape(-1)
+        pred_dict = {'$\hat{u}$': pred_adj.detach()}
+        diff_dict = None
+        return pred_dict, diff_dict
 
 
 if __name__ == '__main__':
@@ -368,13 +384,13 @@ if __name__ == '__main__':
     print('samp')
     print(samp)
     print(samp.shape)
-    sol, mesh = ps.get_solution()
+    sol = ps.get_solution(samp)
     print('sol')
     print(sol)
     print(sol.shape)
-    print('mesh')
-    print(mesh)
-    print(mesh.shape)
+    # print('mesh')
+    # print(mesh)
+    # print(mesh.shape)
     grid = ps.get_grid()
     print('grid')
     print(grid)
@@ -384,12 +400,12 @@ if __name__ == '__main__':
     print(grid)
     print(grid.shape)
 
-    assert np.allclose(grid, mesh)
-    plt.scatter(grid[:,0], grid[:,1], c=sol)
+    # assert np.allclose(grid, mesh)
+    plt.scatter(grid[:,0], grid[:,1], c=sol.reshape(-1))
     plt.show()
 
     print('sol_adj')
     grid = ps.get_grid()
     sol = torch.tensor(sol)
-    sol_adj = ps.adjust(sol, grid[:,0], grid[:,1])
+    sol_adj = ps.adjust(sol, grid)
     print(sol_adj)
