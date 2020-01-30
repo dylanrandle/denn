@@ -52,7 +52,7 @@ pos_problem = pb.PoissonEquation(nx=40, ny=40, perturb=True)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=50000,
+    niters=1000,
     g_lr=1e-3,
     g_betas=(0., 0.9),
     d_lr=1e-3,
@@ -77,7 +77,7 @@ gen_kwargs = dict(
     in_dim=1,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=12,
+    n_hidden_layers=8,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
@@ -89,7 +89,7 @@ disc_kwargs = dict(
     in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=16,
+    n_hidden_layers=12,
     activation=nn.Tanh(),
     residual=True,
     regress=True,        # true for WGAN, false otherwise
@@ -107,11 +107,11 @@ disc_kwargs = dict(
 # L2 Algorithm
 L2_kwargs = dict(
     method='unsupervised',
-    niters=20,
-    lr=1e-3,
+    niters=1000,
+    lr=1e-4,
     betas=(0., 0.9),
     lr_schedule=True,
-    gamma=0.9999,
+    gamma=0.999,
     obs_every=1,
     d1=1,
     d2=1,
@@ -125,10 +125,11 @@ L2_mlp_kwargs = dict(
     in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=4,
+    n_hidden_layers=8,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
+    spectral_norm=False, # included for completeness, but not used
 )
 
 # ==========================
