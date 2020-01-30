@@ -8,4 +8,4 @@
 #SBATCH -e logs.err # Standard error
 module load Anaconda3/5.0.1-fasrc01
 source activate denn
-python experiments.py --pkey nlo --gan --fname gan_nlo_50k_exp09999_D64by16_G64by12.png
+python experiments.py --pkey nlo --gan --fname gan_nlo_paper.png

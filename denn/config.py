@@ -52,7 +52,7 @@ pos_problem = pb.PoissonEquation(nx=100, ny=100, perturb=True)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=100,
+    niters=50,
     g_lr=1e-3,
     g_betas=(0., 0.9),
     d_lr=1e-3,
@@ -74,10 +74,10 @@ gan_kwargs = dict(
 
 # Generator MLP
 gen_kwargs = dict(
-    in_dim=1,
+    in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=2,
+    n_hidden_layers=4,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
@@ -86,10 +86,10 @@ gen_kwargs = dict(
 
 # Discriminator MLP
 disc_kwargs = dict(
-    in_dim=2,
+    in_dim=3,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=4,
+    n_hidden_layers=8,
     activation=nn.Tanh(),
     residual=True,
     regress=True,        # true for WGAN, false otherwise
@@ -136,24 +136,24 @@ L2_mlp_kwargs = dict(
 # ==========================
 
 # GAN SHO (model specs)
-# gan_sho_hyper_space = dict(
-#       # gan_kwargs
-#       gan_niters = [2000, 5000, 10000],
-#       gan_d_lr = [1e-3, 2e-4, 1e-4],
-#       gan_g_lr = [1e-3, 2e-4, 1e-4],
-#       gan_gamma = [0.999, 0.9999, 1.0],
-#       # disc_kwargs
-#       disc_n_hidden_units = [32, 64],
-#       disc_n_hidden_layers = [4, 6, 8, 10],
-#       # gen_kwargs
-#       gen_n_hidden_units = [32, 64],
-#       gen_n_hidden_layers = [2, 4, 6, 8],
-# )
+gan_sho_hyper_space = dict(
+      # gan_kwargs
+      gan_niters = [100],
+      gan_d_lr = [1e-3, 2e-4],
+      gan_g_lr = [1e-3, 2e-4],
+      gan_gamma = [0.999],
+      # disc_kwargs
+      disc_n_hidden_units = [64],
+      disc_n_hidden_layers = [4, 6, 8, 10],
+      # gen_kwargs
+      gen_n_hidden_units = [64],
+      gen_n_hidden_layers = [2, 4, 6, 8],
+)
 
 # GAN SHO (niters)
-gan_sho_hyper_space = dict(
+gan_sho_niters = dict(
      # gan_kwargs
-     gan_niters = [1000, 2000, 5000, 10000, 20000],
+     gan_niters = [10, 20, 50, 100, 200],
      gan_gamma = [0.999],
      # disc_kwargs
      disc_n_hidden_units = [64],
@@ -164,7 +164,7 @@ gan_sho_hyper_space = dict(
 )
 
 # L2 SHO (niters)
-L2_sho_hyper_space = dict(
+L2_sho_niters = dict(
     # model_kwargs
     model_n_hidden_units=[64],
     model_n_hidden_layers=[2],
@@ -174,22 +174,22 @@ L2_sho_hyper_space = dict(
 )
 
 # GAN NLO (model specs)
-# gan_nlo_hyper_space = dict(
-#      # gan_kwargs
-#      gan_niters = [50000],
-#      gan_d_lr = [1e-3],
-#      gan_g_lr = [1e-3],
-#      gan_gamma = [0.999, 0.9999],
-#      # disc_kwargs
-#      disc_n_hidden_units = [64],
-#      disc_n_hidden_layers = [16, 18, 20, 22, 24, 32],
-#      # gen_kwargs
-#      gen_n_hidden_units = [64],
-#      gen_n_hidden_layers = [6, 8, 10, 12],
-# )
+gan_nlo_hyper_space = dict(
+     # gan_kwargs
+     gan_niters = [50000],
+     gan_d_lr = [1e-3],
+     gan_g_lr = [1e-3],
+     gan_gamma = [0.999, 0.9999],
+     # disc_kwargs
+     disc_n_hidden_units = [64],
+     disc_n_hidden_layers = [16, 18, 20, 22, 24, 32],
+     # gen_kwargs
+     gen_n_hidden_units = [64],
+     gen_n_hidden_layers = [6, 8, 10, 12],
+)
 
 # GAN NLO (niters)
-gan_nlo_hyper_space = dict(
+gan_nlo_niters = dict(
      # gan_kwargs
      gan_niters = [10000, 25000, 50000, 75000, 100000],
      # disc_kwargs
@@ -201,19 +201,33 @@ gan_nlo_hyper_space = dict(
 )
 
 # L2 NLO (model specs)
-# L2_nlo_hyper_space = dict(
-#    # model_kwargs
-#    model_n_hidden_units=[32, 64],
-#    model_n_hidden_layers=[4, 6, 8],
-#    # train_kwargs
-#    train_niters=[10000, 50000, 100000],
-# )
+L2_nlo_hyper_space = dict(
+   # model_kwargs
+   model_n_hidden_units=[32, 64],
+   model_n_hidden_layers=[4, 6, 8],
+   # train_kwargs
+   train_niters=[10000, 50000, 100000],
+)
 
 # L2 NLO (niters)
-L2_nlo_hyper_space = dict(
+L2_nlo_niters = dict(
    # model_kwargs
    model_n_hidden_units=[64],
    model_n_hidden_layers=[12],
    # train_kwargs
    train_niters=[10000, 25000, 50000, 75000, 100000],
+)
+
+gan_pos_hyper_space = dict(
+    # gan_kwargs
+    gan_niters = [10, 50, 100],
+    gan_d_lr = [1e-3],
+    gan_g_lr = [1e-3],
+    gan_gamma = [0.999],
+    # disc_kwargs
+    disc_n_hidden_units = [64],
+    disc_n_hidden_layers = [4, 8, 12, 16],
+    # gen_kwargs
+    gen_n_hidden_units = [64],
+    gen_n_hidden_layers = [2, 4, 8, 12],
 )
