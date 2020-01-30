@@ -21,8 +21,8 @@ CSV_DIR = '/Users/dylanrandle/Documents/Harvard/research/denn/experiments/csvs/'
 
 exp_problem = pb.Exponential(n=100, perturb=True, t_max=10)
 sho_problem = pb.SimpleOscillator(n=100, perturb=True, t_max=4*np.pi)
-nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
-pos_problem = pb.PoissonEquation(nx=100, ny=100, perturb=True)
+nlo_problem = pb.NonlinearOscillator(n=200, perturb=True, t_max=8*np.pi)
+pos_problem = pb.PoissonEquation(nx=40, ny=40, perturb=True)
 
 # ==========================
 # GAN
@@ -52,7 +52,7 @@ pos_problem = pb.PoissonEquation(nx=100, ny=100, perturb=True)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=50,
+    niters=50000,
     g_lr=1e-3,
     g_betas=(0., 0.9),
     d_lr=1e-3,
@@ -74,10 +74,10 @@ gan_kwargs = dict(
 
 # Generator MLP
 gen_kwargs = dict(
-    in_dim=2,
+    in_dim=1,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=4,
+    n_hidden_layers=12,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
@@ -86,10 +86,10 @@ gen_kwargs = dict(
 
 # Discriminator MLP
 disc_kwargs = dict(
-    in_dim=3,
+    in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=8,
+    n_hidden_layers=16,
     activation=nn.Tanh(),
     residual=True,
     regress=True,        # true for WGAN, false otherwise
@@ -176,13 +176,13 @@ L2_sho_niters = dict(
 # GAN NLO (model specs)
 gan_nlo_hyper_space = dict(
      # gan_kwargs
-     gan_niters = [50000],
+     gan_niters = [250],
      gan_d_lr = [1e-3],
      gan_g_lr = [1e-3],
-     gan_gamma = [0.999, 0.9999],
+     gan_gamma = [0.9999],
      # disc_kwargs
      disc_n_hidden_units = [64],
-     disc_n_hidden_layers = [16, 18, 20, 22, 24, 32],
+     disc_n_hidden_layers = [12, 14, 16, 18, 20],
      # gen_kwargs
      gen_n_hidden_units = [64],
      gen_n_hidden_layers = [6, 8, 10, 12],
@@ -220,7 +220,7 @@ L2_nlo_niters = dict(
 
 gan_pos_hyper_space = dict(
     # gan_kwargs
-    gan_niters = [10, 50, 100],
+    gan_niters = [1000],
     gan_d_lr = [1e-3],
     gan_g_lr = [1e-3],
     gan_gamma = [0.999],
@@ -230,4 +230,15 @@ gan_pos_hyper_space = dict(
     # gen_kwargs
     gen_n_hidden_units = [64],
     gen_n_hidden_layers = [2, 4, 8, 12],
+)
+
+gan_pos_niters = dict(
+     # gan_kwargs
+     gan_niters = [10000, 25000, 50000, 75000, 100000],
+     # disc_kwargs
+     disc_n_hidden_units = [64],
+     disc_n_hidden_layers = [8],
+     # gen_kwargs
+     gen_n_hidden_units = [64],
+     gen_n_hidden_layers = [4],
 )

@@ -9,4 +9,4 @@
 #SBATCH -e logs.err # Standard error
 module load Anaconda3/5.0.1-fasrc01
 source activate denn
-python hypertune.py --fname nlo_L2_test_niters_expdecay.csv
+python ../hypertune.py --pkey nlo --fname nlo_L2_test_niters_expdecay.csv
