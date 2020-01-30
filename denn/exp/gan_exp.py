@@ -14,6 +14,8 @@ from collections import OrderedDict
 import numpy as np
 import matplotlib.pyplot as plt
 
+from denn.utils import plot_results, diff
+
 plt.rc('axes', titlesize=15)     # fontsize of the axes title
 plt.rc('axes', labelsize=12)     # fontsize of the x and y labels
 plt.rc('legend', fontsize=12)    # fontsize of the legend
@@ -136,12 +138,14 @@ def train_GAN(num_epochs,
           logging=True,
           G_iters=1,
           D_iters=1,
-          seed=42):
+          seed=42,
+          save=False,
+          fname='train_EXP_GAN.png'):
     """
     function to perform training of generator and discriminator for num_epochs
     equation: dx_dt = lambda * x
     """
-    if seed:
+    if seed is not None:
         torch.manual_seed(seed)
 
     # initialize nets
@@ -157,6 +161,8 @@ def train_GAN(num_epochs,
 
     # grid
     t = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
+    # analytic
+    analytic = lambda t: torch.exp(-L*t)
 
     # perturb grid
     delta_t = t[1]-t[0]
@@ -168,6 +174,7 @@ def train_GAN(num_epochs,
     fake_label_vec = torch.full((n,), fake_label).reshape(-1,1)
 
     # optimization
+    mse = nn.MSELoss()
     cross_entropy = nn.BCELoss()
     optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
     optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
@@ -175,7 +182,7 @@ def train_GAN(num_epochs,
     # logging
     D_losses = []
     G_losses = []
-
+    mses = []
     for epoch in range(num_epochs):
 
         ## =========
@@ -185,15 +192,15 @@ def train_GAN(num_epochs,
         for p in D.parameters():
             p.requires_grad = False # turn off computation for D
 
-        t = get_batch()
+        t_samp = get_batch()
 
         for i in range(G_iters):
 
-            x_pred = G.predict(t)
+            x_pred = G.predict(t_samp)
             real = - L * x_pred
 
             # compute dx/dt
-            fake, = autograd.grad(x_pred, t,
+            fake, = autograd.grad(x_pred, t_samp,
                                   grad_outputs=real.data.new(real.shape).fill_(1),
                                   create_graph=True)
 
@@ -228,6 +235,21 @@ def train_GAN(num_epochs,
 
         D_losses.append(d_loss.item())
         G_losses.append(g_loss.item())
+
+        # track current MSE on ground truth
+        pred = G.predict(t)
+        # pred_adj = problem.adjust(pred, grid)[0]
+        curr_mse = mse(pred, analytic(t)).item()
+        mses.append(curr_mse)
+
+    loss_dict = {'$G$': G_losses, '$D$': D_losses}
+    # grid
+    # t = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
+    pred = G.predict(t)
+    pred_dict = {'$\hat{x}$': pred.detach(), '$x$': analytic(t).detach()}
+    diff_dict = {'$\hat{x}$': pred.detach(), '$\hat{\dot{x}}$': diff(pred, t).detach()}
+    plot_results(mses, loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
+        save=save, fname=fname, logloss=False, alpha=0.7)
 
     return G, D, G_losses, D_losses
 
