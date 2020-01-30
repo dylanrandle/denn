@@ -6,12 +6,14 @@ class ResidualBlock(nn.Module):
         https://arxiv.org/pdf/1512.03385.pdf : Equation #1
     """
 
-    def __init__(self, n_units, activation):
+    def __init__(self, n_units, activation, spectral_norm=False):
         super(ResidualBlock, self).__init__()
 
+        norm = lambda x: nn.utils.spectral_norm(x) if spectral_norm else x
+
         self.activation = activation
-        self.l1 = nn.Linear(n_units, n_units)
-        self.l2 = nn.Linear(n_units, n_units)
+        self.l1 = norm(nn.Linear(n_units, n_units))
+        self.l2 = norm(nn.Linear(n_units, n_units))
 
     def forward(self, x):
         return self.activation(
@@ -26,34 +28,30 @@ class MLP(nn.Module):
     Default is sigmoid output
     """
     def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2,
-        activation=nn.Tanh(), residual=False, regress=False,
-        # output_tan=False, # this was added as a hack but I believe is not necessary
-        ):
+        activation=nn.Tanh(), residual=False, regress=False, spectral_norm=False):
 
         super().__init__()
 
+        norm = lambda x: nn.utils.spectral_norm(x) if spectral_norm else x
+
         # input
         self.layers = nn.ModuleList()
-        self.layers.append(nn.Linear(in_dim, n_hidden_units))
+        self.layers.append(norm(nn.Linear(in_dim, n_hidden_units)))
         self.layers.append(activation)
 
         # hidden
         for l in range(n_hidden_layers):
             if residual:
-                self.layers.append(ResidualBlock(n_hidden_units, activation))
+                self.layers.append(ResidualBlock(n_hidden_units, activation, spectral_norm=spectral_norm))
             else:
-                self.layers.append(nn.Linear(n_hidden_units, n_hidden_units))
+                self.layers.append(norm(nn.Linear(n_hidden_units, n_hidden_units)))
                 self.layers.append(activation)
 
         # output
-        self.layers.append(nn.Linear(n_hidden_units, out_dim))
+        self.layers.append(norm(nn.Linear(n_hidden_units, out_dim)))
         if not regress:
             # For WGAN: Discriminator should be unbounded (i.e. no sigmoid / regress = True)
             self.layers.append(nn.Sigmoid())
-
-        # this was added as a hack but I believe is not necessary
-        # if output_tan:
-        #     self.layers.append(nn.Tanh())
 
     def forward(self, x):
         for i in range(len(self.layers)):

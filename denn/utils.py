@@ -35,7 +35,7 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
     # MSEs (Pred vs Actual)
     ax[0].plot(np.arange(len(mse_arr)), mse_arr, alpha=alpha)
     # ax[0].set_title('Mean Squared Error')
-    ax[0].set_ylabel('MSE (Pred vs Actual)')
+    ax[0].set_ylabel('Mean Squared Error')
     ax[0].set_xlabel('Step')
     ax[0].set_yscale('log')
 
@@ -56,8 +56,6 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
         for k, v in pred_dict.items():
             sct1 = ax[2].scatter(grid[:,0], grid[:,1], c=v, label=k,
                 alpha=alpha, cmap='coolwarm')
-            # print(xx.shape, v.shape)
-            # ctr1 = ax[2].contourf(xx, yy, v, cmap='coolwarm', label=k)
             cbar1 = fig.colorbar(sct1, format='%.0e', ax=ax[2])
         ax[2].set_xlabel('$x$')
         ax[2].set_ylabel('$y$')

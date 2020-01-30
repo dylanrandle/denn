@@ -4,6 +4,7 @@ import os
 
 from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
 
+
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
     g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
     lr_schedule=True, gamma=0.999, obs_every=1, d1=1., d2=1.,
@@ -49,7 +50,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     wass = lambda y_true, y_pred: torch.mean(y_true * y_pred)
     criterion = wass if wgan else bce
 
-    null_norm_penalty = torch.zeros(1)
+    # history
     losses = {'G': [], 'D': []}
     mses = []
 
@@ -133,7 +134,11 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             p.requires_grad = True # turn on computation for D
 
         for i in range(D_iters):
-            norm_penalty = calc_gradient_penalty(D, real, fake, gp, cuda=False) if wgan else null_norm_penalty
+            if wgan:
+                norm_penalty = calc_gradient_penalty(D, real, fake, gp, cuda=False)
+            else:
+                norm_penalty = torch.zeros(1)
+
             real_loss = criterion(D(real), real_labels)
             fake_loss = criterion(D(fake), fake_labels)
 

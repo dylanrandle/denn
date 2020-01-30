@@ -372,7 +372,7 @@ class PoissonEquation(Problem):
         pred_adj, d2x, d2y = self.adjust(pred, grid)
         pred_adj = pred_adj.reshape(-1)
         sol = sol.reshape(-1)
-        pred_dict = {'$(\hat{u}-u)^2$': ((pred_adj-sol)**2).detach()}
+        pred_dict = {'$\hat{u}$': pred_adj.detach()}
         diff_dict = None
         return pred_dict, diff_dict
 

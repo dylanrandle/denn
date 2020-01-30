@@ -52,13 +52,13 @@ pos_problem = pb.PoissonEquation(nx=100, ny=100, perturb=True)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=20,
+    niters=100,
     g_lr=1e-3,
     g_betas=(0., 0.9),
     d_lr=1e-3,
     d_betas=(0., 0.9),
     lr_schedule=True,
-    gamma=0.9999,
+    gamma=0.999,
     obs_every=1,
     d1=1.,
     d2=1.,
@@ -74,24 +74,26 @@ gan_kwargs = dict(
 
 # Generator MLP
 gen_kwargs = dict(
+    in_dim=1,
+    out_dim=1,
+    n_hidden_units=64,
+    n_hidden_layers=2,
+    activation=nn.Tanh(),
+    residual=True,
+    regress=True,
+    spectral_norm=False, # included for completeness, but not used; in general
+)                        # spectral norm method is only on discriminator
+
+# Discriminator MLP
+disc_kwargs = dict(
     in_dim=2,
     out_dim=1,
     n_hidden_units=64,
     n_hidden_layers=4,
     activation=nn.Tanh(),
     residual=True,
-    regress=True,
-)
-
-# Discriminator MLP
-disc_kwargs = dict(
-    in_dim=3,
-    out_dim=1,
-    n_hidden_units=64,
-    n_hidden_layers=8,
-    activation=nn.Tanh(),
-    residual=True,
-    regress=True, # true for WGAN, false otherwise
+    regress=True,        # true for WGAN, false otherwise
+    spectral_norm=False, # true for spectral norm method
 )
 
 # ==========================
