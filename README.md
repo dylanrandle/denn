@@ -20,7 +20,7 @@ This is primarily a *research code* which I have developed to investigate and so
 1. Investigations into classic L2 norm-based neural network methods on Reynolds-Averaged Navier Stokes equations (specifically targeting channel flow). This work can be referenced in `notebooks/rans` and the associated source code in `denn/rans`.
 2. The development (and plethora of divergences due to unexpected behavior) of a Generative Adversarial Network (GAN)-based approach applied to a variety of problems, e.g. exponential decay (`exp`), harmonic oscillator (`sho`), nonlinear oscillator (`nlo`). GANs are very hard to train and, in fact, have no guarantee of convergence (unlike normal neural networks trained with gradient descent). This is meant to be an investigation into an idea rather than a highly performant code for solving differential equations.
 
-# GAN Approach (tentatively: ODEGAN)
+# GAN Approach (DEQGAN)
 
 Here is a diagram that describes the high-level idea behind the approach we employ for training the GAN to solve the equation.
 
