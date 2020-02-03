@@ -21,8 +21,8 @@ CSV_DIR = '/Users/dylanrandle/Documents/Harvard/research/denn/experiments/csvs/'
 
 exp_problem = pb.Exponential(n=100, perturb=True, t_max=10)
 sho_problem = pb.SimpleOscillator(n=100, perturb=True, t_max=4*np.pi)
-nlo_problem = pb.NonlinearOscillator(n=200, perturb=True, t_max=8*np.pi)
-pos_problem = pb.PoissonEquation(nx=40, ny=40, perturb=True)
+nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
+pos_problem = pb.PoissonEquation(nx=40, ny=40, f=10, perturb=True)
 
 # ==========================
 # GAN
@@ -53,12 +53,12 @@ pos_problem = pb.PoissonEquation(nx=40, ny=40, perturb=True)
 gan_kwargs = dict(
     method='unsupervised',
     niters=1000,
-    g_lr=1e-3,
+    g_lr=2e-4,
     g_betas=(0., 0.9),
-    d_lr=1e-3,
+    d_lr=2e-4,
     d_betas=(0., 0.9),
     lr_schedule=True,
-    gamma=0.999,
+    gamma=0.995,
     obs_every=1,
     d1=1.,
     d2=1.,
@@ -74,10 +74,10 @@ gan_kwargs = dict(
 
 # Generator MLP
 gen_kwargs = dict(
-    in_dim=1,
+    in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=8,
+    n_hidden_layers=4,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
@@ -86,10 +86,10 @@ gen_kwargs = dict(
 
 # Discriminator MLP
 disc_kwargs = dict(
-    in_dim=2,
+    in_dim=3,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=12,
+    n_hidden_layers=4,
     activation=nn.Tanh(),
     residual=True,
     regress=True,        # true for WGAN, false otherwise
@@ -107,8 +107,8 @@ disc_kwargs = dict(
 # L2 Algorithm
 L2_kwargs = dict(
     method='unsupervised',
-    niters=1000,
-    lr=1e-4,
+    niters=10,
+    lr=1e-3,
     betas=(0., 0.9),
     lr_schedule=True,
     gamma=0.999,
@@ -125,7 +125,7 @@ L2_mlp_kwargs = dict(
     in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=8,
+    n_hidden_layers=2,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
@@ -235,11 +235,19 @@ gan_pos_hyper_space = dict(
 
 gan_pos_niters = dict(
      # gan_kwargs
-     gan_niters = [10000, 25000, 50000, 75000, 100000],
+     gan_niters = [10, 25, 50, 75, 100],
      # disc_kwargs
      disc_n_hidden_units = [64],
-     disc_n_hidden_layers = [8],
+     disc_n_hidden_layers = [4],
      # gen_kwargs
      gen_n_hidden_units = [64],
-     gen_n_hidden_layers = [4],
+     gen_n_hidden_layers = [2],
+)
+
+L2_pos_niters = dict(
+     # gan_kwargs
+     train_niters = [10, 25, 50, 75, 100],
+     # model_kwargs
+     model_n_hidden_units=[64],
+     model_n_hidden_layers=[2],
 )
