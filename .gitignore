@@ -112,3 +112,8 @@ experiments/*
 
 # data dir
 data/*
+
+*.csv
+*.png
+*.out
+*.err

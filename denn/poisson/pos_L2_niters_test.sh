@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J pos_GAN_niters_test
+#SBATCH -J pos_L2_niters_test
 #SBATCH -p test
 #SBATCH -n 20
 #SBATCH --mem 4000 # Memory request (in MB)
@@ -8,4 +8,4 @@
 #SBATCH -e logs.err # Standard error
 module load Anaconda3/5.0.1-fasrc01
 source activate denn
-python ../niters.py --pkey pos --gan --nreps 20 --fname pos_GAN_niters_test.csv
+python ../niters.py --pkey pos --nreps 20 --fname pos_L2_niters_test.csv

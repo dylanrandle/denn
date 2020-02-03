@@ -58,7 +58,7 @@ gan_kwargs = dict(
     d_lr=2e-4,
     d_betas=(0., 0.9),
     lr_schedule=True,
-    gamma=0.995,
+    gamma=0.9999,
     obs_every=1,
     d1=1.,
     d2=1.,
@@ -107,7 +107,7 @@ disc_kwargs = dict(
 # L2 Algorithm
 L2_kwargs = dict(
     method='unsupervised',
-    niters=10,
+    niters=100,
     lr=1e-3,
     betas=(0., 0.9),
     lr_schedule=True,
