@@ -22,7 +22,7 @@ CSV_DIR = '/Users/dylanrandle/Documents/Harvard/research/denn/experiments/csvs/'
 exp_problem = pb.Exponential(n=100, perturb=True, t_max=10)
 sho_problem = pb.SimpleOscillator(n=100, perturb=True, t_max=4*np.pi)
 nlo_problem = pb.NonlinearOscillator(n=1000, perturb=True, t_max=8*np.pi)
-pos_problem = pb.PoissonEquation(nx=40, ny=40, f=10, perturb=True)
+pos_problem = pb.PoissonEquation(nx=100, ny=100, f=10, perturb=True)
 
 # ==========================
 # GAN
@@ -52,13 +52,13 @@ pos_problem = pb.PoissonEquation(nx=40, ny=40, f=10, perturb=True)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=1000,
-    g_lr=2e-4,
+    niters=500,
+    g_lr=1e-3,
     g_betas=(0., 0.9),
-    d_lr=2e-4,
+    d_lr=1e-3,
     d_betas=(0., 0.9),
     lr_schedule=True,
-    gamma=0.9999,
+    gamma=0.99,
     obs_every=1,
     d1=1.,
     d2=1.,
@@ -107,11 +107,11 @@ disc_kwargs = dict(
 # L2 Algorithm
 L2_kwargs = dict(
     method='unsupervised',
-    niters=100,
+    niters=500,
     lr=1e-3,
     betas=(0., 0.9),
     lr_schedule=True,
-    gamma=0.999,
+    gamma=0.99,
     obs_every=1,
     d1=1,
     d2=1,
@@ -125,7 +125,7 @@ L2_mlp_kwargs = dict(
     in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=2,
+    n_hidden_layers=4,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
@@ -235,19 +235,19 @@ gan_pos_hyper_space = dict(
 
 gan_pos_niters = dict(
      # gan_kwargs
-     gan_niters = [10, 25, 50, 75, 100],
+     gan_niters = [1000, 2000],
      # disc_kwargs
      disc_n_hidden_units = [64],
      disc_n_hidden_layers = [4],
      # gen_kwargs
      gen_n_hidden_units = [64],
-     gen_n_hidden_layers = [2],
+     gen_n_hidden_layers = [4],
 )
 
 L2_pos_niters = dict(
      # gan_kwargs
-     train_niters = [10, 25, 50, 75, 100],
+     train_niters = [1000, 2000],
      # model_kwargs
      model_n_hidden_units=[64],
-     model_n_hidden_layers=[2],
+     model_n_hidden_layers=[4],
 )
