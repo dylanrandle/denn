@@ -60,13 +60,13 @@ pos_problem = pb.PoissonEquation(nx=100, ny=100, f=10, perturb=True)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=50000,
+    niters=500,
     g_lr=1e-3,
     g_betas=(0., 0.9),
     d_lr=1e-3,
     d_betas=(0., 0.9),
     lr_schedule=True,
-    gamma=0.9999,
+    gamma=0.99,
     obs_every=1,
     d1=1.,
     d2=1.,
@@ -82,10 +82,10 @@ gan_kwargs = dict(
 
 # Generator MLP
 gen_kwargs = dict(
-    in_dim=1,
+    in_dim=2,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=12,
+    n_hidden_layers=4,
     activation=nn.Tanh(),
     residual=True,
     regress=True,
@@ -94,10 +94,10 @@ gen_kwargs = dict(
 
 # Discriminator MLP
 disc_kwargs = dict(
-    in_dim=2,
+    in_dim=3,
     out_dim=1,
     n_hidden_units=64,
-    n_hidden_layers=16,
+    n_hidden_layers=4,
     activation=nn.Tanh(),
     residual=True,
     regress=True,        # true for WGAN, false otherwise
