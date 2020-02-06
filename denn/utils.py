@@ -32,16 +32,19 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
     else:
         fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
+    linewidth = 2
+
     # MSEs (Pred vs Actual)
-    ax[0].plot(np.arange(len(mse_arr)), mse_arr, alpha=alpha)
+    ax[0].plot(np.arange(len(mse_arr)), mse_arr, alpha=alpha, linewidth=linewidth)
     # ax[0].set_title('Mean Squared Error')
     ax[0].set_ylabel('Mean Squared Error')
     ax[0].set_xlabel('Step')
     ax[0].set_yscale('log')
 
     # Losses
-    for k, v in loss_dict.items():
-        ax[1].plot(np.arange(len(v)), v, label=k, alpha=alpha)
+    for i, (k, v) in enumerate(loss_dict.items()):
+        ax[1].plot(np.arange(len(v)), v, label=k, alpha=alpha, linewidth=linewidth)
     if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
         ax[1].legend(loc='upper right')
     # ax[1].set_title('Loss')
@@ -60,8 +63,8 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
         ax[2].set_xlabel('$x$')
         ax[2].set_ylabel('$y$')
     else: # ODE
-        for k, v in pred_dict.items():
-            ax[2].plot(grid, v, label=k, alpha=alpha)
+        for i, (k, v) in enumerate(pred_dict.items()):
+            ax[2].plot(grid, v, label=k, alpha=alpha, linestyle=linestyles[i], linewidth=linewidth)
         ax[2].set_xlabel('$t$')
         ax[2].set_ylabel('$x$')
     ax[2].legend(loc='upper right')
@@ -69,12 +72,13 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
 
     # Derivatives
     if diff_dict:
-        for k, v in diff_dict.items():
-            ax[3].plot(grid, v, label=k, alpha=alpha)
+        for i, (k, v) in enumerate(diff_dict.items()):
+            ax[3].plot(grid, v, label=k, alpha=alpha, linestyle=linestyles[i], linewidth=linewidth)
         ax[3].legend(loc='upper right')
         # ax[3].set_title('Derivative')
         ax[3].set_xlabel('$t$')
         ax[3].set_ylabel('$x$')
+        # ax[3].set_yscale('log')
 
     plt.tight_layout()
     if save:

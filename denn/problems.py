@@ -113,7 +113,7 @@ class Exponential(Problem):
         """ return appropriate pred_dict and diff_dict used for plotting """
         xadj, dx = self.adjust(x, t)
         pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
-        diff_dict = {'$\hat{x}$': xadj.detach(), '$\hat{\dot{x}}$': dx.detach()}
+        diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\dot{x}}$': (-dx).detach()}
         return pred_dict, diff_dict
 
 class SimpleOscillator(Problem):
@@ -184,7 +184,7 @@ class SimpleOscillator(Problem):
         """ return appropriate pred_dict and diff_dict used for plotting """
         xadj, dx, d2x = self.adjust(x, t)
         pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
-        diff_dict = {'$\hat{x}$': xadj.detach(), '$\hat{\ddot{x}}$': d2x.detach()}
+        diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\ddot{x}}$': (-d2x).detach()}
         return pred_dict, diff_dict
 
 class NonlinearOscillator(Problem):

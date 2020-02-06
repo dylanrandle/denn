@@ -140,6 +140,7 @@ def train_GAN(num_epochs,
           D_iters=1,
           seed=42,
           save=False,
+          plot=False,
           fname='train_EXP_GAN.png'):
     """
     function to perform training of generator and discriminator for num_epochs
@@ -238,20 +239,21 @@ def train_GAN(num_epochs,
 
         # track current MSE on ground truth
         pred = G.predict(t)
-        # pred_adj = problem.adjust(pred, grid)[0]
         curr_mse = mse(pred, analytic(t)).item()
         mses.append(curr_mse)
 
     loss_dict = {'$G$': G_losses, '$D$': D_losses}
-    # grid
-    # t = torch.linspace(t_low, t_high, n, dtype=torch.float, requires_grad=True).reshape(-1,1)
     pred = G.predict(t)
     pred_dict = {'$\hat{x}$': pred.detach(), '$x$': analytic(t).detach()}
-    diff_dict = {'$\hat{x}$': pred.detach(), '$\hat{\dot{x}}$': diff(pred, t).detach()}
-    plot_results(mses, loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
-        save=save, fname=fname, logloss=False, alpha=0.7)
+    # diff_dict = {'$\hat{x}$': pred.detach(), '$\hat{\dot{x}}$': diff(pred, t).detach()}
+    dx = diff(pred, t)
+    diff_dict = {'$\hat{x}$': (pred).detach(), '$-\hat{\dot{x}}$': (-dx).detach()}
+    # diff_dict = {'$\hat{\dot{x}} + \hat{x}$': (dx+pred).detach()}
+    if plot:
+        plot_results(mses, loss_dict, t.detach(), pred_dict, diff_dict=diff_dict,
+            save=save, fname=fname, logloss=False, alpha=0.7)
 
-    return G, D, G_losses, D_losses
+    return G, D, G_losses, D_losses, mses
 
 def train_Lagaris(num_epochs,
                   L=1,
@@ -286,6 +288,7 @@ def train_Lagaris(num_epochs,
     # logging
     D_losses = []
     G_losses = []
+    mses = []
 
     for epoch in range(num_epochs):
 
@@ -307,22 +310,44 @@ def train_Lagaris(num_epochs,
             optiG.step()
 
         G_losses.append(g_loss.item())
+        # track MSE
+        pred = G.predict(t)
+        curr_mse = mse(pred, analytic(t)).item()
+        mses.append(curr_mse)
 
-    return G, G_losses
+    return G, G_losses, mses
 
 if __name__ == "__main__":
-    L = 1
-    n = 100
-    analytic = lambda t: np.exp(-L*t)
-    t = np.linspace(0,10,n)
-    G,D,G_loss,D_loss = train_GAN(500,
-                          L=L,
-                          g_hidden_units=20,
-                          g_hidden_layers=3,
-                          d_hidden_units=10,
-                          d_hidden_layers=2,
-                          logging=False,
-                          G_iters=10,
-                          D_iters=1,
-                          n=n)
-    plot_losses_and_preds(G_loss, D_loss, G, t, analytic)
+    # L = 1
+    # n = 100
+    # analytic = lambda t: np.exp(-L*t)
+    # t = np.linspace(0,10,n)
+    # G,D,G_loss,D_loss = train_GAN(500,
+    #                       L=L,
+    #                       g_hidden_units=20,
+    #                       g_hidden_layers=3,
+    #                       d_hidden_units=10,
+    #                       d_hidden_layers=2,
+    #                       logging=False,
+    #                       G_iters=10,
+    #                       D_iters=1,
+    #                       n=n)
+    # plot_losses_and_preds(G_loss, D_loss, G, t, analytic)
+
+    G,D,G_loss,D_loss,mses = train_GAN(500,
+                              g_hidden_units=20,
+                              g_hidden_layers=2,
+                              d_hidden_units=20,
+                              d_hidden_layers=2,
+                              logging=False,
+                              G_iters=1,
+                              D_iters=1,
+                              g_lr=1e-2,
+                              d_lr=1e-2,
+                              g_betas=(0.9, 0.999),
+                              d_betas=(0.9, 0.999),
+                              n=100,
+                              seed=0,
+                              save=True,
+                              plot=True,
+                              fname='../../experiments/figs/exp_gan_paper.png')
