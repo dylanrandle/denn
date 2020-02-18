@@ -60,13 +60,13 @@ pos_problem = pb.PoissonEquation(nx=100, ny=100, f=10, perturb=True)
 # GAN Algorithm
 gan_kwargs = dict(
     method='unsupervised',
-    niters=500,
+    niters=10000,
     g_lr=1e-3,
     g_betas=(0., 0.9),
     d_lr=1e-3,
     d_betas=(0., 0.9),
     lr_schedule=True,
-    gamma=0.99,
+    gamma=0.999,
     obs_every=1,
     d1=1.,
     d2=1.,
@@ -115,7 +115,7 @@ disc_kwargs = dict(
 # L2 Algorithm
 L2_kwargs = dict(
     method='unsupervised',
-    niters=500,
+    niters=50000,
     lr=1e-3,
     betas=(0., 0.9),
     lr_schedule=True,
