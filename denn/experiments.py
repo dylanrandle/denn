@@ -5,39 +5,38 @@ import numpy as np
 
 from denn.algos import train_L2, train_GAN
 from denn.models import MLP
-from denn.config import *
+from denn.config.config import get_config
 from denn.utils import handle_overwrite
+import denn.problems as pb
 
-def get_problem(pkey):
+def get_problem(pkey, params):
     """ helper to parse problem key and return appropriate problem
     """
-    if pkey.lower().strip() == 'sho':
-        print('Solving SimpleOscillator problem')
-        problem = sho_problem
-    elif pkey.lower().strip() == 'nlo':
-        print('Solving NonlinearOscillator problem')
-        problem = nlo_problem
-    elif pkey.lower().strip() == 'exp':
-        print('Solving Exponential problem')
-        problem = exp_problem
-    elif pkey.lower().strip() == 'pos':
-        print('Solving Poisson problem')
-        problem = pos_problem
+    pkey = pkey.lower().strip()
+    if pkey == 'exp':
+        return pb.Exponential(**params['problem'])
+    elif pkey == 'sho':
+        return pb.SimpleOscillator(**params['problem'])
+    elif pkey == 'nlo':
+        return pb.NonlinearOscillator(**params['problem'])
+    elif pkey == 'pos':
+        return pb.PoissonEquation(**params['problem'])
     else:
         raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
-    return problem
 
-def L2_experiment(problem, seed=0, model_kwargs={}, train_kwargs={}):
-    torch.manual_seed(seed)
-    model = MLP(**model_kwargs)
-    res = train_L2(model, problem, **train_kwargs)
+def L2_experiment(pkey, params):
+    torch.manual_seed(params['training']['seed'])
+    problem = get_problem(pkey, params)
+    model = MLP(**params['generator'])
+    res = train_L2(model, problem, **params['training'])
     return res
 
-def gan_experiment(problem, seed=0, gen_kwargs={}, disc_kwargs={}, train_kwargs={}):
-    torch.manual_seed(seed)
-    gen = MLP(**gen_kwargs)
-    disc = MLP(**disc_kwargs)
-    res = train_GAN(gen, disc, problem, **train_kwargs)
+def gan_experiment(pkey, params):
+    torch.manual_seed(params['training']['seed'])
+    problem = get_problem(pkey, params)
+    gen = MLP(**params['generator'])
+    disc = MLP(**params['discriminator'])
+    res = train_GAN(gen, disc, problem, **params['training'])
     return res
 
 if __name__ == '__main__':
@@ -46,21 +45,13 @@ if __name__ == '__main__':
         help='whether to use GAN-based training, default False (use L2-based)')
     args.add_argument('--pkey', type=str, default='EXP',
         help='problem to run (exp=Exponential, sho=SimpleOscillator, nlo=NonlinearOscillator)')
-    args.add_argument('--seed', type=int, default=0,
-        help='value of random seed set for reproducibility (default: 0)')
-    args.add_argument('--fname', type=str, default=None,
-        help='file name to save figure (default None: use function default)')
     args = args.parse_args()
 
-    problem = get_problem(args.pkey)
+    params = get_config(args.pkey)
 
     if args.gan:
-        print('Running GAN training...')
-        if args.fname:
-            gan_kwargs['fname'] = args.fname
-        gan_experiment(problem, seed=args.seed, gen_kwargs=gen_kwargs, disc_kwargs=disc_kwargs, train_kwargs=gan_kwargs)
+        print(f'Running GAN training for {args.pkey} problem...')
+        gan_experiment(args.pkey, params)
     else:
-        print('Running L2 training...')
-        if args.fname:
-            L2_kwargs['fname'] = args.fname
-        L2_experiment(problem, seed=args.seed, model_kwargs=L2_mlp_kwargs, train_kwargs=L2_kwargs)
+        print(f'Running L2 training for {args.pkey} problem...')
+        L2_experiment(args.pkey, params)

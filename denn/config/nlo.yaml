@@ -1,0 +1,45 @@
+problem:
+  n: 1000
+  perturb: True
+  t_max: 25.12
+
+training:
+  method: 'unsupervised'
+  seed: 0
+  niters: 50000
+  g_lr: 0.001
+  d_lr: 0.001
+  g_betas: [0.0, 0.9]
+  d_betas: [0.0, 0.9]
+  lr_schedule: True
+  gamma: 0.9999
+  obs_every: 1
+  d1: 1
+  d2: 1
+  G_iters: 1
+  D_iters: 1
+  wgan: False
+  gp: 0.1
+  conditional: True
+  plot: True
+  save: False
+  fname: 'NLO.png'
+
+generator:
+  in_dim: 1
+  out_dim: 1
+  n_hidden_units: 64
+  n_hidden_layers: 12
+  activation: 'Tanh'
+  residual: True
+  regress: True
+
+discriminator:
+  in_dim: 2
+  out_dim: 1
+  n_hidden_units: 64
+  n_hidden_layers: 16
+  activation: 'Tanh'
+  residual: True
+  regress: False
+  spectral_norm: True

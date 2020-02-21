@@ -1,0 +1,46 @@
+problem:
+  nx: 100
+  ny: 100
+  f: 10
+  perturb: True
+
+training:
+  method: 'unsupervised'
+  seed: 0
+  niters: 500
+  g_lr: 0.001
+  d_lr: 0.001
+  g_betas: [0.0, 0.9]
+  d_betas: [0.0, 0.9]
+  lr_schedule: True
+  gamma: 0.99
+  obs_every: 1
+  d1: 1
+  d2: 1
+  G_iters: 1
+  D_iters: 1
+  wgan: False
+  gp: 0.1
+  conditional: True
+  plot: True
+  save: False
+  fname: 'POS.png'
+
+generator:
+  in_dim: 2
+  out_dim: 1
+  n_hidden_units: 64
+  n_hidden_layers: 4
+  activation: 'Tanh'
+  residual: True
+  regress: True
+
+discriminator:
+  in_dim: 3
+  out_dim: 1
+  n_hidden_units: 64
+  n_hidden_layers: 4
+  activation: 'Tanh'
+  residual: True
+  regress: False
+  spectral_norm: True
