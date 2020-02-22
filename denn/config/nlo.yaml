@@ -1,17 +1,17 @@
 problem:
-  n: 1000
+  n: 100
   perturb: True
-  t_max: 25.12
+  t_max: 12.56
 
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 50000
+  niters: 2000
   g_lr: 0.001
   d_lr: 0.001
-  g_betas: [0.0, 0.9]
-  d_betas: [0.0, 0.9]
-  lr_schedule: True
+  g_betas: [0.9, 0.999]
+  d_betas: [0.9, 0.999]
+  lr_schedule: False
   gamma: 0.9999
   obs_every: 1
   d1: 1
@@ -20,26 +20,26 @@ training:
   D_iters: 1
   wgan: False
   gp: 0.1
-  conditional: True
+  conditional: False
   log: True
   plot: True
-  save: False
-  dirname: 'NLO_run'
+  save: True
+  dirname: 'NLO_run_L2'
 
 generator:
   in_dim: 1
   out_dim: 1
   n_hidden_units: 64
-  n_hidden_layers: 12
+  n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
   regress: True
 
 discriminator:
-  in_dim: 2
+  in_dim: 1
   out_dim: 1
   n_hidden_units: 64
-  n_hidden_layers: 16
+  n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
   regress: False

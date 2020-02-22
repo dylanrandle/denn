@@ -3,6 +3,7 @@ import torch.nn as nn
 import os
 
 from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
+from denn.config.config import write_config
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -10,7 +11,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
     lr_schedule=True, gamma=0.999, obs_every=1, d1=1., d2=1.,
     G_iters=1, D_iters=1, wgan=True, gp=0.1, conditional=True,
-    log=True, plot=True, save=False, dirname='train_GAN', **kwargs):
+    log=True, plot=True, save=False, dirname='train_GAN',
+    config=None, **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
@@ -24,9 +26,9 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     grid = problem.get_grid()
     soln = problem.get_solution(grid)
 
-    # validation
-    val_grid = problem.get_grid_sample()
-    val_soln = problem.get_solution(val_grid)
+    # # validation
+    # val_grid = problem.get_grid_sample()
+    # val_soln = problem.get_solution(val_grid)
 
     # observer mask and masked grid/solution (t_obs/y_obs)
     observers = torch.arange(0, len(grid), obs_every)
@@ -57,7 +59,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
     # history
     losses = {'G': [], 'D': []}
-    mses = {'train': [], 'val': []}
+    mses = {'train': []}
 
     for epoch in range(niters):
         # Train Generator
@@ -165,26 +167,29 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         train_mse = mse(train_pred_adj, soln).item()
         mses['train'].append(train_mse)
 
-        # track current MSE on ground truth (val)
-        val_pred = G(val_grid)
-        val_pred_adj = problem.adjust(val_pred, val_grid)[0]
-        val_mse = mse(val_pred_adj, val_soln).item()
-        mses['val'].append(val_mse)
+        # # track current MSE on ground truth (val)
+        # val_pred = G(val_grid)
+        # val_pred_adj = problem.adjust(val_pred, val_grid)[0]
+        # val_mse = mse(val_pred_adj, val_soln).item()
+        # mses['val'].append(val_mse)
 
         if log:
-            print(f'Step {epoch} Train MSE {train_mse} Val MSE {val_mse}')
+            print(f'Step {epoch} Train MSE {train_mse}')
 
     if plot:
         pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, soln)
         plot_results(mses, losses, grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, dirname=dirname, logloss=False, alpha=0.7)
 
+    if save:
+        write_config(config, os.path.join(dirname, 'config.yaml'))
+
     return {'mses': mses, 'model': G, 'losses': losses}
 
 def train_L2(model, problem, method='unsupervised', niters=100,
     lr=1e-3, betas=(0, 0.9), lr_schedule=True, gamma=0.999,
     obs_every=1, d1=1, d2=1, log=True, plot=True, save=False,
-    dirname='train_L2', **kwargs):
+    dirname='train_L2', config=None, **kwargs):
     """
     Train/test Lagaris method: supervised/semisupervised/unsupervised
     """
@@ -198,9 +203,9 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     grid = problem.get_grid()
     sol = problem.get_solution(grid)
 
-    # validation
-    val_grid = problem.get_grid_sample()
-    val_sol = problem.get_solution(val_grid)
+    # # validation
+    # val_grid = problem.get_grid_sample()
+    # val_sol = problem.get_solution(val_grid)
 
     observers = torch.arange(0, len(grid), obs_every)
     grid_obs = grid[observers, :]
@@ -214,7 +219,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=gamma)
 
     loss_trace = []
-    mses = {'train': [], 'val': []}
+    mses = {'train': []}
 
     for i in range(niters):
         if method == 'unsupervised':
@@ -252,14 +257,14 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         train_mse = mse(train_pred_adj, sol).item()
         mses['train'].append(train_mse)
 
-        # track current MSE on ground truth (val)
-        val_pred = model(val_grid)
-        val_pred_adj = problem.adjust(val_pred, val_grid)[0]
-        val_mse = mse(val_pred_adj, val_sol).item()
-        mses['val'].append(val_mse)
+        # # track current MSE on ground truth (val)
+        # val_pred = model(val_grid)
+        # val_pred_adj = problem.adjust(val_pred, val_grid)[0]
+        # val_mse = mse(val_pred_adj, val_sol).item()
+        # mses['val'].append(val_mse)
 
         if log:
-            print(f'Step {i} Train MSE {train_mse} Val MSE {val_mse}')
+            print(f'Step {i} Train MSE {train_mse}')
 
         opt.zero_grad()
         loss.backward(retain_graph=True)
@@ -282,5 +287,8 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         pred_dict, diff_dict = problem.get_plot_dicts(model(grid), grid, sol)
         plot_results(mses, loss_dict, grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, dirname=dirname, logloss=True, alpha=0.7)
+
+    if save:
+        write_config(config, os.path.join(dirname, 'config.yaml'))
 
     return {'mses': mses, 'model': model, 'losses': loss_trace}

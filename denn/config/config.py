@@ -11,6 +11,10 @@ def get_config(problem_key):
         params = yaml.full_load(f)
     return params
 
+def write_config(config_dict, save_path):
+    with open(save_path, 'w') as f:
+        yaml.dump(config_dict, f)
+
 if __name__ == '__main__':
     print(get_config('exp'))
 
