@@ -1,18 +1,18 @@
 problem:
   n: 100
   perturb: True
-  t_max: 12.56
+  t_max: 6.28
 
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 10000
+  niters: 2000
   g_lr: 0.001
   d_lr: 0.001
-  g_betas: [0.0, 0.9]
-  d_betas: [0.0, 0.9]
-  lr_schedule: True
-  gamma: 0.999
+  g_betas: [0.9, 0.999]
+  d_betas: [0.9, 0.999]
+  lr_schedule: False
+  gamma: 1.0
   obs_every: 1
   d1: 1
   d2: 1
@@ -20,10 +20,11 @@ training:
   D_iters: 1
   wgan: False
   gp: 0.1
-  conditional: True
+  conditional: False
+  log: True
   plot: True
-  save: False
-  fname: 'SHO.png'
+  save: True
+  dirname: 'SHO_run'
 
 generator:
   in_dim: 1
@@ -35,10 +36,10 @@ generator:
   regress: True
 
 discriminator:
-  in_dim: 2
+  in_dim: 1
   out_dim: 1
   n_hidden_units: 64
-  n_hidden_layers: 10
+  n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
   regress: False

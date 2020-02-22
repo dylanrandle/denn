@@ -12,7 +12,7 @@ training:
   g_betas: [0.9, 0.999]
   d_betas: [0.9, 0.999]
   lr_schedule: True
-  gamma: 1.0
+  gamma: 0.99
   obs_every: 1
   d1: 1
   d2: 1
@@ -20,10 +20,11 @@ training:
   D_iters: 1
   wgan: False
   gp: 0.1
-  conditional: True
+  conditional: False
+  log: True
   plot: True
-  save: False
-  fname: 'EXP.png'
+  save: True
+  dirname: 'EXP_run'
 
 generator:
   in_dim: 1
@@ -35,7 +36,7 @@ generator:
   regress: True
 
 discriminator:
-  in_dim: 2
+  in_dim: 1
   out_dim: 1
   n_hidden_units: 20
   n_hidden_layers: 2

@@ -21,9 +21,10 @@ training:
   wgan: False
   gp: 0.1
   conditional: True
+  log: True
   plot: True
   save: False
-  fname: 'NLO.png'
+  dirname: 'NLO_run'
 
 generator:
   in_dim: 1

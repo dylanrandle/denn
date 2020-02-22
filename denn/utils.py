@@ -19,13 +19,13 @@ def diff(x, t):
     return dx_dt
 
 def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=False,
-    save=False, fname=None, logloss=False, alpha=0.8):
+    save=False, dirname=None, logloss=False, alpha=0.8):
     """ helpful plotting function """
     if clear:
       clear_output(True)
 
-    if save and not fname:
-        raise RuntimeError('Please provide a file name `fname` when `save=True`.')
+    if save and not dirname:
+        raise RuntimeError('Please provide a directory name `dirname` when `save=True`.')
 
     if diff_dict:   # add derivatives plot
         fig, ax = plt.subplots(1, 4, figsize=(16, 4))
@@ -82,8 +82,20 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
     plt.tight_layout()
     if save:
-        print(f'Saving plot to {fname}')
-        plt.savefig(fname)
+        print(f'Saving results to {dirname}')
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+        plt.savefig(os.path.join(dirname, 'plot.png'))
+        np.save(os.path.join(dirname, "grid"), grid)
+        for k, v in mse_dict.items():
+            np.save(os.path.join(dirname, f"{k}_mse"), v)
+        for k, v in loss_dict.items():
+            np.save(os.path.join(dirname, f"{k}_loss"), v)
+        for k, v in pred_dict.items():
+            np.save(os.path.join(dirname, f"{k}_pred"), v)
+        if diff_dict:
+            for k, v in diff_dict.items():
+                np.save(os.path.join(dirname, f"{k}_diff"), v)
     else:
         plt.show()
 
