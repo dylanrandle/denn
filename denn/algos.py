@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import os
 
+from ray.tune import track
+
 from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
 from denn.config.config import write_config
 
@@ -166,6 +168,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         train_pred_adj = problem.adjust(pred, grid)[0]
         train_mse = mse(train_pred_adj, soln).item()
         mses['train'].append(train_mse)
+        try:
+            track.log(mean_squared_error=train_mse)
+        except:
+            pass
 
         # # track current MSE on ground truth (val)
         # val_pred = G(val_grid)
