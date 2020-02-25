@@ -168,10 +168,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         train_pred_adj = problem.adjust(pred, grid)[0]
         train_mse = mse(train_pred_adj, soln).item()
         mses['train'].append(train_mse)
-        try:
-            track.log(mean_squared_error=train_mse)
-        except:
-            pass
+        # try:
+        #     track.log(mean_squared_error=train_mse)
+        # except:
+        #     pass
 
         # # track current MSE on ground truth (val)
         # val_pred = G(val_grid)
@@ -195,7 +195,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 def train_L2(model, problem, method='unsupervised', niters=100,
     lr=1e-3, betas=(0, 0.9), lr_schedule=True, gamma=0.999,
     obs_every=1, d1=1, d2=1, log=True, plot=True, save=False,
-    dirname='train_L2', config=None, **kwargs):
+    dirname='train_L2', config=None, loss_fn=None, **kwargs):
     """
     Train/test Lagaris method: supervised/semisupervised/unsupervised
     """
@@ -219,7 +219,10 @@ def train_L2(model, problem, method='unsupervised', niters=100,
 
     # optimizers & loss functions
     opt = torch.optim.Adam(model.parameters(), lr=lr, betas=betas)
-    mse = torch.nn.MSELoss()
+    if loss_fn:
+        mse = eval(f"torch.nn.{loss_fn}()")
+    else:
+        mse = torch.nn.MSELoss()
     # lr scheduler
     if lr_schedule:
         lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=gamma)

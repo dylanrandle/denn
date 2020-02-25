@@ -116,6 +116,7 @@ dependencies:
   - python-dateutil=2.8.1=py_0
   - pytorch=1.3.1=py3.7_0
   - pytz=2019.3=py_0
+  - pyyaml=5.3=py37h0b31af3_0
   - pyzmq=18.1.1=py37h4bf09a9_0
   - readline=8.0=hcfe32e1_0
   - rhash=1.3.6=h1de35cc_1001
@@ -144,9 +145,35 @@ dependencies:
   - webencodings=0.5.1=py_1
   - wheel=0.33.6=py37_0
   - xz=5.2.4=h1de35cc_1001
+  - yaml=0.2.2=h0b31af3_1
   - zeromq=4.3.2=h6de7cb9_2
   - zipp=0.6.0=py_0
   - zlib=1.2.11=h0b31af3_1006
   - zstd=1.4.4=he7fca8b_1
+  - pip:
+    - aiohttp==3.6.2
+    - async-timeout==3.0.1
+    - chardet==3.0.4
+    - click==7.0
+    - cloudpickle==1.3.0
+    - colorama==0.4.3
+    - filelock==3.0.12
+    - funcsigs==1.0.2
+    - grpcio==1.27.2
+    - idna==2.9
+    - multidict==4.7.5
+    - packaging==20.1
+    - pluggy==0.13.1
+    - protobuf==3.11.3
+    - psutil==5.7.0
+    - py==1.8.1
+    - pytest==5.3.5
+    - ray==0.8.1
+    - redis==3.4.1
+    - requests==2.23.0
+    - setproctitle==1.1.10
+    - tabulate==0.8.6
+    - urllib3==1.25.8
+    - yarl==1.4.2
 prefix: /Users/dylanrandle/anaconda3/envs/denn
 

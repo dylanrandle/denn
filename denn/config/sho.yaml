@@ -6,24 +6,25 @@ problem:
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 2000
-  g_lr: 0.001
-  d_lr: 0.001
+  niters: 1000 # 2000
+  g_lr: 0.0033005  # 0.001 # 68_d_lr=4.0406e-05,g_lr=0.0033005,niters=569
+  d_lr: 4.0406e-05 # 0.001
   g_betas: [0.9, 0.999]
   d_betas: [0.9, 0.999]
   lr_schedule: False
-  gamma: 1.0
+  gamma: 0.999
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
+  loss_fn: MSELoss
   wgan: False
   gp: 0.1
   conditional: False
   log: True
   plot: True
-  save: True
+  save: False
   dirname: 'SHO_run'
 
 generator:

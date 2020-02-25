@@ -23,22 +23,34 @@ if __name__ == "__main__":
     params['training']['save'] = False
 
     def gan_tuning(config):
-        return gan_experiment(args.pkey, config)
+        res = gan_experiment(args.pkey, config)
+        train_mse = res['mses']['train']
+        track.log(mean_squared_error=np.mean(train_mse[-10:]))
+        return res
 
     search_space = deepcopy(params)
 
     search_space['training']['g_lr'] = tune.sample_from(lambda spec: 10**(-10 * np.random.rand()))
     search_space['training']['d_lr'] = tune.sample_from(lambda spec: 10**(-10 * np.random.rand()))
+    search_space['training']['niters'] = tune.sample_from(lambda _: np.random.choice(range(500,5000)))
+    search_space['generator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,50)))
+    search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,5)))
+    search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,50)))
+    search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,5)))
 
     # Uncomment this to enable distributed execution
     # `ray.init(address=...)`
 
     analysis = tune.run(
         gan_tuning,
+        name=str(f'gan_tuning_{args.pkey}'),
         config=search_space,
-        num_samples=5)
+        num_samples=200
+    )
 
-    # df = analysis.dataframe(metric="mean_squared_error", mode="min")
-    # print(df.head())
-    print("Best trial is:", analysis.get_best_trial(metric="mean_squared_error", mode="min"))
+    df = analysis.dataframe(metric="mean_squared_error", mode="min")
+    print(df)
     print("Best config is:", analysis.get_best_config(metric="mean_squared_error", mode="min"))
+    best_logdir = analysis.get_best_logdir(metric="mean_squared_error", mode="min")
+    best_mse = df.loc[df.logdir==best_logdir]
+    print("Best MSE is:", best_mse.mean_squared_error)
