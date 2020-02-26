@@ -32,11 +32,11 @@ if __name__ == "__main__":
 
     search_space['training']['g_lr'] = tune.sample_from(lambda spec: 10**(-10 * np.random.rand()))
     search_space['training']['d_lr'] = tune.sample_from(lambda spec: 10**(-10 * np.random.rand()))
-    search_space['training']['niters'] = tune.sample_from(lambda _: np.random.choice(range(500,5000)))
-    search_space['generator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,50)))
-    search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,5)))
-    search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,50)))
-    search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,5)))
+    # search_space['training']['niters'] = tune.sample_from(lambda _: np.random.choice(range(4000,8000)))
+    # search_space['generator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,31)))
+    # search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,4)))
+    # search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,31)))
+    # search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,4)))
 
     # Uncomment this to enable distributed execution
     # `ray.init(address=...)`
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         gan_tuning,
         name=str(f'gan_tuning_{args.pkey}'),
         config=search_space,
-        num_samples=200
+        num_samples=100
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")

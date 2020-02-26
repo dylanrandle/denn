@@ -6,9 +6,9 @@ problem:
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 1000 # 2000
-  g_lr: 0.0033005  # 0.001 # 68_d_lr=4.0406e-05,g_lr=0.0033005,niters=569
-  d_lr: 4.0406e-05 # 0.001
+  niters: 822
+  g_lr: 0.006397509258273433
+  d_lr: 0.0001715952321721463
   g_betas: [0.9, 0.999]
   d_betas: [0.9, 0.999]
   lr_schedule: False
@@ -24,13 +24,13 @@ training:
   conditional: False
   log: True
   plot: True
-  save: False
+  save: True
   dirname: 'SHO_run'
 
 generator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 64
+  n_hidden_units: 20
   n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
@@ -39,7 +39,7 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 64
+  n_hidden_units: 20
   n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
