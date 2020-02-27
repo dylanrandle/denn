@@ -2,25 +2,36 @@ import torch
 import torch.nn as nn
 import os
 
-from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
+from ray.tune import track
 
+from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
+from denn.config.config import write_config
+
+this_dir = os.path.dirname(os.path.abspath(__file__))
 
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
     g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
     lr_schedule=True, gamma=0.999, obs_every=1, d1=1., d2=1.,
     G_iters=1, D_iters=1, wgan=True, gp=0.1, conditional=True,
-    plot=True, save=False, fname='train_GAN.png'):
+    log=True, plot=True, save=False, dirname='train_GAN',
+    config=None, **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
     assert method in ['supervised', 'semisupervised', 'unsupervised'], f'Method {method} not understood!'
 
+    dirname = os.path.join(this_dir, '../experiments/runs', dirname)
     if plot and save:
-        handle_overwrite(fname)
+        handle_overwrite(dirname)
 
-    # full grid/solution (t/y)
+    # training: full grid/solution (t/y)
     grid = problem.get_grid()
     soln = problem.get_solution(grid)
+
+    # # validation
+    # val_grid = problem.get_grid_sample()
+    # val_soln = problem.get_solution(val_grid)
+
     # observer mask and masked grid/solution (t_obs/y_obs)
     observers = torch.arange(0, len(grid), obs_every)
     grid_obs = grid[observers, :]
@@ -39,8 +50,6 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
     optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
     if lr_schedule:
-        # lr_scheduler_G = torch.optim.lr_scheduler.LambdaLR(optiG, lr_lambda=LambdaLR(niters, 0, 0).step)
-        # lr_scheduler_D = torch.optim.lr_scheduler.LambdaLR(optiD, lr_lambda=LambdaLR(niters, 0, 0).step)
         lr_scheduler_G = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=gamma)
         lr_scheduler_D = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=gamma)
 
@@ -52,7 +61,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
     # history
     losses = {'G': [], 'D': []}
-    mses = []
+    mses = {'train': []}
 
     for epoch in range(niters):
         # Train Generator
@@ -154,56 +163,73 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
           lr_scheduler_G.step()
           lr_scheduler_D.step()
 
-        # track current MSE on ground truth
-        pred = G(grid)
-        pred_adj = problem.adjust(pred, grid)[0]
-        curr_mse = mse(pred_adj, soln).item()
-        mses.append(curr_mse)
+        # track current MSE on ground truth (train)
+        train_pred = G(grid)
+        train_pred_adj = problem.adjust(pred, grid)[0]
+        train_mse = mse(train_pred_adj, soln).item()
+        mses['train'].append(train_mse)
+        # try:
+        #     track.log(mean_squared_error=train_mse)
+        # except:
+        #     pass
 
-        print(f'Step {epoch} MSE {curr_mse}')
+        # # track current MSE on ground truth (val)
+        # val_pred = G(val_grid)
+        # val_pred_adj = problem.adjust(val_pred, val_grid)[0]
+        # val_mse = mse(val_pred_adj, val_soln).item()
+        # mses['val'].append(val_mse)
+
+        if log:
+            print(f'Step {epoch} Train MSE {train_mse}')
 
     if plot:
-        loss_dict = {}
-        loss_dict['$D$'] = losses['D']
-        loss_dict['$G$'] = losses['G']
         pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, soln)
-        plot_results(mses, loss_dict, grid.detach(), pred_dict, diff_dict=diff_dict,
-            save=save, fname=fname, logloss=False, alpha=0.7)
+        plot_results(mses, losses, grid.detach(), pred_dict, diff_dict=diff_dict,
+            save=save, dirname=dirname, logloss=False, alpha=0.7)
 
-    pred = G(grid)
-    pred_adj = problem.adjust(pred, grid)[0]
-    final_mse = mse(pred_adj, soln).item()
-    print(f'Final MSE {final_mse}')
-    return {'final_mse': final_mse, 'model': G}
+    if save:
+        write_config(config, os.path.join(dirname, 'config.yaml'))
+
+    return {'mses': mses, 'model': G, 'losses': losses}
 
 def train_L2(model, problem, method='unsupervised', niters=100,
     lr=1e-3, betas=(0, 0.9), lr_schedule=True, gamma=0.999,
-    obs_every=1, d1=1, d2=1,
-    plot=True, save=False, fname='train_L2.png'):
+    obs_every=1, d1=1, d2=1, log=True, plot=True, save=False,
+    dirname='train_L2', config=None, loss_fn=None, **kwargs):
     """
     Train/test Lagaris method: supervised/semisupervised/unsupervised
     """
     assert method in ['supervised', 'semisupervised', 'unsupervised'], f'Method {method} not understood!'
 
+    dirname = os.path.join(this_dir, '../experiments/runs', dirname)
     if plot and save:
-        handle_overwrite(fname)
+        handle_overwrite(dirname)
 
+    # training: full grid/solution (t/y)
     grid = problem.get_grid()
     sol = problem.get_solution(grid)
+
+    # # validation
+    # val_grid = problem.get_grid_sample()
+    # val_sol = problem.get_solution(val_grid)
+
     observers = torch.arange(0, len(grid), obs_every)
     grid_obs = grid[observers, :]
     sol_obs = sol[observers, :]
 
     # optimizers & loss functions
     opt = torch.optim.Adam(model.parameters(), lr=lr, betas=betas)
-    mse = torch.nn.MSELoss()
+    if loss_fn:
+        mse = eval(f"torch.nn.{loss_fn}()")
+    else:
+        mse = torch.nn.MSELoss()
     # lr scheduler
     if lr_schedule:
-        # lr_scheduler = torch.optim.lr_scheduler.LambdaLR(opt, lr_lambda=LambdaLR(niters, 0, 0).step)
         lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=gamma)
 
     loss_trace = []
-    mses = []
+    mses = {'train': []}
+
     for i in range(niters):
         if method == 'unsupervised':
             grid_samp = problem.get_grid_sample()
@@ -234,19 +260,26 @@ def train_L2(model, problem, method='unsupervised', niters=100,
             loss = mse(pred_adj, sol_obs)
             loss_trace.append(loss.item())
 
-        # track current MSE on ground truth
-        pred = model(grid)
-        pred_adj = problem.adjust(pred, grid)[0]
-        curr_mse = mse(pred_adj, sol).item()
-        mses.append(curr_mse)
+        # track current MSE on ground truth (train)
+        train_pred = model(grid)
+        train_pred_adj = problem.adjust(pred, grid)[0]
+        train_mse = mse(train_pred_adj, sol).item()
+        mses['train'].append(train_mse)
+
+        # # track current MSE on ground truth (val)
+        # val_pred = model(val_grid)
+        # val_pred_adj = problem.adjust(val_pred, val_grid)[0]
+        # val_mse = mse(val_pred_adj, val_sol).item()
+        # mses['val'].append(val_mse)
+
+        if log:
+            print(f'Step {i} Train MSE {train_mse}')
 
         opt.zero_grad()
         loss.backward(retain_graph=True)
         opt.step()
         if lr_schedule:
             lr_scheduler.step()
-
-        print(f'Step {i} MSE {curr_mse}')
 
     if plot:
         loss_dict = {}
@@ -258,12 +291,13 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         else:
             loss_dict['$L_U$'] = loss_trace
 
+        save_to = os.path.join(this_dir, '../experiments/runs', dirname)
+
         pred_dict, diff_dict = problem.get_plot_dicts(model(grid), grid, sol)
         plot_results(mses, loss_dict, grid.detach(), pred_dict, diff_dict=diff_dict,
-            save=save, fname=fname, logloss=True, alpha=0.7)
+            save=save, dirname=dirname, logloss=True, alpha=0.7)
 
-    pred = model(grid)
-    pred_adj = problem.adjust(pred, grid)[0]
-    final_mse = mse(pred_adj, sol).item()
-    print(f'Final MSE {final_mse}')
-    return {'final_mse': final_mse, 'model': model}
+    if save:
+        write_config(config, os.path.join(dirname, 'config.yaml'))
+
+    return {'mses': mses, 'model': model, 'losses': loss_trace}

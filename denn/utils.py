@@ -18,14 +18,14 @@ def diff(x, t):
                            create_graph=True)
     return dx_dt
 
-def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=False,
-    save=False, fname=None, logloss=False, alpha=0.8):
+def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=False,
+    save=False, dirname=None, logloss=False, alpha=0.8):
     """ helpful plotting function """
     if clear:
       clear_output(True)
 
-    if save and not fname:
-        raise RuntimeError('Please provide a file name `fname` when `save=True`.')
+    if save and not dirname:
+        raise RuntimeError('Please provide a directory name `dirname` when `save=True`.')
 
     if diff_dict:   # add derivatives plot
         fig, ax = plt.subplots(1, 4, figsize=(16, 4))
@@ -36,8 +36,11 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
     linewidth = 2
 
     # MSEs (Pred vs Actual)
-    ax[0].plot(np.arange(len(mse_arr)), mse_arr, alpha=alpha, linewidth=linewidth)
-    # ax[0].set_title('Mean Squared Error')
+    for i, (k, v) in enumerate(mse_dict.items()):
+        ax[0].plot(np.arange(len(v)), v, label=k, alpha=alpha, linewidth=linewidth)
+
+    if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
+        ax[0].legend(loc='upper right')
     ax[0].set_ylabel('Mean Squared Error')
     ax[0].set_xlabel('Step')
     ax[0].set_yscale('log')
@@ -45,9 +48,9 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
     # Losses
     for i, (k, v) in enumerate(loss_dict.items()):
         ax[1].plot(np.arange(len(v)), v, label=k, alpha=alpha, linewidth=linewidth)
+
     if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
         ax[1].legend(loc='upper right')
-    # ax[1].set_title('Loss')
     ax[1].set_xlabel('Step')
     ax[1].set_ylabel('Loss')
     if logloss:
@@ -68,22 +71,31 @@ def plot_results(mse_arr, loss_dict, grid, pred_dict, diff_dict=None, clear=Fals
         ax[2].set_xlabel('$t$')
         ax[2].set_ylabel('$x$')
     ax[2].legend(loc='upper right')
-    # ax[2].set_title('Prediction')
 
     # Derivatives
     if diff_dict:
         for i, (k, v) in enumerate(diff_dict.items()):
             ax[3].plot(grid, v, label=k, alpha=alpha, linestyle=linestyles[i], linewidth=linewidth)
         ax[3].legend(loc='upper right')
-        # ax[3].set_title('Derivative')
         ax[3].set_xlabel('$t$')
         ax[3].set_ylabel('$x$')
-        # ax[3].set_yscale('log')
 
     plt.tight_layout()
     if save:
-        print(f'Saving plot to {fname}')
-        plt.savefig(fname)
+        print(f'Saving results to {dirname}')
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+        plt.savefig(os.path.join(dirname, 'plot.png'))
+        np.save(os.path.join(dirname, "grid"), grid)
+        for k, v in mse_dict.items():
+            np.save(os.path.join(dirname, f"{k}_mse"), v)
+        for k, v in loss_dict.items():
+            np.save(os.path.join(dirname, f"{k}_loss"), v)
+        for k, v in pred_dict.items():
+            np.save(os.path.join(dirname, f"{k}_pred"), v)
+        if diff_dict:
+            for k, v in diff_dict.items():
+                np.save(os.path.join(dirname, f"{k}_diff"), v)
     else:
         plt.show()
 

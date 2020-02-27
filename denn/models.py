@@ -32,6 +32,9 @@ class MLP(nn.Module):
 
         super().__init__()
 
+        if isinstance(activation, str):
+            activation = eval('nn.'+activation+'()')
+
         norm = lambda x: nn.utils.spectral_norm(x) if spectral_norm else x
 
         # input
