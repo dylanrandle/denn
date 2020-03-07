@@ -24,19 +24,21 @@ if __name__ == "__main__":
 
     def gan_tuning(config):
         res = gan_experiment(args.pkey, config)
-        train_mse = res['mses']['train']
-        track.log(mean_squared_error=np.mean(train_mse[-10:]))
+        train_mse = res['mses']['val'] # val is the fixed grid
+        last_pct = train_mse[-int(0.05 * len(train_mse)):]
+        track.log(mean_squared_error=np.mean(last_pct))
         return res
 
     search_space = deepcopy(params)
 
     search_space['training']['g_lr'] = tune.sample_from(lambda spec: 10**(-10 * np.random.rand()))
     search_space['training']['d_lr'] = tune.sample_from(lambda spec: 10**(-10 * np.random.rand()))
-    # search_space['training']['niters'] = tune.sample_from(lambda _: np.random.choice(range(4000,8000)))
-    # search_space['generator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,31)))
-    # search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,4)))
-    # search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,31)))
-    # search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,4)))
+    search_space['training']['niters'] = tune.sample_from(lambda _: np.random.choice(range(1000,5001)))
+    # search_space['training']['lr_schedule'] = tune.sample_from(lambda _: np.random.choice([True, False]))
+    search_space['generator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,51)))
+    search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,6)))
+    search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,51)))
+    search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,6)))
 
     # Uncomment this to enable distributed execution
     # `ray.init(address=...)`
@@ -45,7 +47,7 @@ if __name__ == "__main__":
         gan_tuning,
         name=str(f'gan_tuning_{args.pkey}'),
         config=search_space,
-        num_samples=100
+        num_samples=500
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")

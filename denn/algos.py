@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import os
 
-from ray.tune import track
-
 from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
 from denn.config.config import write_config
 
@@ -24,7 +22,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     if plot and save:
         handle_overwrite(dirname)
 
-    # training: full grid/solution (t/y)
+    # validation: fixed grid/solution
     grid = problem.get_grid()
     soln = problem.get_solution(grid)
 
@@ -61,7 +59,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
     # history
     losses = {'G': [], 'D': []}
-    mses = {'train': []}
+    mses = {'train': [], 'val': []}
 
     for epoch in range(niters):
         # Train Generator
@@ -163,24 +161,23 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
           lr_scheduler_G.step()
           lr_scheduler_D.step()
 
-        # track current MSE on ground truth (train)
-        train_pred = G(grid)
-        train_pred_adj = problem.adjust(pred, grid)[0]
-        train_mse = mse(train_pred_adj, soln).item()
+        # train MSE: grid sample vs true soln
+        grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
+        # pred = pred[sort_ids, :]
+        pred = G(grid_samp)
+        pred_adj = problem.adjust(pred, grid_samp)[0]
+        sol_samp = problem.get_solution(grid_samp)
+        train_mse = mse(pred_adj, sol_samp).item()
         mses['train'].append(train_mse)
-        # try:
-        #     track.log(mean_squared_error=train_mse)
-        # except:
-        #     pass
 
-        # # track current MSE on ground truth (val)
-        # val_pred = G(val_grid)
-        # val_pred_adj = problem.adjust(val_pred, val_grid)[0]
-        # val_mse = mse(val_pred_adj, val_soln).item()
-        # mses['val'].append(val_mse)
+        # val MSE: fixed grid vs true soln
+        val_pred = G(grid)
+        val_pred_adj = problem.adjust(val_pred, grid)[0]
+        val_mse = mse(val_pred_adj, soln).item()
+        mses['val'].append(val_mse)
 
         if log:
-            print(f'Step {epoch} Train MSE {train_mse}')
+            print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
 
     if plot:
         pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, soln)
@@ -205,9 +202,10 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     if plot and save:
         handle_overwrite(dirname)
 
-    # training: full grid/solution (t/y)
+    # validation: fixed grid/solution
     grid = problem.get_grid()
     sol = problem.get_solution(grid)
+    print(sol.shape)
 
     # # validation
     # val_grid = problem.get_grid_sample()
@@ -228,7 +226,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=gamma)
 
     loss_trace = []
-    mses = {'train': []}
+    mses = {'train': [], 'val': []}
 
     for i in range(niters):
         if method == 'unsupervised':
@@ -260,20 +258,24 @@ def train_L2(model, problem, method='unsupervised', niters=100,
             loss = mse(pred_adj, sol_obs)
             loss_trace.append(loss.item())
 
-        # track current MSE on ground truth (train)
-        train_pred = model(grid)
-        train_pred_adj = problem.adjust(pred, grid)[0]
-        train_mse = mse(train_pred_adj, sol).item()
+        # # train MSE: grid sample vs true soln
+        # grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
+        # # pred = pred[sort_ids, :]
+        # pred = model(grid_samp)
+        # pred_adj = problem.adjust(pred, grid_samp)[0]
+        # sol_samp = problem.get_solution(grid_samp)
+        # train_mse = mse(pred_adj, sol_samp).item()
+        train_mse = 0
         mses['train'].append(train_mse)
 
-        # # track current MSE on ground truth (val)
-        # val_pred = model(val_grid)
-        # val_pred_adj = problem.adjust(val_pred, val_grid)[0]
-        # val_mse = mse(val_pred_adj, val_sol).item()
-        # mses['val'].append(val_mse)
+        # val MSE: fixed grid vs true soln
+        val_pred = model(grid)
+        val_pred_adj = problem.adjust(val_pred, grid)[0]
+        val_mse = mse(val_pred_adj, sol).item()
+        mses['val'].append(val_mse)
 
         if log:
-            print(f'Step {i} Train MSE {train_mse}')
+            print(f'Step {i}: Loss {loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
 
         opt.zero_grad()
         loss.backward(retain_graph=True)

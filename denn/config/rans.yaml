@@ -1,38 +1,36 @@
 problem:
-  nx: 50
-  ny: 50
-  f: 1
+  n: 1000
   perturb: True
 
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 400 # 128
-  g_lr: 0.00019893770088673558
-  d_lr: 0.0039994072067298745
+  niters: 20000
+  g_lr: 1.0e-4 # 0.017527633279259706
+  d_lr: 2.4036439049494245e-05
   g_betas: [0.9, 0.999]
   d_betas: [0.9, 0.999]
   lr_schedule: False
-  gamma: 0.99
+  gamma: 0.9999
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: SmoothL1Loss
+  loss_fn: MSELoss
   wgan: False
   gp: 0.1
   conditional: False
   log: True
   plot: True
   save: False
-  dirname: 'POS_run_Feb272020_SmoothL1Compare'
+  dirname: 'RANS_run'
 
 generator:
-  in_dim: 2
+  in_dim: 1
   out_dim: 1
-  n_hidden_units: 30
-  n_hidden_layers: 3
+  n_hidden_units: 40
+  n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
   regress: True
@@ -40,8 +38,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 30
-  n_hidden_layers: 3
+  n_hidden_units: 20
+  n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
   regress: False

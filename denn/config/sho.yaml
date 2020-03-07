@@ -18,13 +18,13 @@ training:
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: MSELoss
+  loss_fn: SmoothL1Loss
   wgan: False
   gp: 0.1
   conditional: False
   log: True
   plot: True
-  save: True
+  save: False
   dirname: 'SHO_run'
 
 generator:

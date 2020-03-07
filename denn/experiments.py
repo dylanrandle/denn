@@ -21,6 +21,8 @@ def get_problem(pkey, params):
         return pb.NonlinearOscillator(**params['problem'])
     elif pkey == 'pos':
         return pb.PoissonEquation(**params['problem'])
+    elif pkey == 'rans':
+        return pb.ReynoldsAveragedNavierStokes(**params['problem'])
     else:
         raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
 

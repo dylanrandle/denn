@@ -5,7 +5,7 @@ import tqdm
 import copy
 import time
 import os
-import utils
+import denn.rans.rans_utils as utils
 
 class Chanflow(torch.nn.Module):
     """ Basic neural network to approximate the solution of the stationary channel flow PDE """

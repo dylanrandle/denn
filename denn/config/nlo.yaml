@@ -7,9 +7,9 @@ problem:
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 1624
-  g_lr: 0.017527633279259706
-  d_lr: 2.4036439049494245e-05
+  niters: 1624 # 2226 # 2507
+  g_lr: 0.017527633279259706 # 0.004469715484799873 # 0.00832037200610708
+  d_lr: 2.4036439049494245e-05 # 0.0005155201359737032 # 0.0002000216091078027
   g_betas: [0.9, 0.999]
   d_betas: [0.9, 0.999]
   lr_schedule: False
@@ -25,14 +25,14 @@ training:
   conditional: False
   log: True
   plot: True
-  save: True
+  save: False
   dirname: 'NLO_run'
 
 generator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 2
+  n_hidden_units: 20 # 48
+  n_hidden_layers: 2 # 4
   activation: 'Tanh'
   residual: True
   regress: True
@@ -40,8 +40,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 2
+  n_hidden_units: 20 # 37
+  n_hidden_layers: 2 # 4 
   activation: 'Tanh'
   residual: True
   regress: False

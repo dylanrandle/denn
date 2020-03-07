@@ -3,6 +3,9 @@ import torch
 from scipy.integrate import odeint
 from denn.utils import diff
 from denn.poisson.poisson import compute_solution as poisson_compute_solution
+import os
+
+_THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class Problem():
     """ parent class for all problems
@@ -24,6 +27,18 @@ class Problem():
             return grid + spacing * torch.randn_like(grid) / 3
         else:
             return grid
+
+    # def sample_grid(self, grid, spacing):
+    #     """ return perturbed samples from the grid
+    #         grid is the torch tensor representing the grid
+    #         d is the inter-point spacing
+    #     """
+    #     if self.perturb:
+    #         ptb = grid + spacing * torch.randn_like(grid) / 3
+    #         ptb, _ = torch.sort(ptb, dim=0)
+    #         return ptb
+    #     else:
+    #         return grid
 
     def get_grid(self):
         """ return base grid """
@@ -241,6 +256,7 @@ class NonlinearOscillator(Problem):
             pass
 
         t = t.reshape(-1)
+
         sol = odeint(self._nlo_system, [self.x0, self.dx_dt0], t, tfirst=True)
         return torch.tensor(sol[:,0], dtype=torch.float).reshape(-1, 1)
 
@@ -270,6 +286,76 @@ class NonlinearOscillator(Problem):
         xadj, dx, d2x = self.adjust(x, t)
         pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
         diff_dict = None     # the derivatives here are less meaningful, so dont plot them
+        return pred_dict, diff_dict
+
+class ReynoldsAveragedNavierStokes(Problem):
+    """
+    RANS Equations for 1-Dimensional Channel Flow
+    """
+    def __init__(self, ymin = -1, ymax = 1, bc = [0, 0],
+        kappa=0.41, rho=1.0, nu=0.0055555555, dp_dx = -1,
+        **kwargs):
+        """
+        ymin - min y-coordinate
+        ymax - max y-coordinate
+        bc - boundary condation as [u(ymin), y(ymax)]
+        kwargs - keyword args passed to `Problem`
+        """
+        super().__init__(**kwargs)
+        self.ymin = ymin
+        self.ymax = ymax
+        self.bc = bc
+        self.kappa = kappa
+        self.rho = rho
+        self.nu = nu
+        self.dp_dx = dp_dx
+        self.delta = 1
+        self.grid = torch.linspace(
+            ymin,
+            ymax,
+            self.n,
+            dtype=torch.float,
+            requires_grad=True
+        ).reshape(-1, 1)
+        self.spacing = self.grid[1, 0] - self.grid[0, 0]
+
+    def get_grid(self):
+        return self.grid
+
+    def get_grid_sample(self):
+        return self.sample_grid(self.grid, self.spacing)
+
+    def get_solution(self, y):
+        return torch.tensor(
+            np.load(os.path.join(_THIS_DIR, '../data/mixlen_numerical_u180.npy')),
+            dtype=torch.float).reshape(-1,1)
+
+    def _reynolds_stress(self, y, du_dy):
+        a = self.kappa * (torch.abs(y)-self.delta) # / (2*self.delta)
+        return -(a ** 2) * torch.abs(du_dy) * du_dy
+
+    def _rans_eqn(self, dre, d2u):
+        return self.nu * d2u - dre - (1/self.rho) * self.dp_dx
+
+    def adjust(self, y, u):
+        a = self.bc[0]
+        b = (self.bc[1]-self.bc[0]) * (y - self.ymin)
+        c = self.ymax - self.ymin
+        d = (y - self.ymin)*(y - self.ymax) * u
+        u_adj = a + b/c + d
+        du = diff(u_adj, y)
+        dre = diff(self._reynolds_stress(y, du), y)
+        d2u = diff(du, y)
+        return u_adj, dre, d2u
+
+    def get_equation(self, y, u):
+        uadj, dre, d2u = self.adjust(y, u)
+        return self._rans_eqn(dre, d2u)
+
+    def get_plot_dicts(self, u, y, sol):
+        uadj, dre, d2u = self.adjust(y, u)
+        pred_dict = {'$\hat{u}$': uadj.detach(), '$u$': sol.detach()}
+        diff_dict = None
         return pred_dict, diff_dict
 
 class PoissonEquation(Problem):

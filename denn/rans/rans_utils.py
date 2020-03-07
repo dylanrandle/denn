@@ -1,7 +1,13 @@
-import denn.channel_flow as chan
+import denn.rans.channel_flow as chan
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
+
+# global plot params
+plt.rc('axes', titlesize=15)
+plt.rc('axes', labelsize=12)
+plt.rc('legend', fontsize=12)
 
 def calc_renot(u_bar, delta, nu):
     """ calculates Re_not where Re stands for Reynolds number"""
@@ -43,32 +49,33 @@ def plot_dns(handle, dns, hypers, color='red', label='DNS'):
 
 def loss_vs_distance(ax, ymin, ymax, model, n):
     """ plots model loss vs. distance in the channel """
-    y = torch.tensor(torch.linspace(ymin,ymax,n).reshape(-1,1), requires_grad=True)
+    y = torch.linspace(ymin,ymax,n, requires_grad=True).reshape(-1,1)
     u_bar = model.predict(y)
     axial_eqn = model.compute_diffeq(u_bar, y)
-    ax.plot(y.detach().numpy(), np.power(axial_eqn.detach().numpy(), 2), 'o', markersize=2, lw=0.5, label='square')
-    ax.set_title('Loss as a function of distance on ({}, {})'.format(ymin, ymax))
-    ax.set_ylabel('Loss (f^2 or |f|)')
-    ax.set_xlabel('position (y)')
-    ax.legend()
+    ax.plot(y.detach().numpy(), np.abs(axial_eqn.detach().numpy()), 'o',
+        alpha=0.5, markersize=2, color='crimson', lw=0.5, label='square')
+    # ax.set_title('Loss as a function of distance on ({}, {})'.format(ymin, ymax))
+    ax.set_ylabel('Loss')
+    ax.set_xlabel('$y$')
+    # ax.legend()
 
 def make_plots(ax, train_loss, val_loss,  preds, hypers, retau, numerical):
     """ plot loss and prediction of model at retau for RANS equations """
     # losses
-    ax[0].loglog(np.arange(train_loss.shape[0]), train_loss, color='blue', label='train')
-    ax[0].loglog(np.arange(val_loss.shape[0])*100, val_loss, color='orange', label='val', alpha=0.7)
-    ax[0].set_title('Log mean loss vs. log epoch at Retau={}'.format(retau))
-    ax[0].set_xlabel('log( epoch )')
-    ax[0].set_ylabel('log( mean loss )')
+    ax[0].loglog(np.arange(train_loss.shape[0]), train_loss, color='crimson', label='train')
+    ax[0].loglog(np.arange(val_loss.shape[0])*100, val_loss, color='blue', label='val', alpha=0.7)
+    # ax[0].set_title('Log mean loss vs. log epoch at Retau={}'.format(retau))
+    ax[0].set_xlabel('Step')
+    ax[0].set_ylabel('Loss')
     ax[0].legend()
     # preds
     y_space = torch.linspace(hypers['ymin'], hypers['ymax'], hypers['n']).reshape(-1,1)
     y=y_space.detach().numpy()
-    ax[1].plot(preds, y, alpha=1, color='blue', label='NN')
-    ax[1].plot(numerical, y, label='FD', color='black')
-    ax[1].set_title('Predicted $<u>$ at Retau={}'.format(retau))
-    ax[1].set_ylabel('y')
-    ax[1].set_xlabel('$<u>$')
+    ax[1].plot(preds, y, alpha=1, color='crimson', label='NN')
+    ax[1].plot(numerical, y, label='FD', color='blue')
+    # ax[1].set_title('Predicted $<u>$ at Retau={}'.format(retau))
+    ax[1].set_ylabel('$y$')
+    ax[1].set_xlabel('$\\bar{u}$')
     ax[1].legend()
 
 def expose_results(folder_timestamp, top_dir='experiments/', dns_file='data/LM_Channel_Retau180.txt', numerical_file='data/mixlen_numerical_u180.npy'):
@@ -77,33 +84,36 @@ def expose_results(folder_timestamp, top_dir='experiments/', dns_file='data/LM_C
     preds = np.load(top_dir+'{}/preds.npy'.format(folder_timestamp))
     train_loss = np.load(top_dir+'{}/train_loss.npy'.format(folder_timestamp))
     val_loss = np.load(top_dir+'{}/val_loss.npy'.format(folder_timestamp))
-    hypers = np.load(top_dir+'{}/hypers.npy'.format(folder_timestamp))
+    hypers = np.load(top_dir+'{}/hypers.npy'.format(folder_timestamp), allow_pickle=True)
     hypers = hypers.item()
     print('hypers: \n{}'.format(hypers))
     pdenn = chan.Chanflow(**hypers)
     pdenn.load_state_dict(torch.load(top_dir+'{}/model.pt'.format(folder_timestamp)))
-    dns = pd.read_csv(dns_file, delimiter=' ')
+    # dns = pd.read_csv(dns_file, delimiter=' ')
     # half_u, half_y = convert_dns(hypers, dns)
     numerical = np.load(numerical_file)
     retau=hypers['retau']
 
-    fig, ax = plt.subplots(1, 2, figsize=(20,10))
-    plot_dns(ax[1], dns, hypers)
+    fig, ax = plt.subplots(1, 2, figsize=(12,5))
+    # plot_dns(ax[1], dns, hypers)
     make_plots(ax, train_loss, val_loss, preds, hypers, retau, numerical)
+    plt.savefig('rans_nn_vs_fd_grid.png')
 
-    y = np.linspace(hypers['ymin'], hypers['ymax'], hypers['n'])
-    fig, ax = plt.subplots(1, 1, figsize=(10,8))
-    ax.plot(preds, y, 'o', label='NN', color='blue', alpha=1, markersize=0.5, linewidth=1)
-    ax.plot(numerical, y, label='FD', color='black')
-    ax.set_title('$<U>$ @ Re_tau = {}'.format(retau))
-    ax.set_xlabel('$<U>$')
-    ax.set_ylabel('$y$')
-    ax.legend()
+    # y = np.linspace(hypers['ymin'], hypers['ymax'], hypers['n'])
+    # fig, ax = plt.subplots(1, 1, figsize=(10,8))
+    # ax.plot(preds, y, 'o', label='NN', color='blue', alpha=1, markersize=0.5, linewidth=1)
+    # ax.plot(numerical, y, label='FD', color='black')
+    # # ax.set_title('$<U>$ @ Re_tau = {}'.format(retau))
+    # ax.set_xlabel('$<U>$')
+    # ax.set_ylabel('$y$')
+    # ax.legend()
 
-    fig, ax = plt.subplots(2,2, figsize=(12,10))
-    loss_vs_distance(ax[0,0],  -1, 1, pdenn, 1000)
-    loss_vs_distance(ax[0,1], -.5, .5, pdenn, 1000)
-    loss_vs_distance(ax[1,0], .8, 1, pdenn, 1000)
-    loss_vs_distance(ax[1,1], .99, 1, pdenn, 1000)
+    npts = 10000
+    fig, ax = plt.subplots(2,2, figsize=(6,5))
+    loss_vs_distance(ax[0,0],  -1, 1, pdenn, npts)
+    loss_vs_distance(ax[0,1], -.5, .5, pdenn, npts)
+    loss_vs_distance(ax[1,0], -1, -0.9, pdenn, npts)
+    loss_vs_distance(ax[1,1], 0.9, 1, pdenn, npts)
+    fig.tight_layout()
 
     plt.show()

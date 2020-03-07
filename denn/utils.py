@@ -34,10 +34,13 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
     linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
     linewidth = 2
+    alphas = [alpha, alpha-0.2, alpha-0.4]
+    colors = ['crimson', 'blue', 'skyblue', 'limegreen', 'aquamarine']
 
     # MSEs (Pred vs Actual)
     for i, (k, v) in enumerate(mse_dict.items()):
-        ax[0].plot(np.arange(len(v)), v, label=k, alpha=alpha, linewidth=linewidth)
+        ax[0].plot(np.arange(len(v)), v, label=k,
+            alpha=alphas[i], linewidth=linewidth, color=colors[i])
 
     if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
         ax[0].legend(loc='upper right')
@@ -47,7 +50,8 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
     # Losses
     for i, (k, v) in enumerate(loss_dict.items()):
-        ax[1].plot(np.arange(len(v)), v, label=k, alpha=alpha, linewidth=linewidth)
+        ax[1].plot(np.arange(len(v)), v, label=k,
+            alpha=alphas[i], linewidth=linewidth, color=colors[i])
 
     if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
         ax[1].legend(loc='upper right')
@@ -58,24 +62,30 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
     # Predictions
     if grid.shape[1] == 2: # PDE
-        xx, yy = np.meshgrid(grid[:,0], grid[:,1])
-        for k, v in pred_dict.items():
-            sct1 = ax[2].scatter(grid[:,0], grid[:,1], c=v, label=k,
-                alpha=alpha, cmap='coolwarm')
-            cbar1 = fig.colorbar(sct1, format='%.0e', ax=ax[2])
+        x = np.unique(grid[:, 0])
+        y = np.unique(grid[:, 1])
+        for i, (k, v) in enumerate(pred_dict.items()):
+            v = v.reshape((len(x),len(y)))
+            cf = ax[2].contourf(x, y, v, cmap='Blues')
+            cb = fig.colorbar(cf, format='%.0e', ax=ax[2])
         ax[2].set_xlabel('$x$')
         ax[2].set_ylabel('$y$')
     else: # ODE
         for i, (k, v) in enumerate(pred_dict.items()):
-            ax[2].plot(grid, v, label=k, alpha=alpha, linestyle=linestyles[i], linewidth=linewidth)
+            ax[2].plot(grid, v, label=k,
+                alpha=alphas[i], linestyle=linestyles[i],
+                linewidth=linewidth, color=colors[i])
         ax[2].set_xlabel('$t$')
         ax[2].set_ylabel('$x$')
-    ax[2].legend(loc='upper right')
+    if len(pred_dict.keys()) > 1:
+        ax[2].legend(loc='upper right')
 
     # Derivatives
     if diff_dict:
         for i, (k, v) in enumerate(diff_dict.items()):
-            ax[3].plot(grid, v, label=k, alpha=alpha, linestyle=linestyles[i], linewidth=linewidth)
+            ax[3].plot(grid, v, label=k,
+                alpha=alphas[i], linestyle=linestyles[i],
+                linewidth=linewidth, color=colors[i])
         ax[3].legend(loc='upper right')
         ax[3].set_xlabel('$t$')
         ax[3].set_ylabel('$x$')
