@@ -1,6 +1,27 @@
-import denn.channel_flow as chan
+import denn.rans.channel_flow as chan
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.integrate import solve_bvp
+
+def solve_rans_scipy_solve_bvp(y, k=0.41/4, nu=0.0055555555, rho=1,
+    dpdx=-1, max_nodes=100000, tol=1e-6, delta=1):
+    """ use scipy solve_bvp to solve RANS equation """
+
+    def fun(y, u):
+        """ solves the equation as system """
+        du_sig = np.sign(u[1])
+        a = 4 * ((y**2) - delta) * y * du_sig * u[1]**2
+        b = ((y**2) - delta)**2
+        return np.vstack([
+            u[1],
+            (-(k**2)*a + dpdx/rho)/( nu + (k**2) * b * (du_sig * u[1] + np.abs(u[1])))
+        ])
+    def bc(ua, ub):
+        """ boundary residuals (just zero) """
+        return np.array([ua[0], ub[0]])
+
+    u0 = np.zeros((2, y.size))
+    return solve_bvp(fun, bc, y, u0, max_nodes=max_nodes, tol=tol)
 
 def handle_boundary(u, i, n, U_0=0, U_L=0):
     # careful with boundaries. contains {i-2, i-1, i, i+1, i+2}
