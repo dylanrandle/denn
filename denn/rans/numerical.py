@@ -4,7 +4,7 @@ import numpy as np
 from scipy.integrate import solve_bvp
 
 def solve_rans_scipy_solve_bvp(y, k=0.41/4, nu=0.0055555555, rho=1,
-    dpdx=-1, max_nodes=100000, tol=1e-6, delta=1):
+    dpdx=-1, max_nodes=1000, tol=1e-3, delta=1):
     """ use scipy solve_bvp to solve RANS equation """
 
     def fun(y, u):

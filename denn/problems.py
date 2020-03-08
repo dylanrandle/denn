@@ -3,6 +3,7 @@ import torch
 from scipy.integrate import odeint
 from denn.utils import diff
 from denn.poisson.poisson import compute_solution as poisson_compute_solution
+from denn.rans.numerical import solve_rans_scipy_solve_bvp
 import os
 
 _THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -27,18 +28,6 @@ class Problem():
             return grid + spacing * torch.randn_like(grid) / 3
         else:
             return grid
-
-    # def sample_grid(self, grid, spacing):
-    #     """ return perturbed samples from the grid
-    #         grid is the torch tensor representing the grid
-    #         d is the inter-point spacing
-    #     """
-    #     if self.perturb:
-    #         ptb = grid + spacing * torch.randn_like(grid) / 3
-    #         ptb, _ = torch.sort(ptb, dim=0)
-    #         return ptb
-    #     else:
-    #         return grid
 
     def get_grid(self):
         """ return base grid """
@@ -293,7 +282,7 @@ class ReynoldsAveragedNavierStokes(Problem):
     RANS Equations for 1-Dimensional Channel Flow
     """
     def __init__(self, ymin = -1, ymax = 1, bc = [0, 0],
-        kappa=0.41, rho=1.0, nu=0.0055555555, dp_dx = -1,
+        kappa=0.41/4, rho=1.0, nu=0.0055555555, dp_dx = -1,
         **kwargs):
         """
         ymin - min y-coordinate
@@ -325,10 +314,18 @@ class ReynoldsAveragedNavierStokes(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
-    def get_solution(self, y):
-        return torch.tensor(
-            np.load(os.path.join(_THIS_DIR, '../data/mixlen_numerical_u180.npy')),
-            dtype=torch.float).reshape(-1,1)
+    def get_solution(self, y, max_nodes=1000, tol=1e-3):
+        try:
+            y = y.detach().numpy() # if torch tensor, convert to numpy
+        except:
+            pass
+
+        y = y.reshape(-1)
+
+        res = solve_rans_scipy_solve_bvp(y, k=self.kappa, nu=self.nu, rho=self.rho,
+            dpdx=self.dp_dx, delta=self.delta, max_nodes=max_nodes, tol=tol)
+        soln = res.sol(y)[0]
+        return torch.tensor(soln, dtype=torch.float).reshape(-1,1)
 
     def _reynolds_stress(self, y, du_dy):
         a = self.kappa * (torch.abs(y)-self.delta) # / (2*self.delta)
@@ -464,35 +461,4 @@ class PoissonEquation(Problem):
 
 
 if __name__ == '__main__':
-    import matplotlib.pyplot as plt
-    print('testing poisson object')
-    ps = PoissonEquation(n=100)
-    samp = ps.get_grid_sample()
-    print('samp')
-    print(samp)
-    print(samp.shape)
-    sol = ps.get_solution(samp)
-    print('sol')
-    print(sol)
-    print(sol.shape)
-    # print('mesh')
-    # print(mesh)
-    # print(mesh.shape)
-    grid = ps.get_grid()
-    print('grid')
-    print(grid)
-    print(grid.shape)
-    grid = grid.detach().numpy()
-    print('grid np')
-    print(grid)
-    print(grid.shape)
-
-    # assert np.allclose(grid, mesh)
-    plt.scatter(grid[:,0], grid[:,1], c=sol.reshape(-1))
-    plt.show()
-
-    print('sol_adj')
-    grid = ps.get_grid()
-    sol = torch.tensor(sol)
-    sol_adj = ps.adjust(sol, grid)
-    print(sol_adj)
+    print('Problems module')

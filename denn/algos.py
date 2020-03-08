@@ -26,10 +26,6 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     grid = problem.get_grid()
     soln = problem.get_solution(grid)
 
-    # # validation
-    # val_grid = problem.get_grid_sample()
-    # val_soln = problem.get_solution(val_grid)
-
     # observer mask and masked grid/solution (t_obs/y_obs)
     observers = torch.arange(0, len(grid), obs_every)
     grid_obs = grid[observers, :]
@@ -207,10 +203,6 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     sol = problem.get_solution(grid)
     print(sol.shape)
 
-    # # validation
-    # val_grid = problem.get_grid_sample()
-    # val_sol = problem.get_solution(val_grid)
-
     observers = torch.arange(0, len(grid), obs_every)
     grid_obs = grid[observers, :]
     sol_obs = sol[observers, :]
@@ -258,14 +250,12 @@ def train_L2(model, problem, method='unsupervised', niters=100,
             loss = mse(pred_adj, sol_obs)
             loss_trace.append(loss.item())
 
-        # # train MSE: grid sample vs true soln
-        # grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
-        # # pred = pred[sort_ids, :]
-        # pred = model(grid_samp)
-        # pred_adj = problem.adjust(pred, grid_samp)[0]
-        # sol_samp = problem.get_solution(grid_samp)
-        # train_mse = mse(pred_adj, sol_samp).item()
-        train_mse = 0
+        # train MSE: grid sample vs true soln
+        grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
+        pred = model(grid_samp)
+        pred_adj = problem.adjust(pred, grid_samp)[0]
+        sol_samp = problem.get_solution(grid_samp)
+        train_mse = mse(pred_adj, sol_samp).item()
         mses['train'].append(train_mse)
 
         # val MSE: fixed grid vs true soln
