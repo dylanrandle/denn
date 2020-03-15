@@ -30,7 +30,7 @@ if __name__ == '__main__':
     params['training']['save'] = False
 
     np.random.seed(42)
-    seeds = np.random.randint(int(1e16), size=args.nreps)
+    seeds = np.random.randint(int(1e6), size=args.nreps)
 
     results = []
     for s in seeds:
@@ -41,7 +41,7 @@ if __name__ == '__main__':
             print(f'Running GAN training for {args.pkey} problem...')
             res = gan_experiment(args.pkey, params)
         else:
-            print(f'Running L2 training for {args.pkey} problem...')
+            print(f'Running classical training for {args.pkey} problem...')
             res = L2_experiment(args.pkey, params)
 
         results.append(res['mses']['val'])

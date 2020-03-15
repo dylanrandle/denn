@@ -8,7 +8,10 @@ def solve_rans_scipy_solve_bvp(y, k=0.41/4, nu=0.0055555555, rho=1,
     """ use scipy solve_bvp to solve RANS equation """
 
     def fun(y, u):
-        """ solves the equation as system """
+        """ solves the equation as system
+            gets around the absolute value using np.sign
+            to track the sign, and then treats as regular element
+        """
         du_sig = np.sign(u[1])
         a = 4 * ((y**2) - delta) * y * du_sig * u[1]**2
         b = ((y**2) - delta)**2
@@ -22,6 +25,12 @@ def solve_rans_scipy_solve_bvp(y, k=0.41/4, nu=0.0055555555, rho=1,
 
     u0 = np.zeros((2, y.size))
     return solve_bvp(fun, bc, y, u0, max_nodes=max_nodes, tol=tol)
+
+# ===========================
+# Things below this line are
+# highly suspect and should
+# not be trusted.
+# ===========================
 
 def handle_boundary(u, i, n, U_0=0, U_L=0):
     # careful with boundaries. contains {i-2, i-1, i, i+1, i+2}

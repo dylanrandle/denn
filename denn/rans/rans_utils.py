@@ -97,7 +97,8 @@ def expose_results(folder_timestamp, top_dir='experiments/', dns_file='data/LM_C
     fig, ax = plt.subplots(1, 2, figsize=(12,5))
     # plot_dns(ax[1], dns, hypers)
     make_plots(ax, train_loss, val_loss, preds, hypers, retau, numerical)
-    plt.savefig('rans_nn_vs_fd_grid.png')
+    fig.tight_layout()
+    # plt.savefig('rans_nn_vs_fd_perturbed.png')
 
     # y = np.linspace(hypers['ymin'], hypers['ymax'], hypers['n'])
     # fig, ax = plt.subplots(1, 1, figsize=(10,8))

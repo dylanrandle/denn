@@ -1,12 +1,12 @@
 problem:
-  n: 100
+  n: 1000
   perturb: True
   t_max: 6.28
 
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 822
+  niters: 600 # 822
   g_lr: 0.006397509258273433
   d_lr: 0.0001715952321721463
   g_betas: [0.9, 0.999]
@@ -18,14 +18,14 @@ training:
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: SmoothL1Loss
+  loss_fn: MSELoss
   wgan: False
   gp: 0.1
   conditional: False
   log: True
   plot: True
-  save: False
-  dirname: 'SHO_run'
+  save: True
+  dirname: 'SHO_run_gan600step'
 
 generator:
   in_dim: 1

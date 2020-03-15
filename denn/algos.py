@@ -5,6 +5,8 @@ import os
 from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
 from denn.config.config import write_config
 
+from ray.tune import track
+
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
@@ -171,6 +173,11 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         val_pred_adj = problem.adjust(val_pred, grid)[0]
         val_mse = mse(val_pred_adj, soln).item()
         mses['val'].append(val_mse)
+        try:
+            if epoch % 10 == 0:
+                track.log(mean_squared_error=val_mse)
+        except:
+            pass
 
         if log:
             print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
@@ -201,7 +208,6 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     # validation: fixed grid/solution
     grid = problem.get_grid()
     sol = problem.get_solution(grid)
-    print(sol.shape)
 
     observers = torch.arange(0, len(grid), obs_every)
     grid_obs = grid[observers, :]

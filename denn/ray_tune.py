@@ -4,10 +4,13 @@ import numpy as np
 
 from ray import tune
 from ray.tune import track
-from ray.tune.schedulers import ASHAScheduler
+from ray.tune.schedulers import AsyncHyperBandScheduler, MedianStoppingRule
 
 from denn.experiments import gan_experiment
 from denn.config.config import get_config
+
+N_REPS = 5
+LAST_PCT = 0.05
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
@@ -24,30 +27,29 @@ if __name__ == "__main__":
 
     def gan_tuning(config):
         res = gan_experiment(args.pkey, config)
-        train_mse = res['mses']['val'] # val is the fixed grid
-        last_pct = train_mse[-int(0.05 * len(train_mse)):]
-        track.log(mean_squared_error=np.mean(last_pct))
-        return res
 
     search_space = deepcopy(params)
 
     search_space['training']['g_lr'] = tune.sample_from(lambda spec: 10**(-10 * np.random.rand()))
     search_space['training']['d_lr'] = tune.sample_from(lambda spec: 10**(-10 * np.random.rand()))
-    search_space['training']['niters'] = tune.sample_from(lambda _: np.random.choice(range(1000,5001)))
-    # search_space['training']['lr_schedule'] = tune.sample_from(lambda _: np.random.choice([True, False]))
-    search_space['generator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,51)))
-    search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,6)))
-    search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda _: np.random.choice(range(20,51)))
-    search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda _: np.random.choice(range(2,6)))
 
     # Uncomment this to enable distributed execution
     # `ray.init(address=...)`
+
+    scheduler = AsyncHyperBandScheduler(
+        time_attr='time_total_s',
+        metric='mean_squared_error',
+        mode='min',
+        grace_period=20,
+        max_t=120
+    )
 
     analysis = tune.run(
         gan_tuning,
         name=str(f'gan_tuning_{args.pkey}'),
         config=search_space,
-        num_samples=500
+        scheduler=scheduler,
+        num_samples=100
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")
