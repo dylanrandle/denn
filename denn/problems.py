@@ -459,6 +459,109 @@ class PoissonEquation(Problem):
         diff_dict = None
         return pred_dict, diff_dict
 
+class SIRModel(Problem):
+    """ SIR model for epidemiological spread of disease
+        three outputs: S, I, R
+        three equations: minimize residual sum
+    """
+    def __init__(self, t_min = 0, t_max = 60, S0 = 1,
+        I0 = 0, R0 = 0, beta = 1, gamma = 1, **kwargs):
+        """
+        inputs:
+            - t_min: start time
+            - t_max: end time
+            - dx_dt0: initial condition on dx_dt
+            - kwargs: keyword args passed to Problem.__init__()
+        """
+        super().__init__(**kwargs)
+
+        self.t_min = t_min
+        self.t_max = t_max
+        self.S0 = S0
+        self.I0 = I0
+        self.R0 = R0
+        self.beta = beta
+        self.gamma = gamma
+        self.grid = torch.linspace(
+            t_min,
+            t_max,
+            self.n,
+            dtype=torch.float,
+            requires_grad=True
+        ).reshape(-1, 1)
+        self.spacing = self.grid[1, 0] - self.grid[0, 0]
+
+    def get_grid(self):
+        return self.grid
+
+    def get_grid_sample(self):
+        return self.sample_grid(self.grid, self.spacing)
+
+    def get_solution(self, t):
+        """ uses scipy to solve """
+        try:
+            t = t.detach().numpy() # if torch tensor, convert to numpy
+        except:
+            pass
+
+        t = t.reshape(-1)
+
+        init_cond = [self.S0, self.I0, self.R0]
+
+        sol = odeint(self._sir_system, init_cond, t, tfirst=True)
+        return torch.tensor(sol, dtype=torch.float)
+
+    def _sir_system(self, t, x):
+        S, I, R = x[0], x[1], x[2]
+        N = S+I+R
+        rhs1 = -self.beta*I*S/N
+        rhs2 = (self.beta*I*S/N) - self.gamma*I
+        rhs3 = self.gamma*I
+        return np.array([rhs1, rhs2, rhs3])
+
+    def get_equation(self, x, t):
+        """ return value of residuals of equation (i.e. LHS) """
+        eqn1, eqn2, eqn3 = self.adjust(x, t)
+        return eqn1 + eqn2 + eqn3
+
+    def adjust(self, x, t):
+        """ perform initial value adjustment """
+        S, I, R = x[:, 0], x[:, 1], x[:, 2]
+
+        S_adj = self.S0 + (1 - torch.exp(-t)) * S
+        I_adj = self.I0 + (1 - torch.exp(-t)) * I
+        R_adj = self.R0 + (1 - torch.exp(-t)) * R
+
+        N = S_adj + I_adj + R_adj
+
+        eqn1 = diff(S_adj, t) + self.beta * I_adj * S_adj / N
+        eqn2 = diff(I_adj, t) - (self.beta * I_adj * S_adj / N) + self.gamma * I_adj
+        eqn3 = diff(R_adj, t) - self.gamma * I_adj
+
+        return eqn1, eqn2, eqn3
+
+    def get_plot_dicts(self, x, t, y):
+        """ return appropriate pred_dict and diff_dict used for plotting """
+        xadj, dx, d2x = self.adjust(x, t)
+        pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
+        diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\ddot{x}}$': (-d2x).detach()}
+        return pred_dict, diff_dict
+
 
 if __name__ == '__main__':
+    import matplotlib.pyplot as plt
     print('Problems module')
+    sir = SIRModel(n=1000, S0=0.9, I0=0.1, R0=0.0, beta=1, gamma=1)
+    t = sir.get_grid()
+    sol = sir.get_solution(t)
+
+    # plot
+    t = t.detach()
+    sol = sol.detach()
+    a=1.0
+    # s=0.1
+    plt.plot(t, sol[:,0], alpha=a, label='S')
+    plt.plot(t, sol[:,1], alpha=a, label='I')
+    plt.plot(t, sol[:,2], alpha=a, label='R')
+    plt.legend()
+    plt.show()
