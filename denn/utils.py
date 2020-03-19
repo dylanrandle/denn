@@ -5,6 +5,7 @@ import numpy as np
 import itertools
 import matplotlib.pyplot as plt
 from IPython.display import clear_output
+import pandas as pd
 
 # global plot params
 plt.rc('axes', titlesize=15)
@@ -32,15 +33,17 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     else:
         fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 
-    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*2
     linewidth = 2
-    alphas = [alpha, alpha-0.2, alpha-0.4]
-    colors = ['crimson', 'blue', 'skyblue', 'limegreen', 'aquamarine']
+    alphas = [alpha]*10
+    colors = ['crimson', 'blue', 'skyblue', 'limegreen',
+        'aquamarine', 'violet', 'black']
 
     # MSEs (Pred vs Actual)
     for i, (k, v) in enumerate(mse_dict.items()):
         ax[0].plot(np.arange(len(v)), v, label=k,
-            alpha=alphas[i], linewidth=linewidth, color=colors[i])
+            alpha=alphas[i], linewidth=linewidth, color=colors[i],
+            linestyle=linestyles[i])
 
     if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
         ax[0].legend(loc='upper right')
@@ -51,7 +54,8 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     # Losses
     for i, (k, v) in enumerate(loss_dict.items()):
         ax[1].plot(np.arange(len(v)), v, label=k,
-            alpha=alphas[i], linewidth=linewidth, color=colors[i])
+            alpha=alphas[i], linewidth=linewidth, color=colors[i],
+            linestyle=linestyles[i])
 
     if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
         ax[1].legend(loc='upper right')
@@ -88,7 +92,9 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
                 linewidth=linewidth, color=colors[i])
         ax[3].legend(loc='upper right')
         ax[3].set_xlabel('$t$')
-        ax[3].set_ylabel('$x$')
+        # ax[3].set_ylabel('$x$')
+        ax[3].set_ylabel('$F$')
+        ax[3].set_yscale('log')
 
     plt.tight_layout()
     if save:
@@ -106,6 +112,36 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
         if diff_dict:
             for k, v in diff_dict.items():
                 np.save(os.path.join(dirname, f"{k}_diff"), v)
+    else:
+        plt.show()
+
+def plot_reps_results(arrs, labels=['GAN', '$L_2$', '$L_1$', 'Huber'],
+    linewidth=2, alpha_line=0.8, alpha_shade=0.4, figsize=(12,8),
+    pctiles = (2.5, 97.5), window=10, fname=None):
+
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*2
+    colors = ['crimson', 'blue', 'skyblue', 'limegreen',
+        'aquamarine', 'violet', 'black']
+
+    plt.figure(figsize=figsize)
+    plt.yscale('log')
+
+    steps = np.arange(arrs[0].shape[1])
+
+    for i, a in enumerate(arrs):
+        a = pd.DataFrame(data=a).rolling(window, axis=1).mean().values
+        plt.plot(steps, np.median(a, axis=0), label=labels[i],
+                 color=colors[i], linestyle=linestyles[i], linewidth=linewidth, alpha=alpha_line)
+        lqt, upt = np.percentile(a, pctiles, axis=0)
+        plt.fill_between(steps, lqt, upt, alpha=alpha_shade, color=colors[i])
+
+    plt.legend(loc='lower left')
+    plt.xlabel('Iteration')
+    plt.ylabel('Mean squared error')
+    plt.grid()
+
+    if fname:
+        plt.savefig(fname)
     else:
         plt.show()
 

@@ -23,6 +23,8 @@ def get_problem(pkey, params):
         return pb.PoissonEquation(**params['problem'])
     elif pkey == 'rans':
         return pb.ReynoldsAveragedNavierStokes(**params['problem'])
+    elif pkey == 'sir':
+        return pb.SIRModel(**params['problem'])
     else:
         raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
 

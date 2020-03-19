@@ -2,6 +2,7 @@ from copy import deepcopy
 import argparse
 import numpy as np
 
+import ray
 from ray import tune
 from ray.tune import track
 from ray.tune.schedulers import AsyncHyperBandScheduler, MedianStoppingRule
@@ -30,18 +31,29 @@ if __name__ == "__main__":
 
     search_space = deepcopy(params)
 
-    search_space['training']['g_lr'] = tune.sample_from(lambda spec: 10**(-10 * np.random.rand()))
-    search_space['training']['d_lr'] = tune.sample_from(lambda spec: 10**(-10 * np.random.rand()))
+    min_lr_power = 8
+
+    search_space['training']['g_lr'] = tune.sample_from(lambda spec: 10**(-min_lr_power * np.random.rand()))
+    search_space['training']['d_lr'] = tune.sample_from(lambda spec: 10**(-min_lr_power * np.random.rand()))
+    # search_space['training']['niters'] = tune.sample_from(lambda spec: np.random.choice([750, 1000, 1500]))
+    search_space['problem']['n'] = tune.sample_from(lambda spec: int(np.random.choice([100, 200])))
+    search_space['generator']['n_hidden_units'] = tune.sample_from(lambda spec: np.random.choice([20, 30, 40]))
+    search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda spec: np.random.choice([2, 3, 4]))
+    search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda spec: np.random.choice([20, 30, 40]))
+    search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda spec: np.random.choice([2, 3, 4]))
 
     # Uncomment this to enable distributed execution
     # `ray.init(address=...)`
+    ray.init(num_cpus=8)
 
     scheduler = AsyncHyperBandScheduler(
-        time_attr='time_total_s',
+        time_attr='training_iteration',
         metric='mean_squared_error',
         mode='min',
+        # tune is tracked every 10 iters
+        # ==> e.g. 25 x 10 = 250 real iters
         grace_period=20,
-        max_t=120
+        max_t=100 # ==> e.g. 100 x 10 = 1000 real iters
     )
 
     analysis = tune.run(
@@ -49,7 +61,7 @@ if __name__ == "__main__":
         name=str(f'gan_tuning_{args.pkey}'),
         config=search_space,
         scheduler=scheduler,
-        num_samples=100
+        num_samples=500
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")

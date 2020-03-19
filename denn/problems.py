@@ -104,20 +104,24 @@ class Exponential(Problem):
 
     def get_equation(self, x, t):
         """ return value of residuals of equation (i.e. LHS) """
-        x, dx = self.adjust(x, t)
+        adj = self.adjust(x, t)
+        x, dx = adj['pred'], adj['dx']
         return dx + self.L * x
 
     def adjust(self, x, t):
         """ perform initial value adjustment """
         x_adj = self.x0 + (1 - torch.exp(-t)) * x
         dx_dt = diff(x_adj, t)
-        return x_adj, dx_dt
+        return {'pred': x_adj, 'dx': dx_dt}
 
     def get_plot_dicts(self, x, t, y):
         """ return appropriate pred_dict and diff_dict used for plotting """
-        xadj, dx = self.adjust(x, t)
+        adj = self.adjust(x, t)
+        xadj, dx = adj['pred'], adj['dx']
         pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
-        diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\dot{x}}$': (-dx).detach()}
+        # diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\dot{x}}$': (-dx).detach()}
+        residual = self.get_equation(x, t)
+        diff_dict = {'$|\hat{F}|$': np.abs(residual.detach())}
         return pred_dict, diff_dict
 
 class SimpleOscillator(Problem):
@@ -162,7 +166,8 @@ class SimpleOscillator(Problem):
 
     def get_equation(self, x, t):
         """ return value of residuals of equation (i.e. LHS) """
-        x, dx, d2x = self.adjust(x, t)
+        adj = self.adjust(x, t)
+        x, dx, d2x = adj['pred'], adj['dx'], adj['d2x']
         return d2x + x
 
     def adjust(self, x, t):
@@ -170,25 +175,16 @@ class SimpleOscillator(Problem):
         x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
         dx_dt = diff(x_adj, t)
         d2x_dt2 = diff(dx_dt, t)
-        return x_adj, dx_dt, d2x_dt2
-
-    # def adjust(self, x, t):
-    #     """ perform initial value adjustment using coupled equations """
-    #     dx_dt = diff(x, t)
-    #
-    #     x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
-    #
-    #     nn_adj = (1 - torch.exp(-t)) * dx_dt + 2 * torch.exp(-t) * x
-    #     dx_dt_adj = self.dx_dt0 + (1 - torch.exp(-t)) * nn_adj
-    #
-    #     d2x_dt2 = diff(dx_dt_adj, t)
-    #     return x_adj, dx_dt_adj, d2x_dt2
+        return {'pred': x_adj, 'dx': dx_dt, 'd2x': d2x_dt2}
 
     def get_plot_dicts(self, x, t, y):
         """ return appropriate pred_dict and diff_dict used for plotting """
-        xadj, dx, d2x = self.adjust(x, t)
+        adj = self.adjust(x, t)
+        xadj, dx, d2x = adj['pred'], adj['dx'], adj['d2x']
         pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
-        diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\ddot{x}}$': (-d2x).detach()}
+        residual = self.get_equation(x, t)
+        # diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\ddot{x}}$': (-d2x).detach()}
+        diff_dict = {'$|\hat{F}|$': np.abs(residual.detach())}
         return pred_dict, diff_dict
 
 class NonlinearOscillator(Problem):
@@ -260,7 +256,8 @@ class NonlinearOscillator(Problem):
 
     def get_equation(self, x, t):
         """ return value of residuals of equation (i.e. LHS) """
-        x, dx, d2x = self.adjust(x, t)
+        adj = self.adjust(x, t)
+        x, dx, d2x = adj['pred'], adj['dx'], adj['d2x']
         return self._nlo_eqn(x, dx, d2x)
 
     def adjust(self, x, t):
@@ -268,13 +265,15 @@ class NonlinearOscillator(Problem):
         x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
         dx = diff(x_adj, t)
         d2x = diff(dx, t)
-        return x_adj, dx, d2x
+        return {'pred': x_adj, 'dx': dx, 'd2x': d2x}
 
     def get_plot_dicts(self, x, t, y):
         """ return appropriate pred_dict and diff_dict used for plotting """
-        xadj, dx, d2x = self.adjust(x, t)
+        adj = self.adjust(x, t)
+        xadj, dx, d2x = adj['pred'], adj['dx'], adj['d2x']
         pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
-        diff_dict = None     # the derivatives here are less meaningful, so dont plot them
+        residual = self._nlo_eqn(xadj, dx, d2x)
+        diff_dict = {'$|\hat{F}|$': np.abs(residual.detach())}
         return pred_dict, diff_dict
 
 class ReynoldsAveragedNavierStokes(Problem):
@@ -343,14 +342,16 @@ class ReynoldsAveragedNavierStokes(Problem):
         du = diff(u_adj, y)
         dre = diff(self._reynolds_stress(y, du), y)
         d2u = diff(du, y)
-        return u_adj, dre, d2u
+        return {'pred': u_adj, 'dre': dre, 'd2u': d2u}
 
     def get_equation(self, y, u):
-        uadj, dre, d2u = self.adjust(y, u)
+        adj = self.adjust(y, u)
+        uadj, dre, d2u = adj['pred'], adj['dre'], adj['d2u']
         return self._rans_eqn(dre, d2u)
 
     def get_plot_dicts(self, u, y, sol):
-        uadj, dre, d2u = self.adjust(y, u)
+        adj = self.adjust(y, u)
+        uadj, dre, d2u = adj['pred'], adj['dre'], adj['d2u']
         pred_dict = {'$\hat{u}$': uadj.detach(), '$u$': sol.detach()}
         diff_dict = None
         return pred_dict, diff_dict
@@ -417,7 +418,8 @@ class PoissonEquation(Problem):
 
     def get_equation(self, u, grid):
         """ return value of residuals of equation (i.e. LHS) """
-        u_adj, d2x, d2y = self.adjust(u, grid)
+        adj = self.adjust(u, grid)
+        u_adj, d2x, d2y = adj['pred'], adj['d2x'], adj['d2y']
         return self._poisson_eqn(d2x, d2y)
 
     def adjust(self, u, grid):
@@ -448,11 +450,12 @@ class PoissonEquation(Problem):
         dy = diff(u_adj, y)
         d2x = diff(dx, x)
         d2y = diff(dy, y)
-        return u_adj.reshape(-1,1), d2x.reshape(-1,1), d2y.reshape(-1,1)
+        return {'pred': u_adj.reshape(-1,1), 'd2x': d2x.reshape(-1,1), 'd2y': d2y.reshape(-1,1)}
 
     def get_plot_dicts(self, pred, grid, sol):
         """ return appropriate pred_dict / diff_dict used for plotting """
-        pred_adj, d2x, d2y = self.adjust(pred, grid)
+        adj = self.adjust(pred, grid)
+        pred_adj, d2x, d2y = adj['pred'], adj['d2x'], adj['d2y']
         pred_adj = pred_adj.reshape(-1)
         sol = sol.reshape(-1)
         pred_dict = {'$\hat{u}$': pred_adj.detach()}
@@ -464,8 +467,8 @@ class SIRModel(Problem):
         three outputs: S, I, R
         three equations: minimize residual sum
     """
-    def __init__(self, t_min = 0, t_max = 60, S0 = 1,
-        I0 = 0, R0 = 0, beta = 1, gamma = 1, **kwargs):
+    def __init__(self, t_min = 0, t_max = 10, S0 = 0.7,
+        I0 = 0.3, R0 = 0, beta = 1, gamma = 1, **kwargs):
         """
         inputs:
             - t_min: start time
@@ -480,6 +483,7 @@ class SIRModel(Problem):
         self.S0 = S0
         self.I0 = I0
         self.R0 = R0
+        self.N = S0 + I0 + R0
         self.beta = beta
         self.gamma = gamma
         self.grid = torch.linspace(
@@ -513,45 +517,64 @@ class SIRModel(Problem):
 
     def _sir_system(self, t, x):
         S, I, R = x[0], x[1], x[2]
-        N = S+I+R
-        rhs1 = -self.beta*I*S/N
-        rhs2 = (self.beta*I*S/N) - self.gamma*I
+        rhs1 = -self.beta*I*S/self.N
+        rhs2 = (self.beta*I*S/self.N) - self.gamma*I
         rhs3 = self.gamma*I
         return np.array([rhs1, rhs2, rhs3])
 
+    def _sir_eqn(self, t, x_adj):
+        S_adj, I_adj, R_adj = x_adj[:,0], x_adj[:,1], x_adj[:,2]
+        S_adj, I_adj, R_adj = S_adj.reshape(-1,1), I_adj.reshape(-1,1), R_adj.reshape(-1,1)
+
+        eqn1 = diff(S_adj, t) + self.beta * I_adj * S_adj / self.N
+        eqn2 = diff(I_adj, t) - (self.beta * I_adj * S_adj / self.N) + self.gamma * I_adj
+        eqn3 = diff(R_adj, t) - self.gamma * I_adj
+        return eqn1, eqn2, eqn3
+
     def get_equation(self, x, t):
         """ return value of residuals of equation (i.e. LHS) """
-        eqn1, eqn2, eqn3 = self.adjust(x, t)
-        return eqn1 + eqn2 + eqn3
+        adj = self.adjust(x, t)
+        x_adj = adj['pred']
+        eqn1, eqn2, eqn3 = self._sir_eqn(t, x_adj)
+        # it's important to return concat here and NOT the sum
+        # works much better
+        return torch.cat((eqn1, eqn2, eqn3), axis=1)
 
     def adjust(self, x, t):
         """ perform initial value adjustment """
         S, I, R = x[:, 0], x[:, 1], x[:, 2]
 
-        S_adj = self.S0 + (1 - torch.exp(-t)) * S
-        I_adj = self.I0 + (1 - torch.exp(-t)) * I
-        R_adj = self.R0 + (1 - torch.exp(-t)) * R
+        S_adj = self.S0 + (1 - torch.exp(-t)) * S.reshape(-1,1)
+        I_adj = self.I0 + (1 - torch.exp(-t)) * I.reshape(-1,1)
+        R_adj = self.R0 + (1 - torch.exp(-t)) * R.reshape(-1,1)
 
-        N = S_adj + I_adj + R_adj
-
-        eqn1 = diff(S_adj, t) + self.beta * I_adj * S_adj / N
-        eqn2 = diff(I_adj, t) - (self.beta * I_adj * S_adj / N) + self.gamma * I_adj
-        eqn3 = diff(R_adj, t) - self.gamma * I_adj
-
-        return eqn1, eqn2, eqn3
+        # the other problem classes return multiple elements here,
+        # (e.g. x, dx, d2x) add a None here to mimic that,
+        # although we don't need it per-se
+        return {'pred': torch.cat((S_adj, I_adj, R_adj), axis=1)}
 
     def get_plot_dicts(self, x, t, y):
         """ return appropriate pred_dict and diff_dict used for plotting """
-        xadj, dx, d2x = self.adjust(x, t)
-        pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
-        diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\ddot{x}}$': (-d2x).detach()}
+        adj = self.adjust(x, t)
+        x_adj = adj['pred']
+        S_adj, I_adj, R_adj = x_adj[:,0], x_adj[:,1], x_adj[:,2]
+        S_adj, I_adj, R_adj = S_adj.reshape(-1,1), I_adj.reshape(-1,1), R_adj.reshape(-1,1)
+        S_true, I_true, R_true = y[:, 0], y[:, 1], y[:, 2]
+        pred_dict = {'$\hat{S}$': S_adj.detach(), '$S$': S_true.detach(),
+                     '$\hat{I}$': I_adj.detach(), '$I$': I_true.detach(),
+                     '$\hat{R}$': R_adj.detach(), '$R$': R_true.detach(),}
+        # diff_dict = None
+        residuals = self.get_equation(x, t)
+        r1, r2, r3 = residuals[:,0], residuals[:,1], residuals[:,2]
+        diff_dict = {'$|\hat{F_1}|$': np.abs(r1.detach()),
+                     '$|\hat{F_2}|$': np.abs(r2.detach()),
+                     '$|\hat{F_3}|$': np.abs(r3.detach())}
         return pred_dict, diff_dict
-
 
 if __name__ == '__main__':
     import matplotlib.pyplot as plt
-    print('Problems module')
-    sir = SIRModel(n=1000, S0=0.9, I0=0.1, R0=0.0, beta=1, gamma=1)
+    print('Testing SIR Model')
+    sir = SIRModel(n=100, S0=0.7, I0=0.3, R0=0.0, beta=1, gamma=1)
     t = sir.get_grid()
     sol = sir.get_solution(t)
 
@@ -559,7 +582,6 @@ if __name__ == '__main__':
     t = t.detach()
     sol = sol.detach()
     a=1.0
-    # s=0.1
     plt.plot(t, sol[:,0], alpha=a, label='S')
     plt.plot(t, sol[:,1], alpha=a, label='I')
     plt.plot(t, sol[:,2], alpha=a, label='R')

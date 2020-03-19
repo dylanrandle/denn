@@ -6,7 +6,7 @@ problem:
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 600 # 822
+  niters: 600
   g_lr: 0.006397509258273433
   d_lr: 0.0001715952321721463
   g_betas: [0.9, 0.999]
@@ -24,8 +24,8 @@ training:
   conditional: False
   log: True
   plot: True
-  save: True
-  dirname: 'SHO_run_gan600step'
+  save: False
+  dirname: 'SHO_run'
 
 generator:
   in_dim: 1

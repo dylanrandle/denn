@@ -163,14 +163,14 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
         # pred = pred[sort_ids, :]
         pred = G(grid_samp)
-        pred_adj = problem.adjust(pred, grid_samp)[0]
+        pred_adj = problem.adjust(pred, grid_samp)['pred']
         sol_samp = problem.get_solution(grid_samp)
         train_mse = mse(pred_adj, sol_samp).item()
         mses['train'].append(train_mse)
 
         # val MSE: fixed grid vs true soln
         val_pred = G(grid)
-        val_pred_adj = problem.adjust(val_pred, grid)[0]
+        val_pred_adj = problem.adjust(val_pred, grid)['pred']
         val_mse = mse(val_pred_adj, soln).item()
         mses['val'].append(val_mse)
         try:
@@ -259,14 +259,14 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         # train MSE: grid sample vs true soln
         grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
         pred = model(grid_samp)
-        pred_adj = problem.adjust(pred, grid_samp)[0]
+        pred_adj = problem.adjust(pred, grid_samp)['pred']
         sol_samp = problem.get_solution(grid_samp)
         train_mse = mse(pred_adj, sol_samp).item()
         mses['train'].append(train_mse)
 
         # val MSE: fixed grid vs true soln
         val_pred = model(grid)
-        val_pred_adj = problem.adjust(val_pred, grid)[0]
+        val_pred_adj = problem.adjust(val_pred, grid)['pred']
         val_mse = mse(val_pred_adj, sol).item()
         mses['val'].append(val_mse)
 
