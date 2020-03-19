@@ -67,7 +67,7 @@ def make_plots(ax, train_loss, val_loss,  preds, hypers, retau, numerical):
     # ax[0].set_title('Log mean loss vs. log epoch at Retau={}'.format(retau))
     ax[0].set_xlabel('Step')
     ax[0].set_ylabel('Loss')
-    ax[0].legend()
+    ax[0].legend(loc='lower left')
     # preds
     y_space = torch.linspace(hypers['ymin'], hypers['ymax'], hypers['n']).reshape(-1,1)
     y=y_space.detach().numpy()
@@ -76,7 +76,7 @@ def make_plots(ax, train_loss, val_loss,  preds, hypers, retau, numerical):
     # ax[1].set_title('Predicted $<u>$ at Retau={}'.format(retau))
     ax[1].set_ylabel('$y$')
     ax[1].set_xlabel('$\\bar{u}$')
-    ax[1].legend()
+    ax[1].legend(loc='center left')
 
 def expose_results(folder_timestamp, top_dir='experiments/', dns_file='data/LM_Channel_Retau180.txt', numerical_file='data/mixlen_numerical_u180.npy'):
     """ useful function for loading results """
@@ -94,7 +94,7 @@ def expose_results(folder_timestamp, top_dir='experiments/', dns_file='data/LM_C
     numerical = np.load(numerical_file)
     retau=hypers['retau']
 
-    fig, ax = plt.subplots(1, 2, figsize=(12,5))
+    fig, ax = plt.subplots(1, 2, figsize=(10,4))
     # plot_dns(ax[1], dns, hypers)
     make_plots(ax, train_loss, val_loss, preds, hypers, retau, numerical)
     fig.tight_layout()

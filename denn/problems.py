@@ -2,7 +2,7 @@ import numpy as np
 import torch
 from scipy.integrate import odeint
 from denn.utils import diff
-from denn.poisson.poisson import compute_solution as poisson_compute_solution
+# from denn.poisson.poisson import compute_solution as poisson_compute_solution
 from denn.rans.numerical import solve_rans_scipy_solve_bvp
 import os
 
@@ -537,7 +537,7 @@ class SIRModel(Problem):
         x_adj = adj['pred']
         eqn1, eqn2, eqn3 = self._sir_eqn(t, x_adj)
         # it's important to return concat here and NOT the sum
-        # works much better
+        # works much better (for point-wise loss)
         return torch.cat((eqn1, eqn2, eqn3), axis=1)
 
     def adjust(self, x, t):
