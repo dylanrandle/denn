@@ -572,18 +572,31 @@ class SIRModel(Problem):
         return pred_dict, diff_dict
 
 if __name__ == '__main__':
+    import denn.utils as ut
     import matplotlib.pyplot as plt
     print('Testing SIR Model')
-    sir = SIRModel(n=100, S0=0.7, I0=0.3, R0=0.0, beta=1, gamma=1)
-    t = sir.get_grid()
-    sol = sir.get_solution(t)
+    for i, b in enumerate(np.linspace(0.5,4,20)):
+        sir = SIRModel(n=100, S0=0.99, I0=0.01, R0=0.0, beta=b, gamma=1)
+        t = sir.get_grid()
+        sol = sir.get_solution(t)
 
-    # plot
-    t = t.detach()
-    sol = sol.detach()
-    a=1.0
-    plt.plot(t, sol[:,0], alpha=a, label='S')
-    plt.plot(t, sol[:,1], alpha=a, label='I')
-    plt.plot(t, sol[:,2], alpha=a, label='R')
+        # plot
+        t = t.detach()
+        sol = sol.detach()
+        a=0.5
+        if i == 0:
+            plt.plot(t, sol[:,0], alpha=a, label='Susceptible', color='crimson')
+            plt.plot(t, sol[:,1], alpha=a, label='Infected', color='blue')
+            plt.plot(t, sol[:,2], alpha=a, label='Recovered', color='aquamarine')
+        else:
+            plt.plot(t, sol[:,0], alpha=a, color='crimson')
+            plt.plot(t, sol[:,1], alpha=a, color='blue')
+            plt.plot(t, sol[:,2], alpha=a, color='aquamarine')
+
+    plt.title('Flattening the Curve')
+    plt.xlabel('Time')
+    plt.ylabel('Proportion of Population')
+
+    plt.axhline(0.3, label='Capacity', color='k', linestyle='--', alpha=a)
     plt.legend()
     plt.show()

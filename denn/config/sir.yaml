@@ -2,35 +2,35 @@ problem:
   n: 200
   perturb: True
   t_max: 10
-  S0: 0.7
-  I0: 0.3
+  S0: 0.7 # 0.99
+  I0: 0.3 # 0.01
   R0: 0.0
-  beta: 1
+  beta: 3
   gamma: 1
 
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 2000
-  g_lr: 0.00887591243680629 # 0.008804611194583473 # 0.007174070715964093
-  d_lr: 0.002585752845458319 # 0.0011859923053598518 # 0.005432076642154449
-  g_betas: [0.46911885, 0.63171693] #[0.27628016, 0.71817856] #[0.9, 0.999]
-  d_betas: [0.57033929, 0.97470542] #[0.49447241, 0.10830085] #[0.9, 0.999]
+  niters: 5000
+  g_lr: 0.006429803531841584
+  d_lr: 0.009647103812410594
+  g_betas: [0.14666949, 0.93261048]
+  d_betas: [0.51750004, 0.85405624]
   lr_schedule: True
-  gamma: 0.9970293235078984 #0.9963708084105882 #0.9982888329750755
+  gamma: 0.9976839429505154
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: MSELoss
+  loss_fn: SmoothL1Loss
   wgan: False
   gp: 0.1
   conditional: False
   log: True
   plot: True
-  save: False
-  dirname: 'SIR_run'
+  save: True
+  dirname: 'SIR_run_March22_noncollapse_energy_gan'
 
 generator:
   in_dim: 1
