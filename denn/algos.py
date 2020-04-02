@@ -275,6 +275,14 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         val_mse = mse(val_pred_adj, sol).item()
         mses['val'].append(val_mse)
 
+        try:
+            if (i+1) % 10 == 0:
+                # mean of val mses for last 10 steps
+                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
+        except Exception as e:
+            # print(f'Caught exception {e}')
+            pass
+
         if log:
             print(f'Step {i}: Loss {loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
 

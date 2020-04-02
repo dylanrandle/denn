@@ -113,6 +113,9 @@ experiments/*
 # data dir
 data/*
 
+# figs/files
+*.jpg
+*.npy
 *.csv
 *.png
 *.out

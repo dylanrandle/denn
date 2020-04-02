@@ -2,8 +2,8 @@ problem:
   n: 200
   perturb: True
   t_max: 10
-  S0: 0.7 # 0.99
-  I0: 0.3 # 0.01
+  S0: 0.99
+  I0: 0.01
   R0: 0.0
   beta: 3
   gamma: 1
@@ -13,24 +13,32 @@ training:
   seed: 0
   niters: 5000
   g_lr: 0.006429803531841584
+  # classical tuning (with MSE) below:
+  # g_lr: 0.005553717837080301
   d_lr: 0.009647103812410594
   g_betas: [0.14666949, 0.93261048]
+  # classical tuning (with MSE) below:
+  # g_betas: [0.06872975, 0.79722939]
   d_betas: [0.51750004, 0.85405624]
+  # classical tuning (with MSE) below:
+  # d_betas: [0.358731  , 0.09986252]
   lr_schedule: True
   gamma: 0.9976839429505154
+  # classical tuning (with MSE) below:
+  # gamma: 0.998863628077177
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: SmoothL1Loss
+  loss_fn: MSELoss
   wgan: False
   gp: 0.1
   conditional: False
   log: True
   plot: True
-  save: True
-  dirname: 'SIR_run_March22_noncollapse_energy_gan'
+  save: False
+  dirname: 'SIR_run'
 
 generator:
   in_dim: 1

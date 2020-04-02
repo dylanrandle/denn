@@ -115,7 +115,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     else:
         plt.show()
 
-def plot_reps_results(arrs, labels=['GAN', '$L_2$', '$L_1$', 'Huber'],
+def plot_reps_results(arrs_dict,
     linewidth=2, alpha_line=0.8, alpha_shade=0.4, figsize=(12,8),
     pctiles = (2.5, 97.5), window=10, fname=None):
 
@@ -126,11 +126,13 @@ def plot_reps_results(arrs, labels=['GAN', '$L_2$', '$L_1$', 'Huber'],
     plt.figure(figsize=figsize)
     plt.yscale('log')
 
+    arrs = list(arrs_dict.values())
+
     steps = np.arange(arrs[0].shape[1])
 
-    for i, a in enumerate(arrs):
+    for i, (k, a) in enumerate(arrs_dict.items()):
         a = pd.DataFrame(data=a).rolling(window, axis=1).mean().values
-        plt.plot(steps, np.median(a, axis=0), label=labels[i],
+        plt.plot(steps, np.median(a, axis=0), label=k,
                  color=colors[i], linestyle=linestyles[i], linewidth=linewidth, alpha=alpha_line)
         lqt, upt = np.percentile(a, pctiles, axis=0)
         plt.fill_between(steps, lqt, upt, alpha=alpha_shade, color=colors[i])

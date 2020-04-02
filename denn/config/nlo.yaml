@@ -8,25 +8,33 @@ training:
   method: 'unsupervised'
   seed: 0
   niters: 3000
-  g_lr: 0.005801628839417561 # 0.017527633279259706
-  d_lr: 0.0007291873762250555 # 2.4036439049494245e-05
-  g_betas: [0.10244627, 0.76328835] # [0.9, 0.999]
-  d_betas: [0.54142685, 0.67750577] # [0.9, 0.999]
+  g_lr: 0.005801628839417561
+  # classical tuning (with MSE) below:
+  # g_lr: 0.009864365500106666
+  d_lr: 0.0007291873762250555
+  g_betas: [0.10244627, 0.76328835]
+  # classical tuning (with MSE):
+  # g_betas: [0.7816786  0.68308922]
+  d_betas: [0.54142685, 0.67750577]
+  # classical tuning (with MSE):
+  # d_betas: [0.05011763 0.55380932]
   lr_schedule: True
-  gamma: 0.9962712909742575 # 0.999
+  gamma: 0.9962712909742575
+  # classical tuning (with MSE):
+  # gamma: 0.9988731072780002
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: SmoothL1Loss
+  loss_fn: MSELoss
   wgan: False
   gp: 0.1
   conditional: False
   log: True
   plot: True
-  save: True
-  dirname: 'NLO_run_March22_smoothL1'
+  save: False
+  dirname: 'NLO_run'
 
 generator:
   in_dim: 1

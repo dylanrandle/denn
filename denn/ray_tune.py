@@ -7,13 +7,15 @@ from ray import tune
 from ray.tune import track
 from ray.tune.schedulers import AsyncHyperBandScheduler, MedianStoppingRule
 
-from denn.experiments import gan_experiment
+from denn.experiments import gan_experiment, L2_experiment
 from denn.config.config import get_config
 
 if __name__ == "__main__":
     args = argparse.ArgumentParser()
     args.add_argument('--pkey', type=str, default='EXP',
         help='problem to run (exp=Exponential, sho=SimpleOscillator, nlo=NonlinearOscillator)')
+    args.add_argument('--classical', action='store_true', default=False,
+        help='whether to use classical training, default False (use GAN))')
     args = args.parse_args()
 
     params = get_config(args.pkey)
@@ -25,6 +27,9 @@ if __name__ == "__main__":
 
     def gan_tuning(config):
         res = gan_experiment(args.pkey, config)
+
+    def classical_tuning(config):
+        res = L2_experiment(args.pkey, config)
 
     search_space = deepcopy(params)
 
@@ -54,9 +59,18 @@ if __name__ == "__main__":
         grace_period=50, # tune is tracked every 10 iters
     )                    # ==> e.g. 25 x 10 = 250 real iters
 
+    if args.classical:
+        print('Using classical method')
+        _fn = classical_tuning
+        _jobname = f"classical_tuning_{args.pkey}"
+    else:
+        print('Using GAN method')
+        _fn = gan_tuning
+        _jobname = f"gan_tuning_{args.pkey}"
+
     analysis = tune.run(
-        gan_tuning,
-        name=str(f'gan_tuning_{args.pkey}'),
+        _fn,
+        name=_jobname,
         config=search_space,
         scheduler=scheduler,
         num_samples=100

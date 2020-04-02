@@ -8,6 +8,8 @@ training:
   seed: 0
   niters: 600
   g_lr: 0.006397509258273433
+  # classical tuning (with MSE) below:
+  # g_lr: 0.009192820123954835
   d_lr: 0.0001715952321721463
   g_betas: [0.9, 0.999]
   d_betas: [0.9, 0.999]
