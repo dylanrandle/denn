@@ -43,6 +43,11 @@ if __name__ == "__main__":
     search_space['training']['g_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
     search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
 
+    # for testing at different seeds
+    # note: need to change experiments.py to init models below seed setting
+    # nseeds = 10
+    # search_space['training']['seed'] = tune.sample_from(lambda s: np.random.choice(nseeds))
+
     # Uncomment this to enable distributed execution
     # ray.init(address='auto', redis_password='5241590000000000')
 

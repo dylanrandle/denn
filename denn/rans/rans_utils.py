@@ -61,19 +61,38 @@ def loss_vs_distance(ax, ymin, ymax, model, n):
 
 def make_plots(ax, train_loss, val_loss,  preds, hypers, retau, numerical):
     """ plot loss and prediction of model at retau for RANS equations """
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*2
+    linewidth = 2
+    alpha = 0.7
+    alphas = [alpha]*10
+    colors = ['crimson', 'blue', 'skyblue', 'limegreen',
+        'aquamarine', 'violet', 'black']
+
     # losses
-    ax[0].loglog(np.arange(train_loss.shape[0]), train_loss, color='crimson', label='train')
-    ax[0].loglog(np.arange(val_loss.shape[0])*100, val_loss, color='blue', label='val', alpha=0.7)
-    # ax[0].set_title('Log mean loss vs. log epoch at Retau={}'.format(retau))
+    ax[0].loglog(np.arange(train_loss.shape[0]), train_loss,
+        color=colors[0], linestyle=linestyles[0], linewidth=linewidth,
+        label='$Train$', alpha=alphas[0])
+    ax[0].loglog(np.arange(val_loss.shape[0])*100, val_loss,
+        color=colors[1], linestyle=linestyles[1], linewidth=linewidth,
+        label='$Val$', alpha=alphas[1])
     ax[0].set_xlabel('Step')
     ax[0].set_ylabel('Loss')
-    ax[0].legend(loc='lower left')
+    ax[0].legend(loc='center left')
     # preds
     y_space = torch.linspace(hypers['ymin'], hypers['ymax'], hypers['n']).reshape(-1,1)
     y=y_space.detach().numpy()
-    ax[1].plot(preds, y, alpha=1, color='crimson', label='NN')
-    ax[1].plot(numerical, y, label='FD', color='blue')
-    # ax[1].set_title('Predicted $<u>$ at Retau={}'.format(retau))
+    ax[1].plot(preds, y, label='$NN$',
+        color=colors[0], linestyle=linestyles[0],
+        linewidth=linewidth, alpha=alphas[0])
+    ax[1].plot(numerical, y, label='$FD$',
+        color=colors[1], linestyle=linestyles[1],
+        linewidth=linewidth, alpha=alphas[1])
+
+    from sklearn.metrics import mean_squared_error
+    mse = mean_squared_error(numerical, preds)
+    # ax[1].set_title('MSE = {}'.format(mse))
+    ax[1].annotate("$MSE = {:.2E}$".format(mse), (0.5,0.5), fontsize=15)
+
     ax[1].set_ylabel('$y$')
     ax[1].set_xlabel('$\\bar{u}$')
     ax[1].legend(loc='center left')
@@ -94,13 +113,10 @@ def expose_results(folder_timestamp, top_dir='experiments/', dns_file='data/LM_C
     numerical = np.load(numerical_file)
     retau=hypers['retau']
 
-    fig, ax = plt.subplots(1, 2, figsize=(10,4))
+    fig, ax = plt.subplots(1, 2, figsize=(9,3))
     # plot_dns(ax[1], dns, hypers)
     make_plots(ax, train_loss, val_loss, preds, hypers, retau, numerical)
     # mse = np.mean(((preds-numerical)**2))
-    from sklearn.metrics import mean_squared_error
-    mse = mean_squared_error(numerical, preds)
-    print(f'MSE = {mse}')
     fig.tight_layout()
     # plt.savefig('rans_nn_vs_fd_perturbed.png')
 
