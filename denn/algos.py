@@ -264,9 +264,12 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         # train MSE: grid sample vs true soln
         grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
         pred = model(grid_samp)
-        pred_adj = problem.adjust(pred, grid_samp)['pred']
-        sol_samp = problem.get_solution(grid_samp)
-        train_mse = mse(pred_adj, sol_samp).item()
+        try:
+            pred_adj = problem.adjust(pred, grid_samp)['pred']
+            sol_samp = problem.get_solution(grid_samp)
+            train_mse = mse(pred_adj, sol_samp).item()
+        except Exception as e:
+            print(f'Exception: {e}')
         mses['train'].append(train_mse)
 
         # val MSE: fixed grid vs true soln

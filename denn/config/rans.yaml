@@ -1,16 +1,16 @@
 problem:
-  n: 200
+  n: 1000
   perturb: True
 
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 10000
-  g_lr: 1.0e-3 # 0.017527633279259706
+  niters: 200000
+  g_lr: 1.0e-4 # 0.017527633279259706
   d_lr: 2.4036439049494245e-05
   g_betas: [0.9, 0.999]
   d_betas: [0.9, 0.999]
-  lr_schedule: True
+  lr_schedule: False
   gamma: 0.999
   obs_every: 1
   d1: 1
@@ -29,17 +29,17 @@ training:
 generator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 20
+  n_hidden_units: 40
   n_hidden_layers: 2
   activation: 'Tanh'
-  residual: True
+  residual: False
   regress: True
 
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 30
-  n_hidden_layers: 4
+  n_hidden_units: 40
+  n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
   regress: False
