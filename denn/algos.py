@@ -15,7 +15,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     lr_schedule=True, gamma=0.999, obs_every=1, d1=1., d2=1.,
     G_iters=1, D_iters=1, wgan=True, gp=0.1, conditional=True,
     log=True, plot=True, save=False, dirname='train_GAN',
-    config=None, **kwargs):
+    config=None, save_for_animation=False, **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
@@ -59,6 +59,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     # history
     losses = {'G': [], 'D': []}
     mses = {'train': [], 'val': []}
+    preds = {'pred': [], 'soln': []}
 
     for epoch in range(niters):
         # Train Generator
@@ -175,6 +176,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         val_mse = mse(val_pred_adj, soln).item()
         mses['val'].append(val_mse)
 
+        # save preds for animation
+        preds['pred'].append(val_pred_adj.detach())
+        preds['soln'].append(soln.detach())
+
         try:
             if (epoch+1) % 10 == 0:
                 # mean of val mses for last 10 steps
@@ -182,7 +187,6 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         except Exception as e:
             # print(f'Caught exception {e}')
             pass
-
 
         if log:
             print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
@@ -195,12 +199,28 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
 
+    if save_for_animation:
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+        anim_dir = os.path.join(dirname, "animation")
+        print(f'Saving animation traces to {anim_dir}')
+        if not os.path.exists(anim_dir):
+            os.mkdir(anim_dir)
+        np.save(os.path.join(anim_dir, "grid"), grid.detach())
+        for k, v in preds.items():
+            v = np.hstack(v)
+            # TODO @dylan: for systems (i.e. multi-dim preds),
+            # hstack flattens preds, need to use dstack
+            # v = np.dstack(v)
+            np.save(os.path.join(anim_dir, f"{k}_pred"), v)
+
     return {'mses': mses, 'model': G, 'losses': losses}
 
 def train_L2(model, problem, method='unsupervised', niters=100,
     lr=1e-3, betas=(0, 0.9), lr_schedule=True, gamma=0.999,
     obs_every=1, d1=1, d2=1, log=True, plot=True, save=False,
-    dirname='train_L2', config=None, loss_fn=None, **kwargs):
+    dirname='train_L2', config=None, loss_fn=None, save_for_animation=False,
+    **kwargs):
     """
     Train/test Lagaris method: supervised/semisupervised/unsupervised
     """
@@ -230,6 +250,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
 
     loss_trace = []
     mses = {'train': [], 'val': []}
+    preds = {'pred': [], 'soln': []}
 
     for i in range(niters):
         if method == 'unsupervised':
@@ -278,6 +299,10 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         val_mse = mse(val_pred_adj, sol).item()
         mses['val'].append(val_mse)
 
+        # store preds for animation
+        preds['pred'].append(val_pred_adj.detach())
+        preds['soln'].append(sol.detach())
+
         try:
             if (i+1) % 10 == 0:
                 # mean of val mses for last 10 steps
@@ -313,5 +338,20 @@ def train_L2(model, problem, method='unsupervised', niters=100,
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
+
+    if save_for_animation:
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+        anim_dir = os.path.join(dirname, "animation")
+        print(f'Saving animation traces to {anim_dir}')
+        if not os.path.exists(anim_dir):
+            os.mkdir(anim_dir)
+        np.save(os.path.join(anim_dir, "grid"), grid.detach())
+        for k, v in preds.items():
+            v = np.hstack(v)
+            # TODO @dylan: for systems (i.e. multi-dim preds),
+            # hstack flattens preds, need to use dstack
+            # v = np.dstack(v)
+            np.save(os.path.join(anim_dir, f"{k}_pred"), v)
 
     return {'mses': mses, 'model': model, 'losses': loss_trace}

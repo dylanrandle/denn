@@ -34,6 +34,7 @@ training:
   log: True
   plot: True
   save: False
+  save_for_animation: False
   dirname: 'NLO_run'
 
 generator:

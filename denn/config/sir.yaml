@@ -38,6 +38,7 @@ training:
   log: True
   plot: True
   save: False
+  save_for_animation: False
   dirname: 'SIR_run'
 
 generator:

@@ -27,6 +27,7 @@ training:
   log: True
   plot: True
   save: False
+  save_for_animation: False
   dirname: 'EXP_run'
 
 generator:
