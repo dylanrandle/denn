@@ -571,32 +571,145 @@ class SIRModel(Problem):
                      '$|\hat{F_3}|$': np.abs(r3.detach())}
         return pred_dict, diff_dict
 
-if __name__ == '__main__':
+class CoupledOscillator(Problem):
+    """
+    1) dx_dt = -ty
+    2) dy_dt = tx
+
+    Soln:
+    x = cos(t^2 / 2)
+    y = sin(t^2 / 2)
+    """
+    def __init__(self, t_min = 0, t_max = 6, x0 = 1, y0 = 0, **kwargs):
+        """
+        inputs:
+            - t_min: start time
+            - t_max: end time
+            - x0: x initial condition
+            - y0: y initial condition
+            - kwargs: keyword args passed to Problem.__init__()
+        """
+        super().__init__(**kwargs)
+
+        self.t_min = t_min
+        self.t_max = t_max
+        self.x0 = x0
+        self.y0 = y0
+        self.grid = torch.linspace(
+            t_min,
+            t_max,
+            self.n,
+            dtype=torch.float,
+            requires_grad=True
+        ).reshape(-1, 1)
+        self.spacing = self.grid[1, 0] - self.grid[0, 0]
+
+    def get_grid(self):
+        return self.grid
+
+    def get_grid_sample(self):
+        return self.sample_grid(self.grid, self.spacing)
+
+    def get_solution(self, t):
+        """ use analytical solution """
+        t = t.reshape(-1, 1)
+        xsol = torch.cos((t**2) / 2)
+        ysol = torch.sin((t**2) / 2)
+        return torch.cat((xsol, ysol), axis=1)
+
+    def _co_eqn(self, t, sol_adj):
+        """ compute residuals LHS """
+        x_adj, y_adj = sol_adj[:, 0].reshape(-1,1), sol_adj[:, 1].reshape(-1,1)
+        eqn1 = diff(x_adj, t) + t * y_adj
+        eqn2 = diff(y_adj, t) - t * x_adj
+        return eqn1, eqn2
+
+    def get_equation(self, sol, t):
+        """ return value of residuals of equation (i.e. LHS) """
+        adj = self.adjust(sol, t)
+        pred_adj = adj['pred']
+        eqn1, eqn2 = self._co_eqn(t, pred_adj)
+        # it's important to return concat here and NOT the sum
+        # works much better (for point-wise loss)
+        return torch.cat((eqn1, eqn2), axis=1)
+
+    def adjust(self, sol, t):
+        """ perform initial value adjustment """
+        x, y = sol[:, 0], sol[:, 1]
+
+        x_adj = self.x0 + (1 - torch.exp(-t)) * x.reshape(-1,1)
+        y_adj = self.y0 + (1 - torch.exp(-t)) * y.reshape(-1,1)
+
+        # the other problem classes return multiple elements here,
+        # (e.g. x, dx, d2x) add a None here to mimic that,
+        # although we don't need it per-se
+        return {'pred': torch.cat((x_adj, y_adj), axis=1)}
+
+    def get_plot_dicts(self, sol, t, true):
+        """ return appropriate pred_dict and diff_dict used for plotting """
+        adj = self.adjust(sol, t)['pred']
+        x_adj, y_adj = adj[:,0].reshape(-1, 1), adj[:,1].reshape(-1, 1)
+        x_true, y_true = true[:, 0], true[:, 1]
+        pred_dict = {'$\hat{x}$': x_adj.detach(), '$x$': x_true.detach(),
+                     '$\hat{y}$': y_adj.detach(), '$y$': y_true.detach(),}
+        # diff_dict = None
+        residuals = self.get_equation(sol, t)
+        r1, r2 = residuals[:,0], residuals[:,1]
+        diff_dict = {'$|\hat{F_1}|$': np.abs(r1.detach()),
+                     '$|\hat{F_2}|$': np.abs(r2.detach())}
+        return pred_dict, diff_dict
+
+if __name__ == "__main__":
     import denn.utils as ut
     import matplotlib.pyplot as plt
-    print('Testing SIR Model')
-    for i, b in enumerate(np.linspace(0.5,4,20)):
-        sir = SIRModel(n=100, S0=0.99, I0=0.01, R0=0.0, beta=b, gamma=1)
-        t = sir.get_grid()
-        sol = sir.get_solution(t)
+    print("Testing CoupledOscillator")
+    co = CoupledOscillator()
+    t = co.get_grid()
+    s = co.get_solution(t)
+    adj = co.adjust(s, t)['pred']
+    res = co.get_equation(adj, t)
 
-        # plot
-        t = t.detach()
-        sol = sol.detach()
-        a=0.5
-        if i == 0:
-            plt.plot(t, sol[:,0], alpha=a, label='Susceptible', color='crimson')
-            plt.plot(t, sol[:,1], alpha=a, label='Infected', color='blue')
-            plt.plot(t, sol[:,2], alpha=a, label='Recovered', color='aquamarine')
-        else:
-            plt.plot(t, sol[:,0], alpha=a, color='crimson')
-            plt.plot(t, sol[:,1], alpha=a, color='blue')
-            plt.plot(t, sol[:,2], alpha=a, color='aquamarine')
+    plt_dict = co.get_plot_dicts(adj, t, s)
 
-    plt.title('Flattening the Curve')
-    plt.xlabel('Time')
-    plt.ylabel('Proportion of Population')
+    t = t.detach()
+    s = s.detach()
+    adj = adj.detach()
+    res = res.detach()
 
-    plt.axhline(0.3, label='Capacity', color='k', linestyle='--', alpha=a)
-    plt.legend()
+    plt.plot(t, s[:,0])
+    plt.plot(t, s[:,1])
+    plt.plot(t, adj[:, 0])
+    plt.plot(t, adj[:, 1])
+    plt.plot(t, res[:,0])
+    plt.plot(t, res[:,1])
     plt.show()
+
+# if __name__ == '__main__':
+#     import denn.utils as ut
+#     import matplotlib.pyplot as plt
+#     print('Testing SIR Model')
+#     for i, b in enumerate(np.linspace(0.5,4,20)):
+#         sir = SIRModel(n=100, S0=0.99, I0=0.01, R0=0.0, beta=b, gamma=1)
+#         t = sir.get_grid()
+#         sol = sir.get_solution(t)
+#
+#         # plot
+#         t = t.detach()
+#         sol = sol.detach()
+#         a=0.5
+#         if i == 0:
+#             plt.plot(t, sol[:,0], alpha=a, label='Susceptible', color='crimson')
+#             plt.plot(t, sol[:,1], alpha=a, label='Infected', color='blue')
+#             plt.plot(t, sol[:,2], alpha=a, label='Recovered', color='aquamarine')
+#         else:
+#             plt.plot(t, sol[:,0], alpha=a, color='crimson')
+#             plt.plot(t, sol[:,1], alpha=a, color='blue')
+#             plt.plot(t, sol[:,2], alpha=a, color='aquamarine')
+#
+#     plt.title('Flattening the Curve')
+#     plt.xlabel('Time')
+#     plt.ylabel('Proportion of Population')
+#
+#     plt.axhline(0.3, label='Capacity', color='k', linestyle='--', alpha=a)
+#     plt.legend()
+#     plt.show()

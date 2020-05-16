@@ -26,13 +26,13 @@ training:
   log: True
   plot: True
   save: False
-  dirname: 'POS_run_Feb272020_SmoothL1Compare'
+  dirname: 'POS_run'
 
 generator:
   in_dim: 2
   out_dim: 1
-  n_hidden_units: 30
-  n_hidden_layers: 3
+  n_hidden_units: 20
+  n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
   regress: True
@@ -40,8 +40,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 30
-  n_hidden_layers: 3
+  n_hidden_units: 20
+  n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
   regress: False

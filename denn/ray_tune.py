@@ -16,6 +16,8 @@ if __name__ == "__main__":
         help='problem to run (exp=Exponential, sho=SimpleOscillator, nlo=NonlinearOscillator)')
     args.add_argument('--classical', action='store_true', default=False,
         help='whether to use classical training, default False (use GAN))')
+    args.add_argument('--ncpu', type=int, default=10)
+    args.add_argument('--nsample', type=int, default=100)
     args = args.parse_args()
 
     params = get_config(args.pkey)
@@ -36,6 +38,11 @@ if __name__ == "__main__":
     lr_bound = (1e-6, 1e-2)
     gamma_bound = (0.99, 0.999)
     beta_bound = (0, 0.999)
+    # n_pts = [100, 200, 300]
+    # n_iters = [3000, 4000, 5000]
+
+    # search_space['problem']['n'] = tune.sample_from(lambda s: int(np.random.choice(n_pts)))
+    # search_space['training']['niters'] = tune.sample_from(lambda s: int(np.random.choice(n_iters)))
 
     search_space['training']['g_lr'] = tune.sample_from(lambda s: np.random.uniform(*lr_bound))
     search_space['training']['d_lr'] = tune.sample_from(lambda s: np.random.uniform(*lr_bound))
@@ -52,7 +59,7 @@ if __name__ == "__main__":
     # ray.init(address='auto', redis_password='5241590000000000')
 
     # Uncomment this to specify num cpus
-    ray.init(num_cpus=10)
+    ray.init(num_cpus=args.ncpu)
 
     scheduler = AsyncHyperBandScheduler(
         time_attr='training_iteration',
@@ -78,7 +85,7 @@ if __name__ == "__main__":
         name=_jobname,
         config=search_space,
         scheduler=scheduler,
-        num_samples=100
+        num_samples=args.nsample,
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")

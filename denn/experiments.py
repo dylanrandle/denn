@@ -25,6 +25,8 @@ def get_problem(pkey, params):
         return pb.ReynoldsAveragedNavierStokes(**params['problem'])
     elif pkey == 'sir':
         return pb.SIRModel(**params['problem'])
+    elif pkey == 'coo':
+        return pb.CoupledOscillator(**params['problem'])
     else:
         raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
 
