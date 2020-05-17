@@ -24,10 +24,12 @@ if __name__ == '__main__':
 
     params = get_config(args.pkey)
 
-    # turn off plotting / saving / logging
+    # turn off plotting / logging
     params['training']['log'] = False
     params['training']['plot'] = False
+    # turn off saving
     params['training']['save'] = False
+    params['training']['save_for_animation'] = False
 
     np.random.seed(42)
     seeds = np.random.randint(int(1e6), size=args.nreps)
