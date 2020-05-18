@@ -72,6 +72,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 pred = G(grid_samp)
                 residuals = problem.get_equation(pred, grid_samp)
 
+                # idea: add noise to relax from dirac delta at 0 to distb'n
+                # + torch.normal(0, .1/(i+1), size=residuals.shape)
                 real = torch.zeros_like(residuals)
                 fake = residuals
 
