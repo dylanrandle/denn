@@ -1,5 +1,5 @@
 problem:
-  n: 100
+  n: 400
   perturb: True
   t_max: 6.28
   x0: 1
@@ -7,7 +7,7 @@ problem:
 
 training:
   method: 'unsupervised'
-  seed: 1
+  seed: 0
   niters: 20000
   g_lr: 0.005997518415564992
   d_lr: 5.401739244306492e-05
@@ -26,9 +26,9 @@ training:
   conditional: False
   log: True
   plot: True
-  save: True
-  save_for_animation: True
-  dirname: 'COO_run_gan_besthypers_test'
+  save: False
+  save_for_animation: False
+  dirname: 'COO_run'
 
 generator:
   in_dim: 1

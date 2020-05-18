@@ -1,20 +1,20 @@
 problem:
-  n: 1000
+  n: 100
   perturb: True
   t_max: 6.28
 
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 600
-  g_lr: 0.006397509258273433
+  niters: 1000
+  g_lr: 0.005503284526785565 # 0.006397509258273433
   # classical tuning (with MSE) below:
   # g_lr: 0.009192820123954835
-  d_lr: 0.0001715952321721463
-  g_betas: [0.9, 0.999]
-  d_betas: [0.9, 0.999]
-  lr_schedule: False
-  gamma: 0.995
+  d_lr: 0.0012613049407802796 # 0.0001715952321721463
+  g_betas: [0.21327133, 0.79345627] # [0.9, 0.999]
+  d_betas: [0.75161445, 0.51070724] # [0.9, 0.999]
+  lr_schedule: True
+  gamma: 0.9905863934728789 # 0.995
   obs_every: 1
   d1: 1
   d2: 1
@@ -33,8 +33,8 @@ training:
 generator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 2
+  n_hidden_units: 40 # 20
+  n_hidden_layers: 3 # 2
   activation: 'Tanh'
   residual: True
   regress: True
@@ -42,8 +42,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 2
+  n_hidden_units: 30 # 20
+  n_hidden_layers: 4 # 2
   activation: 'Tanh'
   residual: True
   regress: False
