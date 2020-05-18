@@ -1,25 +1,25 @@
 problem:
-  nx: 50
-  ny: 50
-  f: 1
+  nx: 32
+  ny: 32
+  f: 0
   perturb: True
 
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 400 # 128
+  niters: 1000
   g_lr: 0.00019893770088673558
   d_lr: 0.0039994072067298745
   g_betas: [0.9, 0.999]
   d_betas: [0.9, 0.999]
   lr_schedule: False
-  gamma: 0.99
+  gamma: 0.996
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: SmoothL1Loss
+  loss_fn: MSELoss
   wgan: False
   gp: 0.1
   conditional: False

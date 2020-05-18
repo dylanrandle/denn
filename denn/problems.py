@@ -367,8 +367,25 @@ class PoissonEquation(Problem):
 
     u_D = 0
       f = 1
+
+    NOTE: reduce to Laplace (f=0) for Analytical Solution
+
+    thanks to Feiyu Chen for this:
+    https://github.com/odegym/neurodiffeq/blob/master/neurodiffeq/pde.py
+
+    d2u_dx2 + d2u_dy2 = 0
+    with (x, y) in [0, 1] x [0, 1]
+
+    Boundary conditions:
+    u(x,y) | x=0 : sin(pi * y)
+    u(x,y) | x=1 : 0
+    u(x,y) | y=0 : 0
+    u(x,y) | y=1 : 0
+
+    Solution:
+    u(x,y) = sin(pi * y) * sinh( pi * (1 - x) ) / sinh(pi)
     """
-    def __init__(self, nx=100, ny=100, xmin=0, xmax=1, ymin=0, ymax=1, f=1, **kwargs):
+    def __init__(self, nx=32, ny=32, xmin=0, xmax=1, ymin=0, ymax=1, f=0, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -392,12 +409,19 @@ class PoissonEquation(Problem):
             requires_grad=True
         ).reshape(-1)
         # set up our grid as just the set of all point tuples
-        # self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
         self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
-        # to match Fenics Mesh order
-        self.grid = torch.flip(self.grid, [1])
         # take minimum spacing, which is equal to spacing along an axis
         self.spacing = self.xgrid[1] - self.xgrid[0]
+
+        # """
+        # Computing Solution:
+        #     - use Fenics (finite elements) to compute solution
+        #     - TODO: calculate at `grid` instead of the current fixed mesh
+        # """
+        # to match Fenics Mesh order
+        # self.grid = torch.flip(self.grid, [1])
+        # # u_np, mesh_np = poisson_compute_solution(self.nx, self.ny, self.f)
+        # # self.solution = torch.tensor(u_np, dtype=torch.float).reshape(-1,1) #, mesh_np
 
     def get_grid(self):
         return self.grid
@@ -406,14 +430,14 @@ class PoissonEquation(Problem):
         return self.sample_grid(self.grid, self.spacing)
 
     def get_solution(self, grid):
-        """ use Fenics (finite elements) to compute solution
-            TODO: calculate at `grid` instead of the current fixed mesh
-        """
-        u_np, mesh_np = poisson_compute_solution(self.nx, self.ny, self.f)
-        return torch.tensor(u_np, dtype=torch.float).reshape(-1,1) #, mesh_np
+        x, y = grid[:,0], grid[:, 1]
+        sol = torch.sin(torch.tensor(np.pi * y)) \
+            * torch.sinh(torch.tensor(np.pi * (1 - x))) \
+            / torch.sinh(torch.tensor(np.pi))
+        return sol.reshape(-1,1)
 
     def _poisson_eqn(self, d2x, d2y):
-        """ return RHS of equation (should equal 0) """
+        """ return LHS of equation (should equal 0) """
         return d2x + d2y + self.f
 
     def get_equation(self, u, grid):
@@ -435,7 +459,7 @@ class PoissonEquation(Problem):
 
         # TODO: generalize the boundary conditions to some functions
         # @note: here we have just 0 everywhere
-        self.x_min_val = lambda y: 0
+        self.x_min_val = lambda y: torch.sin(np.pi * y)
         self.x_max_val = lambda y: 0
         self.y_min_val = lambda x: 0
         self.y_max_val = lambda x: 0
@@ -459,7 +483,9 @@ class PoissonEquation(Problem):
         pred_adj = pred_adj.reshape(-1)
         sol = sol.reshape(-1)
         pred_dict = {'$\hat{u}$': pred_adj.detach()}
-        diff_dict = None
+
+        resid = self.get_equation(pred, grid)
+        diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
         return pred_dict, diff_dict
 
 class SIRModel(Problem):

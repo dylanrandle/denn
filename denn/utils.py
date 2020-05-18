@@ -70,7 +70,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
         y = np.unique(grid[:, 1])
         for i, (k, v) in enumerate(pred_dict.items()):
             v = v.reshape((len(x),len(y)))
-            cf = ax[2].contourf(x, y, v, cmap='Blues')
+            cf = ax[2].contourf(x, y, v, cmap='Reds')
             cb = fig.colorbar(cf, format='%.0e', ax=ax[2])
         ax[2].set_xlabel('$x$')
         ax[2].set_ylabel('$y$')
@@ -86,15 +86,25 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
     # Derivatives
     if diff_dict:
-        for i, (k, v) in enumerate(diff_dict.items()):
-            ax[3].plot(grid, v, label=k,
-                alpha=alphas[i], linestyle=linestyles[i],
-                linewidth=linewidth, color=colors[i])
-        ax[3].legend(loc='upper right')
-        ax[3].set_xlabel('$t$')
-        # ax[3].set_ylabel('$x$')
-        ax[3].set_ylabel('$F$')
-        ax[3].set_yscale('log')
+        if grid.shape[1] == 2: # PDE
+            x = np.unique(grid[:, 0])
+            y = np.unique(grid[:, 1])
+            for i, (k, v) in enumerate(diff_dict.items()):
+                v = v.reshape((len(x),len(y)))
+                cf = ax[3].contourf(x, y, v, cmap='Reds')
+                cb = fig.colorbar(cf, format='%.0e', ax=ax[3])
+            ax[3].set_xlabel('$x$')
+            ax[3].set_ylabel('$y$')
+        else:
+            for i, (k, v) in enumerate(diff_dict.items()):
+                ax[3].plot(grid, v, label=k,
+                    alpha=alphas[i], linestyle=linestyles[i],
+                    linewidth=linewidth, color=colors[i])
+            ax[3].legend(loc='upper right')
+            ax[3].set_xlabel('$t$')
+            # ax[3].set_ylabel('$x$')
+            ax[3].set_ylabel('$F$')
+            ax[3].set_yscale('log')
 
     plt.tight_layout()
     if save:

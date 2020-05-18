@@ -52,7 +52,7 @@ if __name__ == "__main__":
     search_space['training']['gamma'] = tune.sample_from(lambda s: np.random.uniform(*gamma_bound))
     search_space['training']['g_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
     search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
-    
+
     search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
     search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
 
