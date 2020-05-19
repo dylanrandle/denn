@@ -19,13 +19,13 @@ class Problem():
         self.n = n
         self.perturb = perturb
 
-    def sample_grid(self, grid, spacing):
+    def sample_grid(self, grid, spacing, tau=3):
         """ return perturbed samples from the grid
             grid is the torch tensor representing the grid
             d is the inter-point spacing
         """
         if self.perturb:
-            return grid + spacing * torch.randn_like(grid) / 3
+            return grid + spacing * torch.randn_like(grid) / tau
         else:
             return grid
 
@@ -233,7 +233,7 @@ class NonlinearOscillator(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
-    def get_solution(self, t):
+    def get_solution(self, t, atol=1e-8, rtol=1e-8):
         """ uses scipy to solve NLO """
         try:
             t = t.detach().numpy() # if torch tensor, convert to numpy
@@ -242,7 +242,9 @@ class NonlinearOscillator(Problem):
 
         t = t.reshape(-1)
 
-        sol = odeint(self._nlo_system, [self.x0, self.dx_dt0], t, tfirst=True)
+        sol = odeint(self._nlo_system,
+            [self.x0, self.dx_dt0],
+            t, tfirst=True, atol=atol, rtol=rtol)
         return torch.tensor(sol[:,0], dtype=torch.float).reshape(-1, 1)
 
     def _nlo_system(self, t, z):
@@ -457,8 +459,6 @@ class PoissonEquation(Problem):
         x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
         y_tilde = (y-self.ymin) / (self.ymax-self.ymin)
 
-        # TODO: generalize the boundary conditions to some functions
-        # @note: here we have just 0 everywhere
         self.x_min_val = lambda y: torch.sin(np.pi * y)
         self.x_max_val = lambda y: 0
         self.y_min_val = lambda x: 0
@@ -480,8 +480,6 @@ class PoissonEquation(Problem):
         """ return appropriate pred_dict / diff_dict used for plotting """
         adj = self.adjust(pred, grid)
         pred_adj, d2x, d2y = adj['pred'], adj['d2x'], adj['d2y']
-        pred_adj = pred_adj.reshape(-1)
-        sol = sol.reshape(-1)
         pred_dict = {'$\hat{u}$': pred_adj.detach()}
 
         resid = self.get_equation(pred, grid)

@@ -7,13 +7,13 @@ problem:
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 1000
+  niters: 6000
   g_lr: 0.00019893770088673558
   d_lr: 0.0039994072067298745
   g_betas: [0.9, 0.999]
   d_betas: [0.9, 0.999]
   lr_schedule: False
-  gamma: 0.996
+  gamma: 0.997
   obs_every: 1
   d1: 1
   d2: 1
@@ -26,6 +26,7 @@ training:
   log: True
   plot: True
   save: False
+  save_for_animation: False
   dirname: 'POS_run'
 
 generator:
