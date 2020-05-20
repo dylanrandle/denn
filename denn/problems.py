@@ -387,7 +387,7 @@ class PoissonEquation(Problem):
     Solution:
     u(x,y) = sin(pi * y) * sinh( pi * (1 - x) ) / sinh(pi)
     """
-    def __init__(self, nx=32, ny=32, xmin=0, xmax=1, ymin=0, ymax=1, f=0, **kwargs):
+    def __init__(self, nx=32, ny=32, xmin=0, xmax=1, ymin=0, ymax=1, f=0, batch_size=100, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -396,6 +396,7 @@ class PoissonEquation(Problem):
         self.nx = nx
         self.ny = ny
         self.f = f
+        self.batch_size = batch_size
         self.xgrid = torch.linspace(
             xmin,
             xmax,
@@ -410,10 +411,15 @@ class PoissonEquation(Problem):
             dtype=torch.float,
             requires_grad=True
         ).reshape(-1)
-        # set up our grid as just the set of all point tuples
-        self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
         # take minimum spacing, which is equal to spacing along an axis
         self.spacing = self.xgrid[1] - self.xgrid[0]
+
+        # set up our grid as just the set of all point tuples
+        # self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
+        # flip axis
+        # self.grid = torch.flip(self.grid, [1])
+        grid_x, grid_y = torch.meshgrid(self.xgrid, self.ygrid)
+        self.grid = torch.cat([grid_x.reshape(-1,1), grid_y.reshape(-1,1)], 1)
 
         # """
         # Computing Solution:
@@ -429,7 +435,10 @@ class PoissonEquation(Problem):
         return self.grid
 
     def get_grid_sample(self):
-        return self.sample_grid(self.grid, self.spacing)
+        # return self.sample_grid(self.grid, self.spacing)
+        tmp = self.sample_grid(self.grid, self.spacing)
+        mask = np.random.choice(len(tmp), size=self.batch_size, replace=False)
+        return tmp[mask,:]
 
     def get_solution(self, grid):
         x, y = grid[:,0], grid[:, 1]

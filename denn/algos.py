@@ -82,7 +82,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                     fake = torch.cat((fake, grid_samp), 1)
 
                 optiG.zero_grad()
-                g_loss = criterion(D(fake), real_labels)
+                # g_loss = criterion(D(fake), real_labels)
+                g_loss = criterion(D(fake), torch.ones_like(fake))
                 g_loss.backward(retain_graph=True)
                 optiG.step()
 
@@ -149,8 +150,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 norm_penalty = torch.zeros(1)
 
             # print(real.shape, fake.shape)
-            real_loss = criterion(D(real), real_labels)
-            fake_loss = criterion(D(fake), fake_labels)
+            # real_loss = criterion(D(real), real_labels)
+            real_loss = criterion(D(real), torch.ones_like(real))
+            # fake_loss = criterion(D(fake), fake_labels)
+            fake_loss = criterion(D(fake), torch.zeros_like(fake))
 
             optiD.zero_grad()
             d_loss = (real_loss + fake_loss)/2 + norm_penalty

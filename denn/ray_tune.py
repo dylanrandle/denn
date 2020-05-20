@@ -36,28 +36,29 @@ if __name__ == "__main__":
 
     search_space = deepcopy(params)
 
-    lr_bound = (1e-8, 1e-2)
-    gamma_bound = (0.99, 0.9999)
+    # Bounds of Search
+    lr_bound = (1e-6, 1e-2)
+    gamma_bound = (0.99, 0.999)
     beta_bound = (0, 0.999)
-    # n_pts = [100, 200, 300]
-    # n_iters = [3000, 4000, 5000]
-    n_nodes = [20,30,40]
-    n_layers = [2,3,4]
+    n_nodes = [20, 30, 40]
+    n_layers = [2, 3, 4]
 
-    # search_space['problem']['n'] = tune.sample_from(lambda s: int(np.random.choice(n_pts)))
-    # search_space['training']['niters'] = tune.sample_from(lambda s: int(np.random.choice(n_iters)))
-
+    # LRs
     search_space['training']['g_lr'] = tune.sample_from(lambda s: np.random.uniform(*lr_bound))
     search_space['training']['d_lr'] = tune.sample_from(lambda s: np.random.uniform(*lr_bound))
+
+    # Decay / Moment
     search_space['training']['gamma'] = tune.sample_from(lambda s: np.random.uniform(*gamma_bound))
     search_space['training']['g_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
     search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
+    
+    # Generator
+    # search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
+    # search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
 
-    search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
-    search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
-
-    search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
-    search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
+    # Discriminator
+    # search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
+    # search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
 
 
     # for testing at different seeds
