@@ -1,6 +1,6 @@
 problem:
-  nx: 32
-  ny: 32
+  nx: 20
+  ny: 20
   f: 0
   perturb: True
 
@@ -25,9 +25,9 @@ training:
   conditional: False
   log: True
   plot: True
-  save: True
+  save: False
   save_for_animation: False
-  dirname: 'POS_run_gan_besthypers_may192020'
+  dirname: 'POS_run'
 
 generator:
   in_dim: 2

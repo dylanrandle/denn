@@ -433,10 +433,10 @@ class PoissonEquation(Problem):
 
     def get_solution(self, grid):
         x, y = grid[:,0], grid[:, 1]
-        sol = torch.sin(torch.tensor(np.pi * y)) \
-            * torch.sinh(torch.tensor(np.pi * (1 - x))) \
+        sol = torch.sin(np.pi * y) \
+            * torch.sinh(np.pi * (1 - x)) \
             / torch.sinh(torch.tensor(np.pi))
-        return sol.reshape(-1,1)
+        return sol.reshape(-1, 1)
 
     def _poisson_eqn(self, d2x, d2y):
         """ return LHS of equation (should equal 0) """
