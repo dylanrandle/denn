@@ -1,5 +1,5 @@
 import argparse
-import numpy as np
+# import numpy as np
 
 from denn.config.config import get_config
 from denn.experiments import gan_experiment, L2_experiment
@@ -31,8 +31,10 @@ if __name__ == '__main__':
     params['training']['save'] = False
     params['training']['save_for_animation'] = False
 
-    np.random.seed(42)
-    seeds = np.random.randint(int(1e6), size=args.nreps)
+    # np.random.seed(42)
+    # seeds = np.random.randint(int(1e6), size=args.nreps)
+    seeds = list(range(args.nreps))
+    print("Using seeds: ", seeds)
 
     results = []
     for s in seeds:
@@ -48,5 +50,6 @@ if __name__ == '__main__':
 
         results.append(res['mses']['val'])
 
+    import numpy as np
     results = np.vstack(results)
     np.save(args.fname, results)

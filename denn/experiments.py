@@ -32,8 +32,10 @@ def get_problem(pkey, params):
 
 def L2_experiment(pkey, params):
     torch.manual_seed(0)
+    np.random.seed(0)
     model = MLP(**params['generator'])
 
+    np.random.seed(params['training']['seed'])
     torch.manual_seed(params['training']['seed'])
     problem = get_problem(pkey, params)
     res = train_L2(model, problem, **params['training'], config=params)
@@ -41,10 +43,12 @@ def L2_experiment(pkey, params):
 
 def gan_experiment(pkey, params):
     torch.manual_seed(0)
+    np.random.seed(0)
     gen = MLP(**params['generator'])
     disc = MLP(**params['discriminator'])
 
     torch.manual_seed(params['training']['seed'])
+    np.random.seed(params['training']['seed'])
     problem = get_problem(pkey, params)
     res = train_GAN(gen, disc, problem, **params['training'], config=params)
     return res

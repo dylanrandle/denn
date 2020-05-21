@@ -168,7 +168,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
           lr_scheduler_D.step()
 
         # train MSE: grid sample vs true soln
-        # grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
+        grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
         pred = G(grid_samp)
         pred_adj = problem.adjust(pred, grid_samp)['pred']
         sol_samp = problem.get_solution(grid_samp)
@@ -189,6 +189,9 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             if (epoch+1) % 10 == 0:
                 # mean of val mses for last 10 steps
                 track.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                # mean of G - D loss for last 10 steps
+                # loss_diff = np.mean(np.abs(losses['G'][-10] - losses['D'][-10]))
+                # track.log(mean_squared_error=loss_diff)
         except Exception as e:
             # print(f'Caught exception {e}')
             pass
@@ -288,7 +291,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
             loss_trace.append(loss.item())
 
         # train MSE: grid sample vs true soln
-        # grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
+        grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
         pred = model(grid_samp)
         try:
             pred_adj = problem.adjust(pred, grid_samp)['pred']
