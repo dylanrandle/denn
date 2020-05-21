@@ -397,6 +397,7 @@ class PoissonEquation(Problem):
         self.ny = ny
         self.f = f
         self.batch_size = batch_size
+        self.pi = torch.tensor(np.pi)
         self.xgrid = torch.linspace(
             xmin,
             xmax,
@@ -442,9 +443,7 @@ class PoissonEquation(Problem):
 
     def get_solution(self, grid):
         x, y = grid[:,0], grid[:, 1]
-        sol = torch.sin(np.pi * y) \
-            * torch.sinh(np.pi * (1 - x)) \
-            / torch.sinh(torch.tensor(np.pi))
+        sol = torch.sin(np.pi*y) * torch.sinh(np.pi*(1 - x)) / torch.sinh(self.pi)
         return sol.reshape(-1, 1)
 
     def _poisson_eqn(self, d2x, d2y):
@@ -465,13 +464,14 @@ class PoissonEquation(Problem):
         """
         u = u.reshape(-1)
         x, y = grid[:,0], grid[:, 1]
-        x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
-        y_tilde = (y-self.ymin) / (self.ymax-self.ymin)
 
         self.x_min_val = lambda y: torch.sin(np.pi * y)
         self.x_max_val = lambda y: 0
         self.y_min_val = lambda x: 0
         self.y_max_val = lambda x: 0
+
+        x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
+        y_tilde = (y-self.ymin) / (self.ymax-self.ymin)
 
         Axy = (1-x_tilde)*self.x_min_val(y) + x_tilde*self.x_max_val(y) + \
               (1-y_tilde)*( self.y_min_val(x) - ((1-x_tilde)*self.y_min_val(self.xmin * torch.ones_like(x_tilde))
@@ -479,6 +479,7 @@ class PoissonEquation(Problem):
                  y_tilde *( self.y_max_val(x) - ((1-x_tilde)*self.y_max_val(self.xmin * torch.ones_like(x_tilde))
                                                   + x_tilde *self.y_max_val(self.xmax * torch.ones_like(x_tilde))) )
         u_adj = Axy + x_tilde*(1-x_tilde)*y_tilde*(1-y_tilde)*u
+
         dx = diff(u_adj, x)
         dy = diff(u_adj, y)
         d2x = diff(dx, x)
