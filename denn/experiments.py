@@ -31,26 +31,40 @@ def get_problem(pkey, params):
         raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
 
 def L2_experiment(pkey, params):
+    # model init seed
     torch.manual_seed(0)
     np.random.seed(0)
+
+    # model
     model = MLP(**params['generator'])
 
+    # experiment seed
     np.random.seed(params['training']['seed'])
     torch.manual_seed(params['training']['seed'])
+
+    # run
     problem = get_problem(pkey, params)
     res = train_L2(model, problem, **params['training'], config=params)
+
     return res
 
 def gan_experiment(pkey, params):
+    # model init seed
     torch.manual_seed(0)
     np.random.seed(0)
+
+    # models
     gen = MLP(**params['generator'])
     disc = MLP(**params['discriminator'])
 
+    # experiment seed
     torch.manual_seed(params['training']['seed'])
     np.random.seed(params['training']['seed'])
+
+    # run
     problem = get_problem(pkey, params)
     res = train_GAN(gen, disc, problem, **params['training'], config=params)
+
     return res
 
 if __name__ == '__main__':

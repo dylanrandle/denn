@@ -1,5 +1,5 @@
 import argparse
-# import numpy as np
+import numpy as np
 
 from denn.config.config import get_config
 from denn.experiments import gan_experiment, L2_experiment
@@ -50,6 +50,5 @@ if __name__ == '__main__':
 
         results.append(res['mses']['val'])
 
-    import numpy as np
     results = np.vstack(results)
     np.save(args.fname, results)
