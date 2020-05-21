@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
     # Bounds of Search
     lr_bound = (1e-6, 1e-2)
-    gamma_bound = (0.99, 0.999)
+    gamma_bound = (0.99, 0.9999)
     beta_bound = (0, 0.999)
     n_nodes = [20, 30, 40]
     n_layers = [2, 3, 4]
@@ -53,13 +53,12 @@ if __name__ == "__main__":
     search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
     
     # Generator
-    # search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
-    # search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
+    search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
+    search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
 
     # Discriminator
-    # search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
-    # search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
-
+    search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
+    search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
 
     # for testing at different seeds
     # note: need to change experiments.py to init models below seed setting

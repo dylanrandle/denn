@@ -6,15 +6,15 @@ problem:
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 1000
-  g_lr: 0.005503284526785565 # 0.006397509258273433
+  niters: 10000
+  g_lr: 0.008680089231847491 # 0.005503284526785565 # 0.006397509258273433
   # classical tuning (with MSE) below:
   # g_lr: 0.009192820123954835
-  d_lr: 0.0012613049407802796 # 0.0001715952321721463
-  g_betas: [0.21327133, 0.79345627] # [0.9, 0.999]
-  d_betas: [0.75161445, 0.51070724] # [0.9, 0.999]
+  d_lr: 0.0016340189433299498 # 0.0012613049407802796 # 0.0001715952321721463
+  g_betas: [0.44436487, 0.63297906] # [0.21327133, 0.79345627] # [0.9, 0.999]
+  d_betas: [0.27154464, 0.14204213] # [0.75161445, 0.51070724] # [0.9, 0.999]
   lr_schedule: True
-  gamma: 0.9905863934728789 # 0.995
+  gamma: 0.997751100319365 # 0.9905863934728789 # 0.995
   obs_every: 1
   d1: 1
   d2: 1
@@ -28,13 +28,13 @@ training:
   plot: True
   save: False
   save_for_animation: False
-  dirname: 'SHO_run'
+  dirname: 'SHO_run_gan_besthype_052120'
 
 generator:
   in_dim: 1
   out_dim: 1
   n_hidden_units: 40 # 20
-  n_hidden_layers: 3 # 2
+  n_hidden_layers: 4 # 3 # 2
   activation: 'Tanh'
   residual: True
   regress: True
@@ -42,8 +42,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 30 # 20
-  n_hidden_layers: 4 # 2
+  n_hidden_units: 40 # 30 # 20
+  n_hidden_layers: 2 # 4 # 2
   activation: 'Tanh'
   residual: True
   regress: False
