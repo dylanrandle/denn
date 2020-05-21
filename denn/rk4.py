@@ -43,8 +43,8 @@ def rk4 ( dydt, tspan, y0, n ):
   tfirst = tspan[0]
   tlast = tspan[1]
   dt = ( tlast - tfirst ) / n
-  t = np.zeros ( n + 1 )
-  y = np.zeros ( [ n + 1, m ] )
+  t = np.zeros ( n + 1 , dtype=np.single)
+  y = np.zeros ( [ n + 1, m ], dtype=np.single)
   t[0] = tspan[0]
   y[0,:] = y0
 
