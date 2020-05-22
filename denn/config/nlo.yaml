@@ -1,5 +1,5 @@
 problem:
-  n: 400
+  n: 1000
   perturb: True
   t_max: 12.56
   dx_dt0: 0.5
@@ -7,19 +7,19 @@ problem:
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 3000
-  g_lr: 0.005801628839417561
+  niters: 20000
+  g_lr: 0.008321475434043704 # 0.008390159336203257 # 0.005801628839417561
   # classical tuning (with MSE) below:
   # g_lr: 0.009864365500106666
-  d_lr: 0.0007291873762250555
-  g_betas: [0.10244627, 0.76328835]
+  d_lr: 0.009253572462548479 # 0.009470172206337 # 0.0007291873762250555
+  g_betas: [0.45878083, 0.59697005] # [0.57298575, 0.6003693 ] # [0.10244627, 0.76328835]
   # classical tuning (with MSE):
   # g_betas: [0.7816786  0.68308922]
-  d_betas: [0.54142685, 0.67750577]
+  d_betas: [0.53148418, 0.96834354] # [0.64861167, 0.70282844] # [0.54142685, 0.67750577]
   # classical tuning (with MSE):
   # d_betas: [0.05011763 0.55380932]
   lr_schedule: True
-  gamma: 0.9962712909742575
+  gamma: 0.9992459000881562 # 0.999014581771989 # 0.9962712909742575
   # classical tuning (with MSE):
   # gamma: 0.9988731072780002
   obs_every: 1
@@ -33,15 +33,15 @@ training:
   conditional: False
   log: True
   plot: True
-  save: False
+  save: True
   save_for_animation: False
-  dirname: 'NLO_run'
+  dirname: 'NLO_run_gan_besthype_052120_n800'
 
 generator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 2
+  n_hidden_units: 40
+  n_hidden_layers: 4
   activation: 'Tanh'
   residual: True
   regress: True
@@ -49,8 +49,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 2
+  n_hidden_units: 20 # 30
+  n_hidden_layers: 2 # 3
   activation: 'Tanh'
   residual: True
   regress: False
