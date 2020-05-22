@@ -1,5 +1,5 @@
 problem:
-  n: 400
+  n: 800 # 400
   perturb: True
   t_max: 6.28
   x0: 1
@@ -7,14 +7,14 @@ problem:
 
 training:
   method: 'unsupervised'
-  seed: 0
-  niters: 20000
-  g_lr: 0.005997518415564992
-  d_lr: 5.401739244306492e-05
-  g_betas: [0.69869083, 0.59402419]
-  d_betas: [0.32980614, 0.56526729]
+  seed: 4
+  niters: 50000
+  g_lr: 0.005769804098364408 # 0.005997518415564992 # 0.005769804098364408 # 0.005997518415564992
+  d_lr: 0.0013268520167394147 # 5.401739244306492e-05 # 0.0013268520167394147 # 5.401739244306492e-05
+  g_betas: [0.70643926, 0.86083728] # [0.69869083, 0.59402419] # [0.70643926, 0.86083728] # [0.69869083, 0.59402419]
+  d_betas: [0.537718  , 0.61495672] # [0.32980614, 0.56526729] # [0.537718  , 0.61495672] # [0.32980614, 0.56526729]
   lr_schedule: True
-  gamma: 0.9996422662507756
+  gamma: 0.9998 # 0.9993978454666558 # 0.9996422662507756
   obs_every: 1
   d1: 1
   d2: 1
@@ -26,15 +26,15 @@ training:
   conditional: False
   log: True
   plot: True
-  save: False
+  save: True
   save_for_animation: False
-  dirname: 'COO_run'
+  dirname: 'COO_run_gan_besthype_052220_seed4'
 
 generator:
   in_dim: 1
   out_dim: 2
-  n_hidden_units: 40
-  n_hidden_layers: 4
+  n_hidden_units: 30 # 40
+  n_hidden_layers: 3 # 4
   activation: 'Tanh'
   residual: True
   regress: True
@@ -42,7 +42,7 @@ generator:
 discriminator:
   in_dim: 2
   out_dim: 1
-  n_hidden_units: 40
+  n_hidden_units: 50 # 40
   n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
