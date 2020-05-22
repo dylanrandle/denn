@@ -1,5 +1,5 @@
 problem:
-  n: 100
+  n: 400
   perturb: True
   t_max: 6.28
 
@@ -26,7 +26,7 @@ training:
   conditional: False
   log: True
   plot: True
-  save: False
+  save: True
   save_for_animation: False
   dirname: 'SHO_run_gan_besthype_052120'
 
