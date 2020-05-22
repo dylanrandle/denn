@@ -1,5 +1,5 @@
 problem:
-  n: 200
+  n: 800 # 400 # 200
   perturb: True
   t_max: 10
   S0: 0.99
@@ -11,19 +11,19 @@ problem:
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 5000
-  g_lr: 0.006429803531841584
+  niters: 20000
+  g_lr: 0.005275558860890438 # 0.005505509064926991 # 0.006429803531841584
   # classical tuning (with MSE) below:
   # g_lr: 0.005553717837080301
-  d_lr: 0.009647103812410594
-  g_betas: [0.14666949, 0.93261048]
+  d_lr: 0.006267819262253434 # 0.008607687566242877 # 0.009647103812410594
+  g_betas: [0.10438127, 0.75404948] # [0.22120303, 0.5248781 ] # [0.14666949, 0.93261048]
   # classical tuning (with MSE) below:
   # g_betas: [0.06872975, 0.79722939]
-  d_betas: [0.51750004, 0.85405624]
+  d_betas: [0.11112147, 0.68105108] # [0.73504708, 0.98841722] # [0.51750004, 0.85405624]
   # classical tuning (with MSE) below:
   # d_betas: [0.358731  , 0.09986252]
   lr_schedule: True
-  gamma: 0.9976839429505154
+  gamma: 0.9988751632852519 # 0.995 # 0.9934806242487488 # 0.9976839429505154
   # classical tuning (with MSE) below:
   # gamma: 0.998863628077177
   obs_every: 1
@@ -37,24 +37,23 @@ training:
   conditional: False
   log: True
   plot: True
-  save: False
+  save: True
   save_for_animation: False
-  dirname: 'SIR_run'
+  dirname: 'SIR_run_gan_052220'
 
 generator:
   in_dim: 1
   out_dim: 3
-  n_hidden_units: 20
-  n_hidden_layers: 2
-  activation: 'Tanh'
+  n_hidden_units: 50 # 40 # 20
+  n_hidden_layers: 3 # 2
   residual: True
   regress: True
 
 discriminator:
   in_dim: 3
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 2
+  n_hidden_units: 20 # 30 # 20
+  n_hidden_layers: 4 # 2
   activation: 'Tanh'
   residual: True
   regress: False
