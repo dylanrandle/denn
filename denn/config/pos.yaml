@@ -3,7 +3,7 @@ problem:
   ny: 32
   f: 0
   perturb: True
-  batch_size: 512 # 1024
+  batch_size: 1024 # 400 # 16 # 512 # 1024
 
 training:
   method: 'unsupervised'
@@ -33,10 +33,10 @@ training:
 generator:
   in_dim: 2
   out_dim: 1
-  n_hidden_units: 30
-  n_hidden_layers: 2
+  n_hidden_units: 32
+  n_hidden_layers: 1
   activation: 'Tanh'
-  residual: True
+  residual: False
   regress: True
 
 discriminator:
