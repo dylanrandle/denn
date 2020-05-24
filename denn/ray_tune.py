@@ -40,8 +40,8 @@ if __name__ == "__main__":
     lr_bound = (1e-6, 1e-2)
     gamma_bound = (0.99, 0.9999)
     beta_bound = (0, 0.999)
-    n_nodes = [20, 30, 40, 50]
-    n_layers = [2, 3, 4, 5]
+    n_nodes = [20, 30, 40, 50, 60]
+    n_layers = [2, 3, 4, 5, 6]
 
     # LRs
     search_space['training']['g_lr'] = tune.sample_from(lambda s: np.random.uniform(*lr_bound))
