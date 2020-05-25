@@ -1,5 +1,5 @@
 problem:
-  n: 20000 # 1200 # 800 # 400 # 200
+  n: 800 # 1000 # 20000 # 1200 # 800 # 400 # 200
   perturb: True
   t_max: 10
   S0: 0.99
@@ -10,8 +10,8 @@ problem:
 
 training:
   method: 'unsupervised'
-  seed: 0
-  niters: 20000 # 20000
+  seed: 4
+  niters: 30000 # 20000
   g_lr: 0.009949364998471707 # 0.005275558860890438 # 0.005505509064926991 # 0.006429803531841584
   # classical tuning (with MSE) below:
   # g_lr: 0.005553717837080301
@@ -23,7 +23,7 @@ training:
   # classical tuning (with MSE) below:
   # d_betas: [0.358731  , 0.09986252]
   lr_schedule: True
-  gamma: 0.999227612781647 # 0.9988751632852519 # 0.995 # 0.9934806242487488 # 0.9976839429505154
+  gamma: 0.9996 # 0.999227612781647 # 0.9988751632852519 # 0.995 # 0.9934806242487488 # 0.9976839429505154
   # classical tuning (with MSE) below:
   # gamma: 0.998863628077177
   obs_every: 1
@@ -31,7 +31,7 @@ training:
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: MSELoss
+  loss_fn: L1Loss
   wgan: False
   gp: 0.1
   conditional: False
@@ -39,7 +39,7 @@ training:
   plot: True
   save: True
   save_for_animation: False
-  dirname: 'SIR_run_gan_052420'
+  dirname: 'SIR_run_gan_052520_seed4'
 
 generator:
   in_dim: 1
