@@ -8,16 +8,40 @@ from IPython.display import clear_output
 import pandas as pd
 
 # global plot params
-plt.rc('axes', titlesize=15)
-plt.rc('axes', labelsize=12)
-plt.rc('legend', fontsize=12)
+# plt.rc('axes', titlesize=15)
+# plt.rc('axes', labelsize=12)
+# plt.rc('legend', fontsize=12)
 
-def diff(x, t):
-    """ wraps autograd to perform differentiation """
-    dx_dt, = autograd.grad(x, t,
-                           grad_outputs=x.data.new(x.shape).fill_(1),
-                           create_graph=True)
-    return dx_dt
+plt.rc('axes', titlesize=20)
+plt.rc('axes', labelsize=20)
+plt.rc('legend', fontsize=20)
+plt.rc('xtick', labelsize=15)
+plt.rc('ytick', labelsize=15)
+
+# def diff(x, t):
+#     """ wraps autograd to perform differentiation """
+#     dx_dt, = autograd.grad(x, t,
+#                            grad_outputs=x.data.new(x.shape).fill_(1),
+#                            create_graph=True)
+#     return dx_dt
+
+def diff(x, t, order=1):
+    """The derivative of a variable with respect to another.
+    :param x: The :math:`x` in :math:`\\displaystyle\\frac{\\partial x}{\\partial t}`.
+    :type x: `torch.tensor`
+    :param t: The :math:`t` in :math:`\\displaystyle\\frac{\\partial x}{\\partial t}`.
+    :type t: `torch.tensor`
+    :param order: The order of the derivative, defaults to 1.
+    :type order: int
+    :returns: The derivative.
+    :rtype: `torch.tensor`
+    """
+    ones = torch.ones_like(x)
+    der, = autograd.grad(x, t, create_graph=True, grad_outputs=ones)
+    for i in range(1, order):
+        ones = torch.ones_like(der)
+        der, = autograd.grad(der, t, create_graph=True, grad_outputs=ones)
+    return der
 
 def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=False,
     save=False, dirname=None, logloss=False, alpha=0.8):
@@ -66,11 +90,12 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
     # Predictions
     if grid.shape[1] == 2: # PDE
-        x = np.unique(grid[:, 0])
-        y = np.unique(grid[:, 1])
+        x, y = grid[:, 0], grid[:, 1]
+        xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
+        xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
         for i, (k, v) in enumerate(pred_dict.items()):
-            v = v.reshape((len(x),len(y)))
-            cf = ax[2].contourf(x, y, v.T, cmap='Reds')
+            v = v.reshape((xdim, ydim))
+            cf = ax[2].contourf(xx, yy, v, cmap='Reds')
             cb = fig.colorbar(cf, format='%.0e', ax=ax[2])
         ax[2].set_xlabel('$x$')
         ax[2].set_ylabel('$y$')
@@ -87,11 +112,12 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     # Derivatives
     if diff_dict:
         if grid.shape[1] == 2: # PDE
-            x = np.unique(grid[:, 0])
-            y = np.unique(grid[:, 1])
+            x, y = grid[:, 0], grid[:, 1]
+            xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
+            xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
             for i, (k, v) in enumerate(diff_dict.items()):
-                v = v.reshape((len(x),len(y)))
-                cf = ax[3].contourf(x, y, v.T, cmap='Reds')
+                v = v.reshape((xdim, ydim))
+                cf = ax[3].contourf(xx, yy, v, cmap='Reds')
                 cb = fig.colorbar(cf, format='%.0e', ax=ax[3])
             ax[3].set_xlabel('$x$')
             ax[3].set_ylabel('$y$')

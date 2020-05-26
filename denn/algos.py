@@ -29,10 +29,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     grid = problem.get_grid()
     soln = problem.get_solution(grid)
 
-    # observer mask and masked grid/solution (t_obs/y_obs)
-    observers = torch.arange(0, len(grid), obs_every)
-    grid_obs = grid[observers, :]
-    soln_obs = soln[observers, :]
+    # # observer mask and masked grid/solution (t_obs/y_obs)
+    # observers = torch.arange(0, len(grid), obs_every)
+    # grid_obs = grid[observers, :]
+    # soln_obs = soln[observers, :]
 
     # labels
     real_label = 1
@@ -168,7 +168,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
           lr_scheduler_D.step()
 
         # train MSE: grid sample vs true soln
-        grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
+        # grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
         pred = G(grid_samp)
         pred_adj = problem.adjust(pred, grid_samp)['pred']
         sol_samp = problem.get_solution(grid_samp)
@@ -242,9 +242,9 @@ def train_L2(model, problem, method='unsupervised', niters=100,
     grid = problem.get_grid()
     sol = problem.get_solution(grid)
 
-    observers = torch.arange(0, len(grid), obs_every)
-    grid_obs = grid[observers, :]
-    sol_obs = sol[observers, :]
+    # observers = torch.arange(0, len(grid), obs_every)
+    # grid_obs = grid[observers, :]
+    # sol_obs = sol[observers, :]
 
     # optimizers & loss functions
     opt = torch.optim.Adam(model.parameters(), lr=lr, betas=betas)
@@ -291,7 +291,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
             loss_trace.append(loss.item())
 
         # train MSE: grid sample vs true soln
-        grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
+        # grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
         pred = model(grid_samp)
         try:
             pred_adj = problem.adjust(pred, grid_samp)['pred']

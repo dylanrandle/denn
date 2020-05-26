@@ -414,12 +414,7 @@ class PoissonEquation(Problem):
         ).reshape(-1)
         # take minimum spacing, which is equal to spacing along an axis
         self.spacing = (xmax - xmin) / nx
-        # self.xgrid[1] - self.xgrid[0]
 
-        # set up our grid as just the set of all point tuples
-        # self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
-        # flip axis
-        # self.grid = torch.flip(self.grid, [1])
         grid_x, grid_y = torch.meshgrid(self.xgrid, self.ygrid)
         self.grid = torch.cat([grid_x.reshape(-1,1), grid_y.reshape(-1,1)], 1)
 
@@ -428,6 +423,8 @@ class PoissonEquation(Problem):
         #     - use Fenics (finite elements) to compute solution
         #     - TODO: calculate at `grid` instead of the current fixed mesh
         # """
+        # set up our grid as just the set of all point tuples
+        # self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
         # to match Fenics Mesh order
         # self.grid = torch.flip(self.grid, [1])
         # # u_np, mesh_np = poisson_compute_solution(self.nx, self.ny, self.f)
@@ -437,15 +434,12 @@ class PoissonEquation(Problem):
         return self.grid
 
     def get_grid_sample(self):
-        # return self.sample_grid(self.grid, self.spacing)
-        tmp = self.sample_grid(self.grid, self.spacing)
-        mask = np.random.choice(len(tmp), size=self.batch_size, replace=False)
-        return tmp[mask,:]
+        return self.sample_grid(self.grid, self.spacing)
 
     def get_solution(self, grid):
-        x, y = grid[:,0], grid[:, 1]
+        x, y = grid[:, 0].reshape(-1,1), grid[:, 1].reshape(-1,1)
         sol = torch.sin(np.pi*y) * torch.sinh(np.pi*(1 - x)) / torch.sinh(self.pi)
-        return sol.reshape(-1, 1)
+        return sol.flatten() # sol.reshape(-1, 1)
 
     def _poisson_eqn(self, d2x, d2y):
         """ return LHS of equation (should equal 0) """
@@ -463,16 +457,14 @@ class PoissonEquation(Problem):
         thanks to Feiyu Chen for this:
         https://github.com/odegym/neurodiffeq/blob/master/neurodiffeq/pde.py
         """
-        # def _bc(yb):
-            # tmp = torch.sin(np.pi * yb)
-
-        self.x_min_val = lambda yb: torch.sin(np.pi * yb) # _bc(yb)
+        self.x_min_val = lambda yb: torch.sin(np.pi * yb)
         self.x_max_val = lambda yb: 0
         self.y_min_val = lambda xb: 0
         self.y_max_val = lambda xb: 0
 
-        # u = u.flatten()
-        x, y = grid[:, 0], grid[:, 1]
+        u = u.reshape(-1, 1)
+
+        x, y = grid[:, 0].reshape(-1, 1), grid[:, 1].reshape(-1, 1)
 
         x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
         y_tilde = (y-self.ymin) / (self.ymax-self.ymin)
@@ -483,22 +475,19 @@ class PoissonEquation(Problem):
                  y_tilde *( self.y_max_val(x) - ((1-x_tilde)*self.y_max_val(self.xmin * torch.ones_like(x_tilde))
                                                   + x_tilde *self.y_max_val(self.xmax * torch.ones_like(x_tilde))) )
 
-        u_adj = Axy + x_tilde*(1-x_tilde)*y_tilde*(1-y_tilde)*u.flatten()
+        u_adj = Axy + x_tilde*(1-x_tilde)*y_tilde*(1-y_tilde) * u
 
-        # first deriv
-        dx = diff(u_adj, x)
-        dy = diff(u_adj, y)
+        d2x = diff(u_adj, x, order=2)
+        d2y = diff(u_adj, y, order=2)
 
-        # second deriv
-        d2x = diff(dx, x)
-        d2y = diff(dy, y)
-
-        return {'pred': u_adj.reshape(-1,1), 'd2x': d2x.reshape(-1,1), 'd2y': d2y.reshape(-1,1)}
+        return {'pred': u_adj, 'd2x': d2x, 'd2y': d2y}
 
     def get_plot_dicts(self, pred, grid, sol):
         """ return appropriate pred_dict / diff_dict used for plotting """
         adj = self.adjust(pred, grid)
         pred_adj, d2x, d2y = adj['pred'], adj['d2x'], adj['d2y']
+        # abs_diff = np.abs((pred_adj[:,0] - sol[:,0]).detach())
+        # pred_dict = {"abs_diff": abs_diff}
         pred_dict = {'$\hat{u}$': pred_adj.detach()}
 
         resid = self.get_equation(pred, grid)
