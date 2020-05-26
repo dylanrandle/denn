@@ -30,7 +30,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     soln = problem.get_solution(grid)
 
     # # observer mask and masked grid/solution (t_obs/y_obs)
-    # observers = torch.arange(0, len(grid), obs_every)
+    observers = torch.arange(0, len(grid), obs_every)
     # grid_obs = grid[observers, :]
     # soln_obs = soln[observers, :]
 
@@ -186,9 +186,9 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         preds['soln'].append(soln.detach())
 
         try:
-            if (epoch+1) % 10 == 0:
+            if (epoch+1) % 100 == 0:
                 # mean of val mses for last 10 steps
-                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                track.log(mean_squared_error=np.max(mses['val'][-100:]))
                 # mean of G - D loss for last 10 steps
                 # loss_diff = np.mean(np.abs(losses['G'][-10] - losses['D'][-10]))
                 # track.log(mean_squared_error=loss_diff)

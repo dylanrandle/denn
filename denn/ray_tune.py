@@ -40,8 +40,8 @@ if __name__ == "__main__":
     lr_bound = (1e-6, 1e-2)
     gamma_bound = (0.99, 0.9999)
     beta_bound = (0, 0.999)
-    n_nodes = [20, 30, 40, 50, 60]
-    n_layers = [2, 3, 4, 5, 6]
+    n_nodes = [20, 30, 40]
+    n_layers = [2, 3, 4]
 
     # LRs
     search_space['training']['g_lr'] = tune.sample_from(lambda s: np.random.uniform(*lr_bound))
@@ -77,8 +77,8 @@ if __name__ == "__main__":
         mode='min',
         reduction_factor=4,
         brackets=1,
-        max_t=int(_niters/10), # ==> e.g. 100 x 10 = 1000 real iters
-        grace_period=int(_niters/100), # tune is tracked every 10 iters
+        max_t=int(_niters/100), # ==> e.g. 100 x 10 = 1000 real iters
+        grace_period=int(_niters/1000), # tune is tracked every 10 iters
     )                    # ==> e.g. 25 x 10 = 250 real iters
 
     if args.classical:
