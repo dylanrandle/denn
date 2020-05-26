@@ -387,7 +387,7 @@ class PoissonEquation(Problem):
     Solution:
     u(x,y) = sin(pi * y) * sinh( pi * (1 - x) ) / sinh(pi)
     """
-    def __init__(self, nx=32, ny=32, xmin=0, xmax=1, ymin=0, ymax=1, f=0, batch_size=100, **kwargs):
+    def __init__(self, nx=32, ny=32, xmin=0, xmax=1, ymin=0, ymax=1, batch_size=100, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -395,7 +395,6 @@ class PoissonEquation(Problem):
         self.ymax = ymax
         self.nx = nx
         self.ny = ny
-        self.f = f
         self.batch_size = batch_size
         self.pi = torch.tensor(np.pi)
         self.xgrid = torch.linspace(
@@ -415,8 +414,12 @@ class PoissonEquation(Problem):
         # take minimum spacing, which is equal to spacing along an axis
         self.spacing = (xmax - xmin) / nx
 
-        grid_x, grid_y = torch.meshgrid(self.xgrid, self.ygrid)
-        self.grid = torch.cat([grid_x.reshape(-1,1), grid_y.reshape(-1,1)], 1)
+        # grid_x, grid_y = torch.meshgrid(self.xgrid, self.ygrid)
+        self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
+        # self.grid = torch.flip(self.grid, [1])
+        # self.grid = torch.cat([grid_x.reshape(-1,1), grid_y.reshape(-1,1)], 1)
+        # print(self.grid)
+        # print(self.grid.requires_grad)
 
         # """
         # Computing Solution:
@@ -436,20 +439,27 @@ class PoissonEquation(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
-    def get_solution(self, grid):
-        x, y = grid[:, 0].reshape(-1,1), grid[:, 1].reshape(-1,1)
-        sol = torch.sin(np.pi*y) * torch.sinh(np.pi*(1 - x)) / torch.sinh(self.pi)
-        return sol.flatten() # sol.reshape(-1, 1)
+    # def get_solution(self, grid):
+    #     x, y = grid[:, 0].reshape(-1,1), grid[:, 1].reshape(-1,1)
+    #     sol = torch.sin(np.pi*y) * torch.sinh(np.pi*(1 - x)) / torch.sinh(self.pi)
+    #     return sol
 
-    def _poisson_eqn(self, d2x, d2y):
+    def get_solution(self, grid):
+        x, y = grid[:, 0].reshape(-1, 1), grid[:, 1].reshape(-1,1)
+        sol = x * (1-x) * y * (1-y) * torch.exp(x - y)
+        return sol
+
+    def _poisson_eqn(self, d2x, d2y, f):
         """ return LHS of equation (should equal 0) """
-        return d2x + d2y - self.f
+        return d2x + d2y - f
 
     def get_equation(self, u, grid):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(u, grid)
         u_adj, d2x, d2y = adj['pred'], adj['d2x'], adj['d2y']
-        return self._poisson_eqn(d2x, d2y)
+        x, y = grid[:,0].reshape(-1, 1), grid[:, 1].reshape(-1, 1)
+        f = 2*x * (y - 1) * (y - 2*x + x*y + 2) * torch.exp(x - y)
+        return self._poisson_eqn(d2x, d2y, f)
 
     def adjust(self, u, grid):
         """ perform boundary value adjustment
@@ -457,10 +467,10 @@ class PoissonEquation(Problem):
         thanks to Feiyu Chen for this:
         https://github.com/odegym/neurodiffeq/blob/master/neurodiffeq/pde.py
         """
-        self.x_min_val = lambda yb: torch.sin(np.pi * yb)
-        self.x_max_val = lambda yb: 0
-        self.y_min_val = lambda xb: 0
-        self.y_max_val = lambda xb: 0
+        self.x_min_val = lambda y: 0 # torch.sin(self.pi * y)
+        self.x_max_val = lambda y: 0
+        self.y_min_val = lambda x: 0
+        self.y_max_val = lambda x: 0
 
         u = u.reshape(-1, 1)
 
