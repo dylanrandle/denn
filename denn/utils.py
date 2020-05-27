@@ -173,7 +173,8 @@ def plot_reps_results(arrs_dict,
         lqt, upt = np.percentile(a, pctiles, axis=0)
         plt.fill_between(steps, lqt, upt, alpha=alpha_shade, color=colors[i])
 
-    plt.legend(loc='lower left')
+    # plt.legend(loc='lower left')
+    plt.legend(loc='upper right')
     plt.xlabel('Iteration')
     plt.ylabel('Mean squared error')
     plt.grid()
