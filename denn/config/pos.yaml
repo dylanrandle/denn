@@ -1,7 +1,8 @@
 problem:
-  nx: 50
-  ny: 50
+  nx: 32
+  ny: 32
   perturb: True
+  batch_size: 16
 
 training:
   method: 'unsupervised'
@@ -11,14 +12,14 @@ training:
   d_lr: 0.008514807806265352 # 0.0031349307555084156 # 0.0034392953625345234
   g_betas: [0.83510043, 0.3353063 ] # [0.76106005, 0.07500873] # [0.9, 0.999]
   d_betas: [0.42605297, 0.69853051] # [0.14686573, 0.12512614] # [0.97137222, 0.50639674]
-  lr_schedule: True
+  lr_schedule: False
   gamma: 0.994 # 0.9932553033254312 # 0.9940129983433766
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: L1Loss
+  loss_fn: MSELoss
   wgan: False
   gp: 0.1
   conditional: False

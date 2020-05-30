@@ -358,6 +358,19 @@ class ReynoldsAveragedNavierStokes(Problem):
         diff_dict = None
         return pred_dict, diff_dict
 
+# make a function to set global state
+FLOAT_DTYPE=torch.float32
+
+def set_default_dtype(dtype):
+    """Set the default `dtype` of `torch.tensor` used in `neurodiffeq`.
+    :param dtype: `torch.float`, `torch.double`, etc
+    """
+    global FLOAT_DTYPE
+    FLOAT_DTYPE=dtype
+    torch.set_default_dtype(FLOAT_DTYPE)
+
+set_default_dtype(FLOAT_DTYPE)
+
 class PoissonEquation(Problem):
     """
     Poisson Equation:
@@ -397,84 +410,48 @@ class PoissonEquation(Problem):
         self.ny = ny
         self.batch_size = batch_size
         self.pi = torch.tensor(np.pi)
-        self.xgrid = torch.linspace(
-            xmin,
-            xmax,
-            self.nx,
-            dtype=torch.float,
-            requires_grad=True
-        ).reshape(-1)
-        self.ygrid = torch.linspace(
-            ymin,
-            ymax,
-            self.ny,
-            dtype=torch.float,
-            requires_grad=True
-        ).reshape(-1)
-        # take minimum spacing, which is equal to spacing along an axis
-        self.spacing = (xmax - xmin) / nx
+        self.hx = (xmax - xmin) / nx
+        self.hy = (ymax - ymin) / ny
+        self.noise_xstd = self.hx / 4.0
+        self.noise_ystd = self.hy / 4.0
 
-        # grid_x, grid_y = torch.meshgrid(self.xgrid, self.ygrid)
-        self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
-        # self.grid = torch.flip(self.grid, [1])
-        # self.grid = torch.cat([grid_x.reshape(-1,1), grid_y.reshape(-1,1)], 1)
-        # print(self.grid)
-        # print(self.grid.requires_grad)
+        xgrid = torch.linspace(xmin, xmax, nx, requires_grad=True)
+        ygrid = torch.linspace(ymin, ymax, ny, requires_grad=True)
 
-        # """
-        # Computing Solution:
-        #     - use Fenics (finite elements) to compute solution
-        #     - TODO: calculate at `grid` instead of the current fixed mesh
-        # """
-        # set up our grid as just the set of all point tuples
-        # self.grid = torch.cartesian_prod(self.xgrid, self.ygrid)
-        # to match Fenics Mesh order
-        # self.grid = torch.flip(self.grid, [1])
-        # # u_np, mesh_np = poisson_compute_solution(self.nx, self.ny, self.f)
-        # # self.solution = torch.tensor(u_np, dtype=torch.float).reshape(-1,1) #, mesh_np
+        grid_x, grid_y = torch.meshgrid(xgrid, ygrid)
+        self.grid_x, self.grid_y = grid_x.reshape(-1,1), grid_y.reshape(-1,1)
 
     def get_grid(self):
-        return self.grid
+        return (self.grid_x, self.grid_y)
 
     def get_grid_sample(self):
-        return self.sample_grid(self.grid, self.spacing)
+        x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
+        y_noisy = torch.normal(mean=self.grid_y, std=self.noise_ystd)
+        return (x_noisy, y_noisy)
 
-    # def get_solution(self, grid):
-    #     x, y = grid[:, 0].reshape(-1,1), grid[:, 1].reshape(-1,1)
-    #     sol = torch.sin(np.pi*y) * torch.sinh(np.pi*(1 - x)) / torch.sinh(self.pi)
-    #     return sol
-
-    def get_solution(self, grid):
-        x, y = grid[:, 0].reshape(-1, 1), grid[:, 1].reshape(-1,1)
+    def get_solution(self, x, y):
         sol = x * (1-x) * y * (1-y) * torch.exp(x - y)
         return sol
 
-    def _poisson_eqn(self, d2x, d2y, f):
-        """ return LHS of equation (should equal 0) """
-        return d2x + d2y - f
+    def _poisson_eqn(self, u, x, y):
+        return diff(u, x, order=2) + diff(u, y, order=2) - 2*x * (y - 1) * (y - 2*x + x*y + 2) * torch.exp(x - y)
 
-    def get_equation(self, u, grid):
+    def get_equation(self, u, x, y):
         """ return value of residuals of equation (i.e. LHS) """
-        adj = self.adjust(u, grid)
-        u_adj, d2x, d2y = adj['pred'], adj['d2x'], adj['d2y']
-        x, y = grid[:,0].reshape(-1, 1), grid[:, 1].reshape(-1, 1)
-        f = 2*x * (y - 1) * (y - 2*x + x*y + 2) * torch.exp(x - y)
-        return self._poisson_eqn(d2x, d2y, f)
+        adj = self.adjust(u, x, y)
+        u_adj = adj['pred']
+        return self._poisson_eqn(u_adj, x, y)
 
-    def adjust(self, u, grid):
+    def adjust(self, u, x, y):
         """ perform boundary value adjustment
 
         thanks to Feiyu Chen for this:
         https://github.com/odegym/neurodiffeq/blob/master/neurodiffeq/pde.py
         """
-        self.x_min_val = lambda y: 0 # torch.sin(self.pi * y)
+        self.x_min_val = lambda y: 0
         self.x_max_val = lambda y: 0
         self.y_min_val = lambda x: 0
         self.y_max_val = lambda x: 0
-
-        u = u.reshape(-1, 1)
-
-        x, y = grid[:, 0].reshape(-1, 1), grid[:, 1].reshape(-1, 1)
 
         x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
         y_tilde = (y-self.ymin) / (self.ymax-self.ymin)
@@ -485,22 +462,17 @@ class PoissonEquation(Problem):
                  y_tilde *( self.y_max_val(x) - ((1-x_tilde)*self.y_max_val(self.xmin * torch.ones_like(x_tilde))
                                                   + x_tilde *self.y_max_val(self.xmax * torch.ones_like(x_tilde))) )
 
-        u_adj = Axy + x_tilde*(1-x_tilde)*y_tilde*(1-y_tilde) * u
+        u_adj = Axy + x_tilde*(1-x_tilde)*y_tilde*(1-y_tilde)*u
 
-        d2x = diff(u_adj, x, order=2)
-        d2y = diff(u_adj, y, order=2)
+        return {'pred': u_adj}
 
-        return {'pred': u_adj, 'd2x': d2x, 'd2y': d2y}
-
-    def get_plot_dicts(self, pred, grid, sol):
+    def get_plot_dicts(self, pred, x, y, sol):
         """ return appropriate pred_dict / diff_dict used for plotting """
-        adj = self.adjust(pred, grid)
-        pred_adj, d2x, d2y = adj['pred'], adj['d2x'], adj['d2y']
-        # abs_diff = np.abs((pred_adj[:,0] - sol[:,0]).detach())
-        # pred_dict = {"abs_diff": abs_diff}
+        adj = self.adjust(pred, x, y)
+        pred_adj = adj['pred']
         pred_dict = {'$\hat{u}$': pred_adj.detach()}
 
-        resid = self.get_equation(pred, grid)
+        resid = self.get_equation(pred, x, y)
         diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
         return pred_dict, diff_dict
 

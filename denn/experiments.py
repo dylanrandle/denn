@@ -3,7 +3,7 @@ import torch.nn as nn
 import argparse
 import numpy as np
 
-from denn.algos import train_L2, train_GAN
+from denn.algos import train_L2, train_L2_2D, train_GAN, train_GAN_2D
 from denn.models import MLP
 from denn.config.config import get_config
 from denn.utils import handle_overwrite
@@ -44,7 +44,10 @@ def L2_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    res = train_L2(model, problem, **params['training'], config=params)
+    if pkey.lower().strip() == "pos":
+        res = train_L2_2D(model, problem, **params['training'], config=params)
+    else:
+        res = train_L2(model, problem, **params['training'], config=params)
 
     return res
 
@@ -63,7 +66,10 @@ def gan_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    res = train_GAN(gen, disc, problem, **params['training'], config=params)
+    if pkey.lower().strip() == "pos":
+        res = train_GAN_2D(gen, disc, problem, **params['training'], config=params)
+    else:
+        res = train_GAN(gen, disc, problem, **params['training'], config=params)
 
     return res
 
