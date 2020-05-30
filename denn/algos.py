@@ -186,9 +186,9 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         preds['soln'].append(soln.detach())
 
         try:
-            if (epoch+1) % 100 == 0:
+            if (epoch+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                track.log(mean_squared_error=np.mean(mses['val'][-100:]))
+                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
                 # mean of G - D loss for last 10 steps
                 # loss_diff = np.mean(np.abs(losses['G'][-10] - losses['D'][-10]))
                 # track.log(mean_squared_error=loss_diff)
@@ -485,9 +485,9 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         preds['soln'].append(soln.detach())
 
         try:
-            if (epoch+1) % 100 == 0:
+            if (epoch+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                track.log(mean_squared_error=np.mean(mses['val'][-100:]))
+                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
                 # mean of G - D loss for last 10 steps
                 # loss_diff = np.mean(np.abs(losses['G'][-10] - losses['D'][-10]))
                 # track.log(mean_squared_error=loss_diff)

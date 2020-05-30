@@ -2,24 +2,23 @@ problem:
   nx: 32
   ny: 32
   perturb: True
-  batch_size: 16
 
 training:
   method: 'unsupervised'
-  seed: 0
-  niters: 1000
-  g_lr: 0.0005255488799146978 # 0.00020180984318885796 # 0.001
-  d_lr: 0.008514807806265352 # 0.0031349307555084156 # 0.0034392953625345234
-  g_betas: [0.83510043, 0.3353063 ] # [0.76106005, 0.07500873] # [0.9, 0.999]
-  d_betas: [0.42605297, 0.69853051] # [0.14686573, 0.12512614] # [0.97137222, 0.50639674]
-  lr_schedule: False
-  gamma: 0.994 # 0.9932553033254312 # 0.9940129983433766
+  seed: 4
+  niters: 4000
+  g_lr: 0.00837031309700901 # 0.0005255488799146978 # 0.00020180984318885796 # 0.001
+  d_lr: 0.0017870853258820207 # 0.008514807806265352 # 0.0031349307555084156 # 0.0034392953625345234
+  g_betas: [0.40987808, 0.44659027] # [0.83510043, 0.3353063 ] # [0.76106005, 0.07500873] # [0.9, 0.999]
+  d_betas: [0.59293134, 0.91462022] # [0.42605297, 0.69853051] # [0.14686573, 0.12512614] # [0.97137222, 0.50639674]
+  lr_schedule: True
+  gamma: 0.9958971301579389 # 0.994 # 0.9932553033254312 # 0.9940129983433766
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: MSELoss
+  loss_fn: L1Loss
   wgan: False
   gp: 0.1
   conditional: False
@@ -27,13 +26,13 @@ training:
   plot: True
   save: True
   save_for_animation: False
-  dirname: 'POS_run_test'
+  dirname: 'POS_run_gan_053020_seed4'
 
 generator:
   in_dim: 2
   out_dim: 1
-  n_hidden_units: 20 # 40
-  n_hidden_layers: 2
+  n_hidden_units: 40
+  n_hidden_layers: 4
   activation: 'Tanh'
   residual: True
   regress: True
@@ -41,8 +40,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 20 #40
-  n_hidden_layers: 2
+  n_hidden_units: 20
+  n_hidden_layers: 4
   activation: 'Tanh'
   residual: True
   regress: False

@@ -77,8 +77,8 @@ if __name__ == "__main__":
         mode='min',
         reduction_factor=4,
         brackets=1,
-        max_t=int(_niters/100), # ==> e.g. 100 x 10 = 1000 real iters
-        grace_period=int(_niters/1000), # tune is tracked every 10 iters
+        max_t=int(_niters/10), # ==> e.g. 100 x 10 = 1000 real iters
+        grace_period=int(_niters/100), # tune is tracked every 10 iters
     )                    # ==> e.g. 25 x 10 = 250 real iters
 
     if args.classical:
