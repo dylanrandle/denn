@@ -1,6 +1,6 @@
 import numpy as np
 import torch
-from scipy.integrate import odeint
+from scipy.integrate import odeint, solve_ivp
 from denn.utils import diff
 # from denn.poisson.poisson import compute_solution as poisson_compute_solution
 from denn.rans.numerical import solve_rans_scipy_solve_bvp
@@ -227,6 +227,17 @@ class NonlinearOscillator(Problem):
         ).reshape(-1, 1)
         self.spacing = self.grid[1, 0] - self.grid[0, 0]
 
+        atol = 1e-8
+        rtol = 1e-8
+        self.sol = solve_ivp(
+            self._nlo_system,
+            t_span=(t_min, t_max),
+            y0=[self.x0, self.dx_dt0],
+            dense_output=True,
+            atol=atol,
+            rtol=rtol,
+        )
+
     def get_grid(self):
         return self.grid
 
@@ -242,10 +253,8 @@ class NonlinearOscillator(Problem):
 
         t = t.reshape(-1)
 
-        sol = odeint(self._nlo_system,
-            [self.x0, self.dx_dt0],
-            t, tfirst=True, atol=atol, rtol=rtol)
-        return torch.tensor(sol[:,0], dtype=torch.float).reshape(-1, 1)
+        sol = self.sol.sol(t)
+        return torch.tensor(sol[0,:], dtype=torch.float).reshape(-1, 1)
 
     def _nlo_system(self, t, z):
         """ NLO decomposed as system of first order equations """
@@ -509,6 +518,17 @@ class SIRModel(Problem):
         ).reshape(-1, 1)
         self.spacing = self.grid[1, 0] - self.grid[0, 0]
 
+        atol = 1e-8
+        rtol = 1e-8
+        self.sol = solve_ivp(
+            self._sir_system,
+            t_span = (t_min, t_max),
+            y0 = [self.S0, self.I0, self.R0],
+            dense_output=True,
+            atol=atol,
+            rtol=rtol,
+        )
+
     def get_grid(self):
         return self.grid
 
@@ -524,10 +544,8 @@ class SIRModel(Problem):
 
         t = t.reshape(-1)
 
-        init_cond = [self.S0, self.I0, self.R0]
-
-        sol = odeint(self._sir_system, init_cond, t, tfirst=True)
-        return torch.tensor(sol, dtype=torch.float)
+        sol = self.sol.sol(t)
+        return torch.tensor(sol.T, dtype=torch.float)
 
     def _sir_system(self, t, x):
         S, I, R = x[0], x[1], x[2]

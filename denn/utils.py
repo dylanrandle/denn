@@ -15,8 +15,8 @@ import pandas as pd
 plt.rc('axes', titlesize=20)
 plt.rc('axes', labelsize=20)
 plt.rc('legend', fontsize=20)
-plt.rc('xtick', labelsize=15)
-plt.rc('ytick', labelsize=15)
+plt.rc('xtick', labelsize=20)
+plt.rc('ytick', labelsize=20)
 
 # def diff(x, t):
 #     """ wraps autograd to perform differentiation """
@@ -173,8 +173,8 @@ def plot_reps_results(arrs_dict,
         lqt, upt = np.percentile(a, pctiles, axis=0)
         plt.fill_between(steps, lqt, upt, alpha=alpha_shade, color=colors[i])
 
-    # plt.legend(loc='lower left')
-    plt.legend(loc='upper right')
+    plt.legend(loc='lower left')
+    # plt.legend(loc='upper right')
     plt.xlabel('Iteration')
     plt.ylabel('Mean squared error')
     plt.grid()
