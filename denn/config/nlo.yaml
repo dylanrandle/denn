@@ -6,8 +6,8 @@ problem:
 
 training:
   method: 'unsupervised'
-  seed: 4
-  niters: 10000 # 5000 # 20000
+  seed: 1
+  niters: 20000 # 5000 # 20000
   g_lr: 0.00580162883941 # 0.008321475434043704 # 0.008390159336203257 # 0.005801628839417561
   # classical tuning (with MSE) below:
   # g_lr: 0.009864365500106666
@@ -27,7 +27,7 @@ training:
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: MSELoss
+  loss_fn: L1Loss
   wgan: False
   gp: 0.1
   conditional: False
@@ -35,7 +35,7 @@ training:
   plot: True
   save: True
   save_for_animation: False
-  dirname: 'NLO_run_gan_052220_seed4'
+  dirname: 'NLO_run_gan_053020_seed1'
 
 generator:
   in_dim: 1
