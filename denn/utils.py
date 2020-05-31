@@ -8,22 +8,10 @@ from IPython.display import clear_output
 import pandas as pd
 
 # global plot params
-# plt.rc('axes', titlesize=15)
-# plt.rc('axes', labelsize=12)
-# plt.rc('legend', fontsize=12)
-
-plt.rc('axes', titlesize=20)
-plt.rc('axes', labelsize=20)
-plt.rc('legend', fontsize=20)
-plt.rc('xtick', labelsize=20)
-plt.rc('ytick', labelsize=20)
-
-# def diff(x, t):
-#     """ wraps autograd to perform differentiation """
-#     dx_dt, = autograd.grad(x, t,
-#                            grad_outputs=x.data.new(x.shape).fill_(1),
-#                            create_graph=True)
-#     return dx_dt
+plt.rc('axes', titlesize=15, labelsize=15)
+plt.rc('legend', fontsize=15)
+plt.rc('xtick', labelsize=13)
+plt.rc('ytick', labelsize=13)
 
 def diff(x, t, order=1):
     """The derivative of a variable with respect to another.
@@ -46,6 +34,12 @@ def diff(x, t, order=1):
 def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=False,
     save=False, dirname=None, logloss=False, alpha=0.8):
     """ helpful plotting function """
+
+    plt.rc('axes', titlesize=15, labelsize=15)
+    plt.rc('legend', fontsize=15)
+    plt.rc('xtick', labelsize=13)
+    plt.rc('ytick', labelsize=13)
+
     if clear:
       clear_output(True)
 
@@ -155,6 +149,11 @@ def plot_reps_results(arrs_dict,
     linewidth=2, alpha_line=0.8, alpha_shade=0.4, figsize=(12,8),
     pctiles = (2.5, 97.5), window=10, fname=None):
 
+    plt.rc('axes', titlesize=20, labelsize=20)
+    plt.rc('legend', fontsize=20)
+    plt.rc('xtick', labelsize=20)
+    plt.rc('ytick', labelsize=20)
+
     linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*2
     colors = ['crimson', 'blue', 'skyblue', 'limegreen',
         'aquamarine', 'violet', 'black']
@@ -175,6 +174,7 @@ def plot_reps_results(arrs_dict,
 
     plt.legend(loc='lower left')
     # plt.legend(loc='upper right')
+    # plt.xticks([0, 5000, 10000, 15000, 20000])
     plt.xlabel('Iteration')
     plt.ylabel('Mean squared error')
     plt.grid()
