@@ -1,0 +1,4 @@
+include *.yml
+include *.yaml
+include denn/config/*.yml
+include denn/config/*.yaml

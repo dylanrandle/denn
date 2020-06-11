@@ -2,7 +2,7 @@ import setuptools
 
 setuptools.setup(
     name="denn",
-    version="0.1",
-    author="Dylan Labatt Randle",
+    version="1.0",
+    author="Dylan L. Randle",
     packages=setuptools.find_packages(),
 )
