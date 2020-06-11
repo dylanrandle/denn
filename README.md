@@ -16,7 +16,7 @@ The minimal installation includes the dependencies required to reproduce the res
 
 ## Reproducing Experimental Results
 
-Substitute `{key}` with the appropriate problem key (e.g. "exp", "sho", "nlo", etc.) and follow instructions for each method below.
+Substitute `{key}` with the appropriate problem key (e.g. "exp", "sho", "nlo", etc.) and follow instructions for each method below. **Note:** to reproduce **NAS** results, specify `{key}` as **"coo"**.
 
 DEQGAN:
 - `python denn/experiments.py --pkey {key} --gan`
@@ -26,4 +26,4 @@ $L_1$ / $L_2$ / Huber:
 - `python denn/experiments.py --pkey {key}`
 
 RK4 / FD:
-- See `notebooks/runs/{key}.ipynb` individually. Note that we must set NumPy to use 32-bit precision to be comparable to PyTorch (NumPy's default is 64)
+- `python denn/traditional.py --pkey {key}`
