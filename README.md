@@ -21,8 +21,8 @@ Substitute `{key}` with the appropriate problem key (e.g. "exp", "sho", "nlo", e
 DEQGAN:
 - `python denn/experiments.py --pkey {key} --gan`
 
-$L_1$ / $L_2$ / Huber:
-- Define PyTorch loss in `denn/config/{key}.yaml` under `training.loss_fn` ($L_1$="L1Loss", $L_2$="MSELoss", Huber="SmoothL1Loss")
+L1 / L2 / Huber:
+- Define PyTorch loss in `denn/config/{key}.yaml` under `training.loss_fn` (L1="L1Loss", L2="MSELoss", Huber="SmoothL1Loss")
 - `python denn/experiments.py --pkey {key}`
 
 RK4 / FD:
