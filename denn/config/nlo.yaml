@@ -1,33 +1,25 @@
 problem:
-  n: 400 # 2000
+  n: 400
   perturb: True
   t_max: 12.56
   dx_dt0: 0.5
 
 training:
   method: 'unsupervised'
-  seed: 1
-  niters: 20000 # 5000 # 20000
-  g_lr: 0.00580162883941 # 0.008321475434043704 # 0.008390159336203257 # 0.005801628839417561
-  # classical tuning (with MSE) below:
-  # g_lr: 0.009864365500106666
-  d_lr: 0.0007291873762250 # 0.009253572462548479 # 0.009470172206337 # 0.0007291873762250555
-  g_betas: [0.10244627, 0.76328835] # [0.45878083, 0.59697005] # [0.57298575, 0.6003693 ] # [0.10244627, 0.76328835]
-  # classical tuning (with MSE):
-  # g_betas: [0.7816786  0.68308922]
-  d_betas: [0.54142685, 0.67750577] # [0.53148418, 0.96834354] # [0.64861167, 0.70282844] # [0.54142685, 0.67750577]
-  # classical tuning (with MSE):
-  # d_betas: [0.05011763 0.55380932]
+  seed: 0
+  niters: 20000
+  g_lr: 0.00580162883941
+  d_lr: 0.0007291873762250
+  g_betas: [0.10244627, 0.76328835]
+  d_betas: [0.54142685, 0.67750577]
   lr_schedule: True
-  gamma: 0.999 # 0.998 # 0.9962712909742575 # 0.9992459000881562 # 0.999014581771989 # 0.9962712909742575
-  # classical tuning (with MSE):
-  # gamma: 0.9988731072780002
+  gamma: 0.999
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: L1Loss
+  loss_fn: MSELoss
   wgan: False
   gp: 0.1
   conditional: False
@@ -35,13 +27,13 @@ training:
   plot: True
   save: True
   save_for_animation: False
-  dirname: 'NLO_run_gan_053020_seed1'
+  dirname: 'NLO_run'
 
 generator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 40 # 20 # 40
-  n_hidden_layers: 4 # 2 # 4
+  n_hidden_units: 40
+  n_hidden_layers: 4
   activation: 'Tanh'
   residual: True
   regress: True
@@ -49,8 +41,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 30 # 20 # 30
-  n_hidden_layers: 3 # 2 # 3
+  n_hidden_units: 30
+  n_hidden_layers: 3
   activation: 'Tanh'
   residual: True
   regress: False

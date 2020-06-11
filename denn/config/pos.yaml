@@ -5,20 +5,20 @@ problem:
 
 training:
   method: 'unsupervised'
-  seed: 4
+  seed: 0
   niters: 4000
-  g_lr: 0.00837031309700901 # 0.0005255488799146978 # 0.00020180984318885796 # 0.001
-  d_lr: 0.0017870853258820207 # 0.008514807806265352 # 0.0031349307555084156 # 0.0034392953625345234
-  g_betas: [0.40987808, 0.44659027] # [0.83510043, 0.3353063 ] # [0.76106005, 0.07500873] # [0.9, 0.999]
-  d_betas: [0.59293134, 0.91462022] # [0.42605297, 0.69853051] # [0.14686573, 0.12512614] # [0.97137222, 0.50639674]
+  g_lr: 0.00837031309700901
+  d_lr: 0.0017870853258820207
+  g_betas: [0.40987808, 0.44659027]
+  d_betas: [0.59293134, 0.91462022]
   lr_schedule: True
-  gamma: 0.9958971301579389 # 0.994 # 0.9932553033254312 # 0.9940129983433766
+  gamma: 0.9958971301579389
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: L1Loss
+  loss_fn: MSELoss
   wgan: False
   gp: 0.1
   conditional: False
@@ -26,7 +26,7 @@ training:
   plot: True
   save: True
   save_for_animation: False
-  dirname: 'POS_run_gan_053020_seed4'
+  dirname: 'POS_run'
 
 generator:
   in_dim: 2
