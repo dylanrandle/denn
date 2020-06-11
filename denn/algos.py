@@ -6,7 +6,10 @@ import os
 from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
 from denn.config.config import write_config
 
-from ray.tune import track
+try:
+    from ray.tune import track
+except:
+    print("Ray not loaded.")
 
 this_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -217,7 +220,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         np.save(os.path.join(anim_dir, "grid"), grid.detach())
         for k, v in preds.items():
             v = np.hstack(v)
-            # TODO @dylan: for systems (i.e. multi-dim preds),
+            # TODO: for systems (i.e. multi-dim preds),
             # hstack flattens preds, need to use dstack
             # v = np.dstack(v)
             np.save(os.path.join(anim_dir, f"{k}_pred"), v)
@@ -357,7 +360,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         np.save(os.path.join(anim_dir, "grid"), grid.detach())
         for k, v in preds.items():
             v = np.hstack(v)
-            # TODO @dylan: for systems (i.e. multi-dim preds),
+            # TODO: for systems (i.e. multi-dim preds),
             # hstack flattens preds, need to use dstack
             # v = np.dstack(v)
             np.save(os.path.join(anim_dir, f"{k}_pred"), v)
@@ -516,7 +519,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         np.save(os.path.join(anim_dir, "grid"), grid.detach())
         for k, v in preds.items():
             v = np.hstack(v)
-            # TODO @dylan: for systems (i.e. multi-dim preds),
+            # TODO: for systems (i.e. multi-dim preds),
             # hstack flattens preds, need to use dstack
             # v = np.dstack(v)
             np.save(os.path.join(anim_dir, f"{k}_pred"), v)
@@ -631,7 +634,7 @@ def train_L2_2D(model, problem, method='unsupervised', niters=100,
         np.save(os.path.join(anim_dir, "grid"), grid.detach())
         for k, v in preds.items():
             v = np.hstack(v)
-            # TODO @dylan: for systems (i.e. multi-dim preds),
+            # TODO: for systems (i.e. multi-dim preds),
             # hstack flattens preds, need to use dstack
             # v = np.dstack(v)
             np.save(os.path.join(anim_dir, f"{k}_pred"), v)

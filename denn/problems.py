@@ -2,7 +2,6 @@ import numpy as np
 import torch
 from scipy.integrate import odeint, solve_ivp
 from denn.utils import diff
-# from denn.poisson.poisson import compute_solution as poisson_compute_solution
 from denn.rans.numerical import solve_rans_scipy_solve_bvp
 import os
 
