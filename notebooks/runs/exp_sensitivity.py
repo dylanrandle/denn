@@ -12,19 +12,31 @@ labels = {
     "mean_squared_error": "Log MSE",
 }
 
-fig = px.parallel_coordinates(pdf, 
-                              dimensions=['seed', 'g_lr', 'd_lr', 'mean_squared_error'],
-                              color=pdf['seed'].astype('category').cat.codes,
-                              labels=labels,
-                              color_continuous_scale=px.colors.sequential.Rainbow,)
+dims = ['seed', 'g_lr', 'd_lr', 'mean_squared_error']
+
+fig = px.parallel_coordinates(
+    pdf, 
+    dimensions=dims,
+    color=pdf['seed'].astype('category').cat.codes,
+    labels=labels,
+    color_continuous_scale=px.colors.sequential.Rainbow,
+)
 
 fig.update_layout(
     font=dict(
-        size=15,
-        color='black'
-    )
+        size=30,
+        color='black',
+    ),
+    coloraxis_colorbar=dict(title="Seed",)
+    
+#     margin=dict(l=80, r=80, t=100, b=90)
+#     autosize=True,
+#     margin=dict(l=20, r=20, t=20, b=20),
+#     height=800,
+#     width=1200,
 )
 
-fig.update_layout(coloraxis_colorbar=dict(title="Seed",))
+# fig.update_layout()
 
+fig.update_yaxes(showticklabels=False)
 fig.show()
