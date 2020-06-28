@@ -1,6 +1,6 @@
 # Unsupervised Neural Networks for Solving Differential Equations
 
-Please read the paper (under review, link forthcoming) for detailed information.
+See [here](https://dylanrandle.github.io/denn/deqgan.html) for more detailed information.
 
 ## Minimal Installation
 
