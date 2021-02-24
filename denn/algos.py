@@ -7,7 +7,7 @@ from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_ove
 from denn.config.config import write_config
 
 try:
-    from ray.tune import track
+    from ray.tune import report # Blake edit: change use tune.report instead of tune.track
 except:
     print("Ray not loaded.")
 
@@ -40,8 +40,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     # labels
     real_label = 1
     fake_label = -1 if wgan else 0
-    real_labels = torch.full((len(grid),), real_label).reshape(-1,1)
-    fake_labels = torch.full((len(grid),), fake_label).reshape(-1,1)
+    real_labels = torch.full((len(grid),), real_label, dtype=torch.float).reshape(-1,1) # Blake edit: add dtype=torch.float
+    fake_labels = torch.full((len(grid),), fake_label, dtype=torch.float).reshape(-1,1) # Blake edit: add dtype=torch.float
     # masked label vectors
     real_labels_obs = real_labels[observers, :]
     fake_labels_obs = fake_labels[observers, :]
@@ -146,6 +146,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         for p in D.parameters():
             p.requires_grad = True # turn on computation for D
 
+
+        # Blake edit: need to rewrite according to: https://github.com/pytorch/pytorch/issues/39141 for torch version > 1.4.0
         for i in range(D_iters):
             if wgan:
                 norm_penalty = calc_gradient_penalty(D, real, fake, gp, cuda=False)
@@ -191,10 +193,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         try:
             if (epoch+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                report.log(mean_squared_error=np.mean(mses['val'][-10:]))
                 # mean of G - D loss for last 10 steps
                 # loss_diff = np.mean(np.abs(losses['G'][-10] - losses['D'][-10]))
-                # track.log(mean_squared_error=loss_diff)
+                # report.log(mean_squared_error=loss_diff)
         except Exception as e:
             # print(f'Caught exception {e}')
             pass
@@ -317,7 +319,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         try:
             if (i+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                report.log(mean_squared_error=np.mean(mses['val'][-10:]))
         except Exception as e:
             # print(f'Caught exception {e}')
             pass
@@ -395,8 +397,8 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     # labels
     real_label = 1
     fake_label = -1 if wgan else 0
-    real_labels = torch.full((len(grid),), real_label).reshape(-1,1)
-    fake_labels = torch.full((len(grid),), fake_label).reshape(-1,1)
+    real_labels = torch.full((len(grid),), real_label, dtype=torch.float).reshape(-1,1) # Blake edit: add dtype=torch.float
+    fake_labels = torch.full((len(grid),), fake_label, dtype=torch.float).reshape(-1,1) # Blake edit: add dtype=torch.float
     # masked label vectors
     real_labels_obs = real_labels[observers, :]
     fake_labels_obs = fake_labels[observers, :]
@@ -490,10 +492,10 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         try:
             if (epoch+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                report.log(mean_squared_error=np.mean(mses['val'][-10:]))
                 # mean of G - D loss for last 10 steps
                 # loss_diff = np.mean(np.abs(losses['G'][-10] - losses['D'][-10]))
-                # track.log(mean_squared_error=loss_diff)
+                # report.log(mean_squared_error=loss_diff)
         except Exception as e:
             # print(f'Caught exception {e}')
             pass
@@ -591,7 +593,7 @@ def train_L2_2D(model, problem, method='unsupervised', niters=100,
         try:
             if (i+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                report.log(mean_squared_error=np.mean(mses['val'][-10:]))
         except Exception as e:
             # print(f'Caught exception {e}')
             pass
