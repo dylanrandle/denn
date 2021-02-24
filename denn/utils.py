@@ -137,11 +137,12 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
             np.save(os.path.join(dirname, f"{k}_mse"), v)
         for k, v in loss_dict.items():
             np.save(os.path.join(dirname, f"{k}_loss"), v)
-        for k, v in pred_dict.items():
-            np.save(os.path.join(dirname, f"{k}_pred"), v)
-        if diff_dict:
-            for k, v in diff_dict.items():
-                np.save(os.path.join(dirname, f"{k}_diff"), v)
+        # Blake comment: commented out because saving pred_dict and diff_dict currently throw errors
+        #for k, v in pred_dict.items():
+        #    np.save(os.path.join(dirname, f"{k}_pred"), v)
+        #if diff_dict:
+        #    for k, v in diff_dict.items():
+        #        np.save(os.path.join(dirname, f"{k}_diff"), v)
     else:
         plt.show()
 
