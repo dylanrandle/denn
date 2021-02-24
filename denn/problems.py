@@ -329,9 +329,9 @@ class ReynoldsAveragedNavierStokes(Problem):
         except:
             pass
 
-        y = y.reshape(-1)
+        y = y.reshape(-1) 
 
-        res = solve_rans_scipy_solve_bvp(y, k=self.kappa, nu=self.nu, rho=self.rho,
+        res = solve_rans_scipy_solve_bvp(y, k=self.kappa, nu=self.nu, rho=self.rho, 
             dpdx=self.dp_dx, delta=self.delta, max_nodes=max_nodes, tol=tol)
         soln = res.sol(y)[0]
         return torch.tensor(soln, dtype=torch.float).reshape(-1,1)
