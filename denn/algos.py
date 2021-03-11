@@ -60,7 +60,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': []}
+    losses = {'G': [], 'D': [], 'D real': [], 'D fake': [], 'LHS': []} # Blake edit: Adding more losses
     mses = {'train': [], 'val': []}
     preds = {'pred': [], 'soln': []}
 
@@ -77,7 +77,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
                 # idea: add noise to relax from dirac delta at 0 to distb'n
                 # + torch.normal(0, .1/(i+1), size=residuals.shape)
-                real = torch.zeros_like(residuals)
+                max_std = torch.mean(torch.abs(residuals)).item() # Blake edit: maximum standard deviation of noise according to Pavlos
+                real = torch.zeros_like(residuals) + torch.normal(5, max_std, size=residuals.shape)
                 fake = residuals
 
                 if conditional:
@@ -166,8 +167,11 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             optiD.step()
 
         losses['D'].append(d_loss.item())
+        losses['D real'].append(real_loss.item()) # Blake edit: updating discriminator loss on real data
+        losses['D fake'].append(fake_loss.item()) # Blake edit: updating discriminator loss on fake data
+        losses['LHS'].append(torch.mean(torch.abs(fake)).item()) # Blake edit: updating differential equation loss
         losses['G'].append(g_loss.item())
-
+        
         if lr_schedule:
           lr_scheduler_G.step()
           lr_scheduler_D.step()
@@ -203,6 +207,9 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
         if log:
             print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
+
+        #if epoch == 3: # Blake edit: add stopping condition when G loss equals D loss
+        #    break
 
     if plot:
         pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, soln)
