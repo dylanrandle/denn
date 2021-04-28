@@ -2,8 +2,9 @@ import numpy as np
 import torch
 import torch.nn as nn
 import os
+import matplotlib.pyplot as plt
 
-from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite
+from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite, plot_grads
 from denn.config.config import write_config
 
 try:
@@ -11,12 +12,7 @@ try:
 except:
     print("Ray not loaded.")
 
-this_dir = os.path.dirname(os.path.abspath(__file__))
-
-def shake_weights(m, std=1):
-    with torch.no_grad():
-        for p in m.parameters():
-            p.add_(torch.randn(p.size()) * std)
+this_dir = os.path.dirname(os.path.abspath(__file__)) 
 
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
     g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
@@ -76,12 +72,17 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     diff = 0
     delta = 1
     mae_std = 1
+    epoch_counter = 0
+
+    # Create figures and axes for plotting gradients
+    fig_G, ax_G = plt.subplots(1, 2, figsize=(14,7))
+    fig_D, ax_D = plt.subplots(1, 2, figsize=(14,7))
 
     for epoch in range(niters):
         # Shake the weights
-        if (epoch >= 500) & (epoch % 500 == 0):
-            print(mae_std)
-            G.apply(lambda m: shake_weights(m=m, std=mae_std/2.43))
+        #if epoch_counter == 500:
+        #    G.apply(lambda m: shake_weights(m=m, std=diff))
+        #    epoch_counter = 0
 
         # Train Generator
         for p in D.parameters():
@@ -110,6 +111,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 g_loss = criterion(D(fake), real_labels) #+ delta*mae_std
                 # g_loss = criterion(D(fake), torch.ones_like(fake))
                 g_loss.backward(retain_graph=True)
+                plot_grads(G.named_parameters(), ax_G) # Call function to plot G gradients
                 optiG.step()
 
             elif method == 'semisupervised':
@@ -185,13 +187,18 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             optiD.zero_grad()
             d_loss = (real_loss + fake_loss)/2 + norm_penalty
             d_loss.backward(retain_graph=True)
+            plot_grads(D.named_parameters(), ax_D) # Call function to plot D gradients
             optiD.step()
 
         # Blake edit: update scaling parameters
         #alpha = g_loss.item() / d_loss.item() # unbounded
         #beta = g_loss.item() / (d_loss.item() + g_loss.item()) # bounded between (0, 1)
         #gamma = 2 / (1 + np.exp(-4*(g_loss.item() / d_loss.item()) + 4)) # bounded between (0, 2)
-        #diff += (g_loss.item() - d_loss.item())
+        diff = (g_loss.item() - d_loss.item())
+        if diff > 0:
+            epoch_counter += 1
+        else:
+            epoch_counter = 0
 
         losses['D'].append(d_loss.item())
         losses['D real'].append(real_loss.item()) # Blake edit: updating discriminator loss on real data
@@ -235,13 +242,18 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         if log:
             print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
 
-        #if epoch == 3: # Blake edit: add stopping condition when G loss equals D loss
-        #    break
-
     if plot:
         pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, soln)
         plot_results(mses, losses, grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, dirname=dirname, logloss=False, alpha=0.7)
+
+        # Plot and save the gradients
+        fig_G.suptitle('Gradients of Generator Layers', fontsize=16)
+        fig_G.tight_layout()
+        fig_G.savefig('G_gradients.png')
+        fig_D.suptitle('Gradients of Discriminator Layers', fontsize=16)
+        fig_D.tight_layout()
+        fig_D.savefig('D_gradients.png')
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
