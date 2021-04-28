@@ -4,6 +4,7 @@ from torch import autograd
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D  
 from IPython.display import clear_output
 import pandas as pd
 
@@ -315,3 +316,45 @@ def draw_neural_net(ax, left, right, bottom, top, layer_sizes):
                 line = plt.Line2D([n*h_spacing + left, (n + 1)*h_spacing + left],
                                   [layer_top_a - m*v_spacing, layer_top_b - o*v_spacing], c='k')
                 ax.add_artist(line)
+
+def shake_weights(m, std=1):
+    '''
+    Adds normal noise to the weights of a model m
+    '''
+    with torch.no_grad():
+        for p in m.parameters():
+            p.add_(torch.randn(p.size()) * std)
+
+def plot_grads(params, ax):
+    '''
+    Plots the gradients in the layers of a network given
+    its named parameters and a matplotlib axis object.
+    '''
+    ave_grads = []
+    max_grads = []
+    layers = []
+    for n, p in params:
+        if(p.requires_grad) and ("bias" not in n):
+            layers.append(n)
+            ave_grads.append(p.grad.abs().mean())
+            max_grads.append(p.grad.abs().max())
+    ax[0].plot(ave_grads, alpha=0.3, color="b")
+    ax[0].hlines(0, 0, len(ave_grads)+1, linewidth=1, color="k" )
+    ax[0].set_xticks(range(0,len(ave_grads), 1))
+    ax[0].set_xticklabels(layers, rotation="vertical")
+    ax[0].set_xlim(xmin=0, xmax=len(ave_grads))
+    ax[0].set_xlabel("Layers")
+    ax[0].set_ylabel("Gradient")
+    ax[0].grid(True)
+    ax[1].bar(np.arange(0.5, len(max_grads)+0.5), max_grads, alpha=0.1, lw=1, color="c")
+    ax[1].bar(np.arange(0.5, len(max_grads)+0.5), ave_grads, alpha=0.1, lw=1, color="b")
+    ax[1].hlines(0, 0, len(ave_grads)+1, lw=2, color="k")
+    ax[1].set_xticks(np.arange(0.5, len(ave_grads)+0.5))
+    ax[1].set_xticklabels(layers, rotation="vertical")
+    ax[1].set_xlim(left=0, right=len(ave_grads))
+    ax[1].set_ylim(bottom = -0.001, top=0.02)
+    ax[1].set_xlabel("Layers")
+    ax[1].grid(True)
+    ax[1].legend([Line2D([0], [0], color="c", lw=4),
+                Line2D([0], [0], color="b", lw=4),
+                Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'], loc='upper center')   
