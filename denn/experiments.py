@@ -53,7 +53,7 @@ def L2_experiment(pkey, params):
 
 def gan_experiment(pkey, params):
     # model init seed
-    torch.manual_seed(8)
+    torch.manual_seed(0)
     np.random.seed(0)
 
     # models
