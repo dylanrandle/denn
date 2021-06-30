@@ -325,7 +325,7 @@ def shake_weights(m, std=1):
         for p in m.parameters():
             p.add_(torch.randn(p.size()) * std)
 
-def plot_grads(params, ax):
+def plot_grads(params, ax, logscale=False):
     '''
     Plots the gradients in the layers of a network given
     its named parameters and a matplotlib axis object.
@@ -343,6 +343,8 @@ def plot_grads(params, ax):
     ax[0].set_xticks(range(0,len(ave_grads), 1))
     ax[0].set_xticklabels(layers, rotation="vertical")
     ax[0].set_xlim(xmin=0, xmax=len(ave_grads))
+    if logscale:
+        ax[0].set_yscale("log")
     ax[0].set_xlabel("Layers")
     ax[0].set_ylabel("Gradient")
     ax[0].grid(True)
