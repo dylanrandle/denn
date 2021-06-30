@@ -16,11 +16,11 @@ this_dir = os.path.dirname(os.path.abspath(__file__))
 
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
     g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
-    lr_schedule=True, gamma=0.999, momentum=0.95, step_size=15, 
-    obs_every=1, d1=1., d2=1., G_iters=1, D_iters=1, wgan=True, 
-    gp=0.1, conditional=True, log=True, plot=True, save=False, 
-    dirname='train_GAN', config=None, save_for_animation=False, 
-    **kwargs):
+    lr_schedule=True, gamma=0.999, momentum=0.95, noise=False, 
+    step_size=15, obs_every=1, d1=1., d2=1., G_iters=1, D_iters=1, 
+    wgan=True, gp=0.1, conditional=True, log=True, plot=True, 
+    save=False, dirname='train_GAN', config=None, 
+    save_for_animation=False, **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
@@ -48,14 +48,9 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     real_labels_obs = real_labels[observers, :]
     fake_labels_obs = fake_labels[observers, :]
 
-    # Blake edit: initialize the scaling parameters
-    alpha = 1
-    beta = 1
-    gam = 1
-    diff = 0
-    delta = 1
-    mae_std = 1
-    epoch_counter = 0
+    # initialize difference parameter for noise
+    if noise:
+        diff = 0
 
     # optimization
     optiG = torch.optim.SGD(G.parameters(), lr=g_lr, momentum=momentum, nesterov=True)
@@ -105,10 +100,12 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 # idea: add noise to relax from dirac delta at 0 to distb'n
                 # + torch.normal(0, .1/(i+1), size=residuals.shape)
                 # mae_std = torch.mean(torch.abs(residuals)).item() # Mean absolute error of residuals
-                # mse_std = torch.mean(residuals**2).item() # Mean squared error of residuals
-                # l2_std = torch.sqrt(torch.sum(residuals**2)).item() # L2 norm of residuals
-                # diff_std = (mae_std + diff) if (mae_std + diff) >= 0 else 0 
-                real = torch.zeros_like(residuals) #+ torch.normal(0, mae_std, size=residuals.shape)
+                # diff_std = (mae_std + diff) if (mae_std + diff) >= 0 else 0
+                if noise:
+                    diff = diff if diff >= 0 else 0
+                    real = torch.zeros_like(residuals) + torch.normal(0, diff, size=residuals.shape)
+                else:
+                    real = torch.zeros_like(residuals)
                 fake = residuals
 
                 if conditional:
@@ -207,11 +204,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         #alpha = g_loss.item() / d_loss.item() # unbounded
         #beta = g_loss.item() / (d_loss.item() + g_loss.item()) # bounded between (0, 1)
         #gam = 2 / (1 + np.exp(-4*(g_loss.item() / d_loss.item()) + 4)) # bounded between (0, 2)
-        #diff = (g_loss.item() - d_loss.item())
-        #if diff > 0:
-        #    epoch_counter += 1
-        #else:
-        #    epoch_counter = 0
+        if noise:
+            diff = g_loss.item() - d_loss.item()
 
         losses['D'].append(d_loss.item())
         losses['D real'].append(real_loss.item()) # Blake edit: updating discriminator loss on real data
