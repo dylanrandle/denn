@@ -53,7 +53,7 @@ class Problem():
         raise NotImplementedError()
 
     def get_plot_dicts(self, *args):
-        """ return pred_dict and optionall diff_dict (or None) to be used for plotting
+        """ return pred_dict and optional diff_dict (or None) to be used for plotting
             depending on the problem we may want to plot different things, which is why
             this method exists (and is required)
         """
@@ -67,13 +67,14 @@ class Exponential(Problem):
     Analytic Solution:
     x = exp(-Lt)
     """
-    def __init__(self, t_min = 0, t_max = 10, x0 = 1., L = 1, **kwargs):
+    def __init__(self, t_min = 0, t_max = 10, x0 = 1., L = 1, shuheng = False, **kwargs):
         """
         inputs:
             - t_min: start time
             - t_max: end time
             - x0: initial condition on x
             - L: rate of decay constant
+            - shuheng: whether or not to use Shuheng's reparameterization
             - kwargs: keyword args passed to Problem.__init__()
         """
         super().__init__(**kwargs)
@@ -82,6 +83,7 @@ class Exponential(Problem):
         self.t_max = t_max
         self.x0 = x0
         self.L = L
+        self.shuheng = shuheng
         self.grid = torch.linspace(
             t_min,
             t_max,
@@ -101,25 +103,36 @@ class Exponential(Problem):
         """ return the analytic solution @ t for this problem """
         return torch.exp(-self.L * t)
 
-    def get_equation(self, x, t):
+    def get_equation(self, x, t, G):
         """ return value of residuals of equation (i.e. LHS) """
-        adj = self.adjust(x, t)
+        if self.shuheng:
+            adj = self.adjust(x, t, G)
+        else:
+            adj = self.adjust(x, t)
         x, dx = adj['pred'], adj['dx']
         return dx + self.L * x
 
-    def adjust(self, x, t):
+    def adjust(self, x, t, G):
         """ perform initial value adjustment """
-        x_adj = self.x0 + (1 - torch.exp(-t)) * x
+        if self.shuheng:
+            t_0 = - torch.log(torch.FloatTensor([self.x0])) / self.L
+            x_adj = self.x0 + x - G(t_0)
+        else:
+            x_adj = self.x0 + (1 - torch.exp(-t)) * x
         dx_dt = diff(x_adj, t)
         return {'pred': x_adj, 'dx': dx_dt}
 
-    def get_plot_dicts(self, x, t, y):
+    def get_plot_dicts(self, x, t, y, G):
         """ return appropriate pred_dict and diff_dict used for plotting """
-        adj = self.adjust(x, t)
+        if self.shuheng:
+            adj = self.adjust(x, t, G)
+            residual = self.get_equation(x, t, G)
+        else:
+            adj = self.adjust(x, t)
+            residual = self.get_equation(x, t)
         xadj, dx = adj['pred'], adj['dx']
         pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
         # diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\dot{x}}$': (-dx).detach()}
-        residual = self.get_equation(x, t)
         diff_dict = {'$|\hat{F}|$': np.abs(residual.detach())}
         return pred_dict, diff_dict
 

@@ -2,17 +2,20 @@ problem:
   n: 100
   perturb: True
   t_max: 10
+  shuheng: True
 
 training:
   method: 'unsupervised'
-  seed: 0
+  seed: 9
   niters: 2000
-  g_lr: 0.008467333205384038
-  d_lr: 0.000469485661628429
+  g_lr: 0.08754704954577336
+  d_lr: 0.005810247101322598
   g_betas: [0.67103718, 0.14351227]
   d_betas: [0.86631674, 0.16513108]
   lr_schedule: True
-  gamma: 0.9907226708922195
+  gamma: 0.9955499869294169
+  momentum: 0.9695661565546975
+  step_size: 8
   obs_every: 1
   d1: 1
   d2: 1
@@ -25,14 +28,14 @@ training:
   log: True
   plot: True
   save: True
-  save_for_animation: True
+  save_for_animation: False
   dirname: 'EXP_run'
 
 generator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 30
-  n_hidden_layers: 2
+  n_hidden_units: 40
+  n_hidden_layers: 3
   activation: 'Tanh'
   residual: True
   regress: True
@@ -41,7 +44,7 @@ discriminator:
   in_dim: 1
   out_dim: 1
   n_hidden_units: 20
-  n_hidden_layers: 4
+  n_hidden_layers: 3
   activation: 'Tanh'
   residual: True
   regress: False

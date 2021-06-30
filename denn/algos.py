@@ -4,11 +4,11 @@ import torch.nn as nn
 import os
 import matplotlib.pyplot as plt
 
-from denn.utils import LambdaLR, plot_results, calc_gradient_penalty, handle_overwrite, plot_grads
+from denn.utils import plot_results, calc_gradient_penalty, handle_overwrite, plot_grads
 from denn.config.config import write_config
 
 try:
-    from ray.tune import report # Blake edit: change use tune.report instead of tune.track
+    from ray.tune import track
 except:
     print("Ray not loaded.")
 
@@ -16,10 +16,11 @@ this_dir = os.path.dirname(os.path.abspath(__file__))
 
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
     g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
-    lr_schedule=True, gamma=0.999, obs_every=1, d1=1., d2=1.,
-    G_iters=1, D_iters=1, wgan=True, gp=0.1, conditional=True,
-    log=True, plot=True, save=False, dirname='train_GAN',
-    config=None, save_for_animation=False, **kwargs):
+    lr_schedule=True, gamma=0.999, momentum=0.95, step_size=15, 
+    obs_every=1, d1=1., d2=1., G_iters=1, D_iters=1, wgan=True, 
+    gp=0.1, conditional=True, log=True, plot=True, save=False, 
+    dirname='train_GAN', config=None, save_for_animation=False, 
+    **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
@@ -41,18 +42,32 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     # labels
     real_label = 1
     fake_label = -1 if wgan else 0
-    real_labels = torch.full((len(grid),), real_label, dtype=torch.float).reshape(-1,1) # Blake edit: add dtype=torch.float
-    fake_labels = torch.full((len(grid),), fake_label, dtype=torch.float).reshape(-1,1) # Blake edit: add dtype=torch.float
+    real_labels = torch.full((len(grid),), real_label, dtype=torch.float).reshape(-1,1)
+    fake_labels = torch.full((len(grid),), fake_label, dtype=torch.float).reshape(-1,1)
     # masked label vectors
     real_labels_obs = real_labels[observers, :]
     fake_labels_obs = fake_labels[observers, :]
 
+    # Blake edit: initialize the scaling parameters
+    alpha = 1
+    beta = 1
+    gam = 1
+    diff = 0
+    delta = 1
+    mae_std = 1
+    epoch_counter = 0
+
     # optimization
-    optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
-    optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
+    optiG = torch.optim.SGD(G.parameters(), lr=g_lr, momentum=momentum, nesterov=True)
+    optiD = torch.optim.SGD(D.parameters(), lr=d_lr, momentum=momentum, nesterov=True)
     if lr_schedule:
-        lr_scheduler_G = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=gamma)
-        lr_scheduler_D = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=gamma)
+        #lmbda = lambda epoch: 1 if diff <= 0 else diff
+        #lr_scheduler_G_up = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=1.01)
+        #lr_scheduler_G_down = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=0.99)
+        #lr_scheduler_D_up = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=1.01)
+        #lr_scheduler_D_down = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=0.99)
+        lr_scheduler_G = torch.optim.lr_scheduler.StepLR(optimizer=optiG, step_size=step_size, gamma=gamma)
+        lr_scheduler_D = torch.optim.lr_scheduler.StepLR(optimizer=optiD, step_size=step_size, gamma=gamma)
 
     # losses
     mse = nn.MSELoss()
@@ -61,29 +76,22 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': [], 'D real': [], 'D fake': [], 'LHS': []} # Blake edit: Adding more losses
+    losses = {'G': [], 'D': [], 'D real': [], 'D fake': []}#, 'LHS': []}
     mses = {'train': [], 'val': []}
     preds = {'pred': [], 'soln': []}
 
-    # Blake edit: initialize the scaling parameters
-    alpha = 1
-    beta = 1
-    gamma = 1
-    diff = 0
-    delta = 1
-    mae_std = 1
-    epoch_counter = 0
-
     # Create figures and axes for plotting gradients
-    fig_G, ax_G = plt.subplots(1, 2, figsize=(14,7))
-    fig_D, ax_D = plt.subplots(1, 2, figsize=(14,7))
+    #fig_G, ax_G = plt.subplots(1, 2, figsize=(14,7))
+    #fig_G_log, ax_G_log = plt.subplots(1, 2, figsize=(14,7))
+    #fig_D, ax_D = plt.subplots(1, 2, figsize=(14,7))
+    #fig_D_log, ax_D_log = plt.subplots(1, 2, figsize=(14,7))
 
     for epoch in range(niters):
         # Shake the weights
         #if epoch_counter == 500:
         #    G.apply(lambda m: shake_weights(m=m, std=diff))
         #    epoch_counter = 0
-
+        
         # Train Generator
         for p in D.parameters():
             p.requires_grad = False # turn off computation for D
@@ -92,15 +100,15 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             if method == 'unsupervised':
                 grid_samp = problem.get_grid_sample()
                 pred = G(grid_samp)
-                residuals = problem.get_equation(pred, grid_samp)
+                residuals = problem.get_equation(pred, grid_samp, G)
 
                 # idea: add noise to relax from dirac delta at 0 to distb'n
                 # + torch.normal(0, .1/(i+1), size=residuals.shape)
-                mae_std = torch.mean(torch.abs(residuals)).item() # Mean absolute error of residuals
+                # mae_std = torch.mean(torch.abs(residuals)).item() # Mean absolute error of residuals
                 # mse_std = torch.mean(residuals**2).item() # Mean squared error of residuals
                 # l2_std = torch.sqrt(torch.sum(residuals**2)).item() # L2 norm of residuals
                 # diff_std = (mae_std + diff) if (mae_std + diff) >= 0 else 0 
-                real = torch.zeros_like(residuals) #+ torch.normal(0, diff_std, size=residuals.shape)
+                real = torch.zeros_like(residuals) #+ torch.normal(0, mae_std, size=residuals.shape)
                 fake = residuals
 
                 if conditional:
@@ -111,7 +119,9 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 g_loss = criterion(D(fake), real_labels) #+ delta*mae_std
                 # g_loss = criterion(D(fake), torch.ones_like(fake))
                 g_loss.backward(retain_graph=True)
-                plot_grads(G.named_parameters(), ax_G) # Call function to plot G gradients
+                # Call function to plot G gradients every epoch
+                #plot_grads(G.named_parameters(), ax_G)
+                #plot_grads(G.named_parameters(), ax_G_log, logscale=True)  
                 optiG.step()
 
             elif method == 'semisupervised':
@@ -187,40 +197,49 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             optiD.zero_grad()
             d_loss = (real_loss + fake_loss)/2 + norm_penalty
             d_loss.backward(retain_graph=True)
-            plot_grads(D.named_parameters(), ax_D) # Call function to plot D gradients
+            #if epoch % 10 == 0:
+            #    # Call function to plot D gradients every 10 epochs
+            #    plot_grads(D.named_parameters(), ax_D)
+            #    plot_grads(D.named_parameters(), ax_D_log, logscale=True)
             optiD.step()
 
         # Blake edit: update scaling parameters
         #alpha = g_loss.item() / d_loss.item() # unbounded
         #beta = g_loss.item() / (d_loss.item() + g_loss.item()) # bounded between (0, 1)
-        #gamma = 2 / (1 + np.exp(-4*(g_loss.item() / d_loss.item()) + 4)) # bounded between (0, 2)
-        diff = (g_loss.item() - d_loss.item())
-        if diff > 0:
-            epoch_counter += 1
-        else:
-            epoch_counter = 0
+        #gam = 2 / (1 + np.exp(-4*(g_loss.item() / d_loss.item()) + 4)) # bounded between (0, 2)
+        #diff = (g_loss.item() - d_loss.item())
+        #if diff > 0:
+        #    epoch_counter += 1
+        #else:
+        #    epoch_counter = 0
 
         losses['D'].append(d_loss.item())
         losses['D real'].append(real_loss.item()) # Blake edit: updating discriminator loss on real data
         losses['D fake'].append(fake_loss.item()) # Blake edit: updating discriminator loss on fake data
-        losses['LHS'].append(torch.mean(torch.abs(fake)).item()) # Blake edit: updating differential equation loss
+        #losses['LHS'].append(torch.mean(torch.abs(fake)).item()) # Blake edit: updating differential equation loss
         losses['G'].append(g_loss.item())
         
         if lr_schedule:
-          lr_scheduler_G.step()
-          lr_scheduler_D.step()
+            lr_scheduler_G.step()
+            lr_scheduler_D.step()
+            #if g_loss.item() > d_loss.item():
+            #    lr_scheduler_D_down.step()
+            #    lr_scheduler_G_down.step()
+            #else:
+            #    lr_scheduler_D_up.step()
+            #    lr_scheduler_G_up.step() 
 
         # train MSE: grid sample vs true soln
         # grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
         pred = G(grid_samp)
-        pred_adj = problem.adjust(pred, grid_samp)['pred']
+        pred_adj = problem.adjust(pred, grid_samp, G)['pred']
         sol_samp = problem.get_solution(grid_samp)
         train_mse = mse(pred_adj, sol_samp).item()
         mses['train'].append(train_mse)
 
         # val MSE: fixed grid vs true soln
         val_pred = G(grid)
-        val_pred_adj = problem.adjust(val_pred, grid)['pred']
+        val_pred_adj = problem.adjust(val_pred, grid, G)['pred']
         val_mse = mse(val_pred_adj, soln).item()
         mses['val'].append(val_mse)
 
@@ -231,7 +250,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         try:
             if (epoch+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                report.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
                 # mean of G - D loss for last 10 steps
                 # loss_diff = np.mean(np.abs(losses['G'][-10] - losses['D'][-10]))
                 # report.log(mean_squared_error=loss_diff)
@@ -243,17 +262,26 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
 
     if plot:
-        pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, soln)
+        pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, soln, G)
         plot_results(mses, losses, grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, dirname=dirname, logloss=False, alpha=0.7)
-
         # Plot and save the gradients
-        fig_G.suptitle('Gradients of Generator Layers', fontsize=16)
-        fig_G.tight_layout()
-        fig_G.savefig('G_gradients.png')
-        fig_D.suptitle('Gradients of Discriminator Layers', fontsize=16)
-        fig_D.tight_layout()
-        fig_D.savefig('D_gradients.png')
+        min_mse = np.min(mses['val'])
+        min_mse_iter = np.argmin(mses['val'])
+        print('Minimum validation MSE: ', min_mse)
+        print('Iteration: ', min_mse_iter)
+        #fig_G.suptitle(f'Generator Gradients per Iteration (min val MSE={min_mse:.3e})', fontsize=16)
+        #fig_G.tight_layout()
+        #fig_G.savefig('G_gradients.png')
+        #fig_G_log.suptitle(f'Generator Gradients per Iteration (min val MSE={min_mse:.3e})', fontsize=16)
+        #fig_G_log.tight_layout()
+        #fig_G_log.savefig('G_gradients_log.png')
+        #fig_D.suptitle(f'Discriminator Gradients per 10 Iterations (min val MSE={min_mse:.3e})', fontsize=16)
+        #fig_D.tight_layout()
+        #fig_D.savefig('D_gradients.png')
+        #fig_D_log.suptitle(f'Discriminator Gradients per 10 Iterations (min val MSE={min_mse:.3e})', fontsize=16)
+        #fig_D_log.tight_layout()
+        #fig_D_log.savefig('D_gradients_log.png')
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
