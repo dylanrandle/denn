@@ -7,12 +7,14 @@ training:
   method: 'unsupervised'
   seed: 0
   niters: 10000
-  g_lr: 0.008680089231847491
-  d_lr: 0.0016340189433299498
+  g_lr: 0.1 #0.008680089231847491
+  d_lr: 0.05 #0.0016340189433299498
   g_betas: [0.44436487, 0.63297906]
   d_betas: [0.27154464, 0.14204213]
   lr_schedule: True
-  gamma: 0.997751100319365
+  gamma: 0.99 #0.997751100319365
+  momentum: 0.99
+  step_size: 15
   obs_every: 1
   d1: 1
   d2: 1
