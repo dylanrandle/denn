@@ -16,8 +16,8 @@ if __name__ == "__main__":
         help='problem to run (exp=Exponential, sho=SimpleOscillator, nlo=NonlinearOscillator)')
     args.add_argument('--classical', action='store_true', default=False,
         help='whether to use classical training, default False (use GAN))')
-    args.add_argument('--ncpu', type=int, default=10)
-    args.add_argument('--nsample', type=int, default=100)
+    args.add_argument('--ncpu', type=int, default=1)
+    args.add_argument('--nsample', type=int, default=200)
     args = args.parse_args()
 
     params = get_config(args.pkey)
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     params['training']['plot'] = False
     params['training']['save'] = False
 
-    def gan_tuning(config):
+    def gan_tuning(config, checkpoint_dir=None):
         res = gan_experiment(args.pkey, config)
 
     def classical_tuning(config):
@@ -37,11 +37,13 @@ if __name__ == "__main__":
     search_space = deepcopy(params)
 
     # Bounds of Search
-    lr_bound = (1e-6, 1e-2)
+    lr_bound = (1e-5, 1e-1)
     gamma_bound = (0.99, 0.9999)
-    beta_bound = (0, 0.999)
-    n_nodes = [20, 30, 40]
-    n_layers = [2, 3, 4]
+    momentum_bound = (0.9, 0.999)
+    step_size_bound = (2, 21)
+    #beta_bound = (0, 0.999)
+    n_nodes = [20, 30, 40, 50]
+    n_layers = [2, 3, 4, 5]
 
     # LRs
     search_space['training']['g_lr'] = tune.sample_from(lambda s: np.random.uniform(*lr_bound))
@@ -49,8 +51,10 @@ if __name__ == "__main__":
 
     # Decay / Moment
     search_space['training']['gamma'] = tune.sample_from(lambda s: np.random.uniform(*gamma_bound))
-    search_space['training']['g_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
-    search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
+    search_space['training']['momentum'] = tune.sample_from(lambda s: np.random.uniform(*momentum_bound))
+    search_space['training']['step_size'] = tune.sample_from(lambda s: np.random.randint(*step_size_bound))
+    #search_space['training']['g_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
+    #search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
 
     # Generator
     search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
@@ -62,8 +66,8 @@ if __name__ == "__main__":
 
     # for testing at different seeds
     # note: need to change experiments.py to init models below seed setting
-    # nseeds = 10
-    # search_space['training']['seed'] = tune.sample_from(lambda s: np.random.choice(nseeds))
+    nseeds = 10
+    search_space['training']['seed'] = tune.sample_from(lambda s: np.random.choice(nseeds))
 
     # Uncomment this to enable distributed execution
     # ray.init(address='auto', redis_password='5241590000000000')
@@ -99,6 +103,7 @@ if __name__ == "__main__":
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")
+    df.to_csv("ray_tune_results.csv")
     print("Sorted top results")
     print(df.sort_values(by="mean_squared_error").head(10))
     print("Best config is:", analysis.get_best_config(metric="mean_squared_error", mode="min"))
