@@ -575,7 +575,7 @@ class SIRModel(Problem):
         eqn3 = diff(R_adj, t) - self.gamma * I_adj
         return eqn1, eqn2, eqn3
 
-    def get_equation(self, x, t):
+    def get_equation(self, x, t, G=None):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(x, t)
         x_adj = adj['pred']
@@ -584,7 +584,7 @@ class SIRModel(Problem):
         # works much better (for point-wise loss)
         return torch.cat((eqn1, eqn2, eqn3), axis=1)
 
-    def adjust(self, x, t):
+    def adjust(self, x, t, G=None):
         """ perform initial value adjustment """
         S, I, R = x[:, 0], x[:, 1], x[:, 2]
 
@@ -597,7 +597,7 @@ class SIRModel(Problem):
         # although we don't need it per-se
         return {'pred': torch.cat((S_adj, I_adj, R_adj), axis=1)}
 
-    def get_plot_dicts(self, x, t, y):
+    def get_plot_dicts(self, x, t, y, G):
         """ return appropriate pred_dict and diff_dict used for plotting """
         adj = self.adjust(x, t)
         x_adj = adj['pred']
