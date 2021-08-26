@@ -103,7 +103,7 @@ class Exponential(Problem):
         """ return the analytic solution @ t for this problem """
         return torch.exp(-self.L * t)
 
-    def get_equation(self, x, t, G):
+    def get_equation(self, x, t, G=None):
         """ return value of residuals of equation (i.e. LHS) """
         if self.shuheng:
             adj = self.adjust(x, t, G)
@@ -112,7 +112,7 @@ class Exponential(Problem):
         x, dx = adj['pred'], adj['dx']
         return dx + self.L * x
 
-    def adjust(self, x, t, G):
+    def adjust(self, x, t, G=None):
         """ perform initial value adjustment """
         if self.shuheng:
             t_0 = - torch.log(torch.FloatTensor([self.x0])) / self.L
@@ -176,20 +176,20 @@ class SimpleOscillator(Problem):
         """ return the analytic solution @ t for this problem """
         return self.dx_dt0 * torch.sin(t)
 
-    def get_equation(self, x, t):
+    def get_equation(self, x, t, G=None):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(x, t)
         x, dx, d2x = adj['pred'], adj['dx'], adj['d2x']
         return d2x + x
 
-    def adjust(self, x, t):
+    def adjust(self, x, t, G=None):
         """ perform initial value adjustment """
         x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
         dx_dt = diff(x_adj, t)
         d2x_dt2 = diff(dx_dt, t)
         return {'pred': x_adj, 'dx': dx_dt, 'd2x': d2x_dt2}
 
-    def get_plot_dicts(self, x, t, y):
+    def get_plot_dicts(self, x, t, y, G):
         """ return appropriate pred_dict and diff_dict used for plotting """
         adj = self.adjust(x, t)
         xadj, dx, d2x = adj['pred'], adj['dx'], adj['d2x']
@@ -277,20 +277,20 @@ class NonlinearOscillator(Problem):
         return d2x + 2 * self.beta * dx + (self.omega ** 2) * x + self.phi * (x ** 2) \
             + self.epsilon * (x ** 3) # - self.F * self.forcing(t)
 
-    def get_equation(self, x, t):
+    def get_equation(self, x, t, G=None):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(x, t)
         x, dx, d2x = adj['pred'], adj['dx'], adj['d2x']
         return self._nlo_eqn(x, dx, d2x)
 
-    def adjust(self, x, t):
+    def adjust(self, x, t, G=None):
         """ perform initial value adjustment """
         x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
         dx = diff(x_adj, t)
         d2x = diff(dx, t)
         return {'pred': x_adj, 'dx': dx, 'd2x': d2x}
 
-    def get_plot_dicts(self, x, t, y):
+    def get_plot_dicts(self, x, t, y, G):
         """ return appropriate pred_dict and diff_dict used for plotting """
         adj = self.adjust(x, t)
         xadj, dx, d2x = adj['pred'], adj['dx'], adj['d2x']
@@ -356,7 +356,7 @@ class ReynoldsAveragedNavierStokes(Problem):
     def _rans_eqn(self, dre, d2u):
         return self.nu * d2u - dre - (1/self.rho) * self.dp_dx
 
-    def adjust(self, y, u):
+    def adjust(self, y, u, G=None):
         a = self.bc[0]
         b = (self.bc[1]-self.bc[0]) * (y - self.ymin)
         c = self.ymax - self.ymin
@@ -367,12 +367,12 @@ class ReynoldsAveragedNavierStokes(Problem):
         d2u = diff(du, y)
         return {'pred': u_adj, 'dre': dre, 'd2u': d2u}
 
-    def get_equation(self, y, u):
+    def get_equation(self, y, u, G=None):
         adj = self.adjust(y, u)
         uadj, dre, d2u = adj['pred'], adj['dre'], adj['d2u']
         return self._rans_eqn(dre, d2u)
 
-    def get_plot_dicts(self, u, y, sol):
+    def get_plot_dicts(self, u, y, sol, G):
         adj = self.adjust(y, u)
         uadj, dre, d2u = adj['pred'], adj['dre'], adj['d2u']
         pred_dict = {'$\hat{u}$': uadj.detach(), '$u$': sol.detach()}
