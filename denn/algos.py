@@ -71,7 +71,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': [], 'D real': [], 'D fake': []}#, 'LHS': []}
+    losses = {'G': [], 'D': [], 'D real': [], 'D fake': [], 'LHS': []}
     mses = {'train': [], 'val': []}
     preds = {'pred': [], 'soln': []}
 
@@ -208,9 +208,9 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             diff = g_loss.item() - d_loss.item()
 
         losses['D'].append(d_loss.item())
-        losses['D real'].append(real_loss.item()) # Blake edit: updating discriminator loss on real data
-        losses['D fake'].append(fake_loss.item()) # Blake edit: updating discriminator loss on fake data
-        #losses['LHS'].append(torch.mean(torch.abs(fake)).item()) # Blake edit: updating differential equation loss
+        losses['D real'].append(real_loss.item())
+        losses['D fake'].append(fake_loss.item())
+        losses['LHS'].append(torch.mean(torch.abs(fake)).item())
         losses['G'].append(g_loss.item())
         
         if lr_schedule:
@@ -439,10 +439,11 @@ def train_L2(model, problem, method='unsupervised', niters=100,
 
 def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
-    lr_schedule=True, gamma=0.999, obs_every=1, d1=1., d2=1.,
-    G_iters=1, D_iters=1, wgan=True, gp=0.1, conditional=True,
-    log=True, plot=True, save=False, dirname='train_GAN',
-    config=None, save_for_animation=False, **kwargs):
+    lr_schedule=True, gamma=0.999, momentum=0.95, noise=False, 
+    step_size=15, obs_every=1, d1=1., d2=1., G_iters=1, D_iters=1, 
+    wgan=True, gp=0.1, conditional=True, log=True, plot=True, 
+    save=False, dirname='train_GAN', config=None, 
+    save_for_animation=False, **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
@@ -465,18 +466,26 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     # labels
     real_label = 1
     fake_label = -1 if wgan else 0
-    real_labels = torch.full((len(grid),), real_label, dtype=torch.float).reshape(-1,1) # Blake edit: add dtype=torch.float
-    fake_labels = torch.full((len(grid),), fake_label, dtype=torch.float).reshape(-1,1) # Blake edit: add dtype=torch.float
+    real_labels = torch.full((len(grid),), real_label, dtype=torch.float).reshape(-1,1)
+    fake_labels = torch.full((len(grid),), fake_label, dtype=torch.float).reshape(-1,1)
     # masked label vectors
     real_labels_obs = real_labels[observers, :]
     fake_labels_obs = fake_labels[observers, :]
 
+    # initialize difference parameter for noise
+    if noise:
+        diff = 0
+
     # optimization
-    optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
-    optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
+    #optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
+    #optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
+    optiG = torch.optim.SGD(G.parameters(), lr=g_lr, momentum=momentum, nesterov=True)
+    optiD = torch.optim.SGD(D.parameters(), lr=g_lr, momentum=momentum, nesterov=True)
     if lr_schedule:
-        lr_scheduler_G = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=gamma)
-        lr_scheduler_D = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=gamma)
+        #lr_scheduler_G = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=gamma)
+        #lr_scheduler_D = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=gamma)
+        lr_scheduler_G = torch.optim.lr_scheduler.StepLR(optimizer=optiG, step_size=step_size, gamma=gamma)
+        lr_scheduler_D = torch.optim.lr_scheduler.StepLR(optimizer=optiD, step_size=step_size, gamma=gamma)
 
     # losses
     mse = nn.MSELoss()
@@ -502,7 +511,11 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
 
             # idea: add noise to relax from dirac delta at 0 to distb'n
             # + torch.normal(0, .1/(i+1), size=residuals.shape)
-            real = torch.zeros_like(residuals)
+            if noise:
+                diff = diff if diff >= 0 else 0
+                real = torch.zeros_like(residuals) + torch.normal(0, diff, size=residuals.shape)
+            else:
+                real = torch.zeros_like(residuals)
             fake = residuals
 
             optiG.zero_grad()
@@ -532,6 +545,10 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
             d_loss.backward(retain_graph=True)
             optiD.step()
 
+        # update the difference between losses
+        if noise:
+            diff = g_loss.item() - d_loss.item()
+
         losses['D'].append(d_loss.item())
         losses['G'].append(g_loss.item())
 
@@ -560,7 +577,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         try:
             if (epoch+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                report.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
                 # mean of G - D loss for last 10 steps
                 # loss_diff = np.mean(np.abs(losses['G'][-10] - losses['D'][-10]))
                 # report.log(mean_squared_error=loss_diff)
@@ -575,6 +592,10 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         pred_dict, diff_dict = problem.get_plot_dicts(G(grid), x, y, soln)
         plot_results(mses, losses, grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, dirname=dirname, logloss=False, alpha=0.7)
+        min_mse = np.min(mses['val'])
+        min_mse_iter = np.argmin(mses['val'])
+        print('Minimum validation MSE: ', min_mse)
+        print('Iteration: ', min_mse_iter)
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
