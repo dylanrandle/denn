@@ -12,6 +12,9 @@ training:
   d_betas: [0.9, 0.999]
   lr_schedule: False
   gamma: 0.999
+  momentum: 0.97
+  noise: False
+  step_size: 6
   obs_every: 1
   d1: 1
   d2: 1

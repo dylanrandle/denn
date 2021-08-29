@@ -15,7 +15,7 @@ training:
   lr_schedule: True
   gamma: 0.9991267210448103
   momentum: 0.950400554503242 #0.944400554503242
-  noise: False
+  noise: True
   step_size: 10
   obs_every: 1
   d1: 1
