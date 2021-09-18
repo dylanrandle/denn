@@ -82,16 +82,12 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     #fig_D_log, ax_D_log = plt.subplots(1, 2, figsize=(14,7))
 
     for epoch in range(niters):
-        # Shake the weights
-        #if epoch_counter == 500:
-        #    G.apply(lambda m: shake_weights(m=m, std=diff))
-        #    epoch_counter = 0
         
         # Train Generator
         for p in D.parameters():
             p.requires_grad = False # turn off computation for D
 
-        for i in range(G_iters):
+        for _ in range(G_iters):
             if method == 'unsupervised':
                 grid_samp = problem.get_grid_sample()
                 pred = G(grid_samp)
@@ -111,11 +107,11 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 if conditional:
                     real = torch.cat((real, grid_samp), 1)
                     fake = torch.cat((fake, grid_samp), 1)
-
+                
                 optiG.zero_grad()
-                g_loss = criterion(D(fake), real_labels) #+ delta*mae_std
+                g_loss = criterion(D(fake), real_labels)
                 # g_loss = criterion(D(fake), torch.ones_like(fake))
-                g_loss.backward(retain_graph=True)
+                g_loss.backward()
                 # Call function to plot G gradients every epoch
                 #plot_grads(G.named_parameters(), ax_G)
                 #plot_grads(G.named_parameters(), ax_G_log, logscale=True)  
@@ -177,9 +173,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         for p in D.parameters():
             p.requires_grad = True # turn on computation for D
 
-
-        # Blake edit: need to rewrite according to: https://github.com/pytorch/pytorch/issues/39141 for torch version > 1.4.0
-        for i in range(D_iters):
+        for _ in range(D_iters):
             if wgan:
                 norm_penalty = calc_gradient_penalty(D, real, fake, gp, cuda=False)
             else:
@@ -188,18 +182,18 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             # print(real.shape, fake.shape)
             real_loss = criterion(D(real), real_labels)
             # real_loss = criterion(D(real), torch.ones_like(real))
-            fake_loss = criterion(D(fake), fake_labels)
+            fake_loss = criterion(D(fake.detach()), fake_labels)
             # fake_loss = criterion(D(fake), torch.zeros_like(fake))
-
+            
             optiD.zero_grad()
             d_loss = (real_loss + fake_loss)/2 + norm_penalty
-            d_loss.backward(retain_graph=True)
+            d_loss.backward()
             #if epoch % 10 == 0:
             #    # Call function to plot D gradients every 10 epochs
             #    plot_grads(D.named_parameters(), ax_D)
             #    plot_grads(D.named_parameters(), ax_D_log, logscale=True)
             optiD.step()
-
+        
         # Blake edit: update scaling parameters
         #alpha = g_loss.item() / d_loss.item() # unbounded
         #beta = g_loss.item() / (d_loss.item() + g_loss.item()) # bounded between (0, 1)
