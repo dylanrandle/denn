@@ -17,7 +17,7 @@ if __name__ == "__main__":
     args.add_argument('--classical', action='store_true', default=False,
         help='whether to use classical training, default False (use GAN))')
     args.add_argument('--ncpu', type=int, default=1)
-    args.add_argument('--nsample', type=int, default=200)
+    args.add_argument('--nsample', type=int, default=100)
     args = args.parse_args()
 
     params = get_config(args.pkey)
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")
-    df.to_csv("ray_tune_results.csv")
+    df.to_csv(f"ray_tune_{args.pkey}.csv")
     print("Sorted top results")
     print(df.sort_values(by="mean_squared_error").head(10))
     print("Best config is:", analysis.get_best_config(metric="mean_squared_error", mode="min"))
