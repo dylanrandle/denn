@@ -3,7 +3,7 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.7
+  - python=3.8
   - pytorch
   - tqdm
   - pandas
@@ -19,3 +19,4 @@ dependencies:
     - torchvision
     - fenics
     - ray
+    - ray[tune]
