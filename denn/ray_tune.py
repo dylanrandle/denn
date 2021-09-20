@@ -41,7 +41,6 @@ if __name__ == "__main__":
     gamma_bound = (0.99, 0.9999)
     momentum_bound = (0.9, 0.999)
     step_size_bound = (2, 21)
-    #beta_bound = (0, 0.999)
     n_nodes = [20, 30, 40, 50]
     n_layers = [2, 3, 4, 5]
 
@@ -53,8 +52,6 @@ if __name__ == "__main__":
     search_space['training']['gamma'] = tune.sample_from(lambda s: np.random.uniform(*gamma_bound))
     search_space['training']['momentum'] = tune.sample_from(lambda s: np.random.uniform(*momentum_bound))
     search_space['training']['step_size'] = tune.sample_from(lambda s: np.random.randint(*step_size_bound))
-    #search_space['training']['g_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
-    #search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
 
     # Generator
     search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
