@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J ray_tune_pos
+#SBATCH -J rand_reps_nlo
 #SBATCH -p test
 #SBATCH -n 48
 #SBATCH -N 1
@@ -13,4 +13,4 @@ module load gcc/10.2.0-fasrc01
 module load Anaconda3/2020.11
 source activate denn
 cd ../denn
-python ray_tune.py --pkey pos --ncpu 48 --nsample 2000
+python rand_reps.py --pkey nlo --gan --fname rand_reps_nlo
