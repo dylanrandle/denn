@@ -668,7 +668,7 @@ class CoupledOscillator(Problem):
         eqn2 = diff(y_adj, t) - t * x_adj
         return eqn1, eqn2
 
-    def get_equation(self, sol, t):
+    def get_equation(self, sol, t, G=None):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(sol, t)
         pred_adj = adj['pred']
@@ -677,7 +677,7 @@ class CoupledOscillator(Problem):
         # works much better (for point-wise loss)
         return torch.cat((eqn1, eqn2), axis=1)
 
-    def adjust(self, sol, t):
+    def adjust(self, sol, t, G=None):
         """ perform initial value adjustment """
         x, y = sol[:, 0], sol[:, 1]
 
@@ -689,7 +689,7 @@ class CoupledOscillator(Problem):
         # although we don't need it per-se
         return {'pred': torch.cat((x_adj, y_adj), axis=1)}
 
-    def get_plot_dicts(self, sol, t, true):
+    def get_plot_dicts(self, sol, t, true, G):
         """ return appropriate pred_dict and diff_dict used for plotting """
         adj = self.adjust(sol, t)['pred']
         x_adj, y_adj = adj[:,0].reshape(-1, 1), adj[:,1].reshape(-1, 1)
