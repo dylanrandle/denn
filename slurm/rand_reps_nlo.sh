@@ -13,4 +13,4 @@ module load gcc/10.2.0-fasrc01
 module load Anaconda3/2020.11
 source activate denn
 cd ../denn
-python rand_reps.py --pkey nlo --gan --fname rand_reps_nlo
+python rand_reps.py --pkey nlo --gan --nreps 20 --fname rand_reps_nlo

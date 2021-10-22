@@ -13,4 +13,4 @@ module load gcc/10.2.0-fasrc01
 module load Anaconda3/2020.11
 source activate denn
 cd ../denn
-python rand_reps.py --pkey sho --gan --fname rand_reps_sho
+python rand_reps.py --pkey sho --gan --nreps 20 --fname rand_reps_sho
