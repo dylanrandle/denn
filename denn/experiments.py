@@ -27,6 +27,8 @@ def get_problem(pkey, params):
         return pb.SIRModel(**params['problem'])
     elif pkey == 'coo':
         return pb.CoupledOscillator(**params['problem'])
+    elif pkey == 'wav':
+        return pb.WaveEquation(**params['problem'])
     else:
         raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
 
@@ -44,7 +46,7 @@ def L2_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    if pkey.lower().strip() == "pos":
+    if pkey.lower().strip() in ["pos", "wav"]:
         res = train_L2_2D(model, problem, **params['training'], config=params)
     else:
         res = train_L2(model, problem, **params['training'], config=params)
@@ -66,7 +68,7 @@ def gan_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    if pkey.lower().strip() == "pos":
+    if pkey.lower().strip() in ["pos", "wav"]:
         res = train_GAN_2D(gen, disc, problem, **params['training'], config=params)
     else:
         res = train_GAN(gen, disc, problem, **params['training'], config=params)
