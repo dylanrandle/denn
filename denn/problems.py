@@ -721,7 +721,7 @@ class WaveEquation(Problem):
     Solution:
     u(x,t) = cos(pi*t) sin(pi*x)
     """
-    def __init__(self, nx=32, nt=32, xmin=0, xmax=1, tmin=0, tmax=1, batch_size=100, **kwargs):
+    def __init__(self, nx=32, nt=32, xmin=0, xmax=1, tmin=0, tmax=1, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -729,7 +729,6 @@ class WaveEquation(Problem):
         self.tmax = tmax
         self.nx = nx
         self.nt = nt
-        self.batch_size = batch_size
         self.pi = torch.tensor(np.pi)
         self.hx = (xmax - xmin) / nx
         self.ht = (tmax - tmin) / nt
@@ -793,26 +792,20 @@ class WaveEquation(Problem):
 if __name__ == "__main__":
     import denn.utils as ut
     import matplotlib.pyplot as plt
+
     print("Testing WaveEquation")
     we = WaveEquation()
     x, t = we.get_grid()
-    x = x.detach()
-    t = t.detach()
-    xx, tt = np.meshgrid(x, t)
-    s = we.get_solution(xx, tt)
-    #adj = we.adjust(s, xx, tt)['pred']
-    #res = we.get_equation(adj, x, t)
-    #plt_dict = we.get_plot_dicts(adj, x, t, 0)
+    xs, ys = we.get_grid_sample()
+    s = we.get_solution(x, t)
+    adj = we.adjust(s, x, t)['pred']
+    res = we.get_equation(adj, x, t)
+    plt_dict = we.get_plot_dicts(adj, x, t, 0)
 
-    #s = s.detach()
-    #adj = adj.detach()
-    #res = res.detach()
-    #print(res)
-
-    fig, ax = plt.subplots(figsize=(10,7))
-    cf = ax.contourf(xx, tt, s, cmap="Blues", levels=100)
-    cb = fig.colorbar(cf, format="%.0e", ax=ax)
-    plt.show()
+    #fig, ax = plt.subplots(figsize=(10,7))
+    #cf = ax.contourf(xx, tt, s, cmap="Blues", levels=100)
+    #cb = fig.colorbar(cf, format="%.0e", ax=ax)
+    #plt.show()
 
 
 # if __name__ == '__main__':
