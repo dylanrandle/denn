@@ -402,7 +402,7 @@ class PoissonEquation(Problem):
               u = u_D  on the boundary
 
     u_D = 0
-      f = 1
+      f = 2x * (y-1) * (y-2x+x*y+2) * exp(x-y)
 
     NOTE: reduce to Laplace (f=0) for Analytical Solution
 
@@ -413,13 +413,13 @@ class PoissonEquation(Problem):
     with (x, y) in [0, 1] x [0, 1]
 
     Boundary conditions:
-    u(x,y) | x=0 : sin(pi * y)
+    u(x,y) | x=0 : 0
     u(x,y) | x=1 : 0
     u(x,y) | y=0 : 0
     u(x,y) | y=1 : 0
 
     Solution:
-    u(x,y) = sin(pi * y) * sinh( pi * (1 - x) ) / sinh(pi)
+    u(x,y) = x * (1-x) * y * (1-y) * exp(x-y)
     """
     def __init__(self, nx=32, ny=32, xmin=0, xmax=1, ymin=0, ymax=1, batch_size=100, **kwargs):
         super().__init__(**kwargs)
@@ -703,32 +703,140 @@ class CoupledOscillator(Problem):
                      '$|\hat{F_2}|$': np.abs(r2.detach())}
         return pred_dict, diff_dict
 
+class WaveEquation(Problem):
+    """
+    Wave Equation:
+
+    $$ u_{tt} = c^2 u_{xx} $$
+
+    d2u_dt2 - c^2 d2u_dx2 = 0
+    with c = 1 and (x, t) in [0, 1] x [0, 1]
+
+    Boundary conditions:
+    u(x,t)     | x=0 : 0
+    u(x,t)     | x=1 : 0
+    u(x,t)     | t=0 : sin(pi*x)
+    du_dt(x,t) | t=0 : 0
+
+    Solution:
+    u(x,t) = cos(pi*t) sin(pi*x)
+    """
+    def __init__(self, nx=32, nt=32, xmin=0, xmax=1, tmin=0, tmax=1, batch_size=100, **kwargs):
+        super().__init__(**kwargs)
+        self.xmin = xmin
+        self.xmax = xmax
+        self.tmin = tmin
+        self.tmax = tmax
+        self.nx = nx
+        self.nt = nt
+        self.batch_size = batch_size
+        self.pi = torch.tensor(np.pi)
+        self.hx = (xmax - xmin) / nx
+        self.ht = (tmax - tmin) / nt
+        self.noise_xstd = self.hx / 4.0
+        self.noise_tstd = self.ht / 4.0
+
+        xgrid = torch.linspace(xmin, xmax, nx, requires_grad=True)
+        tgrid = torch.linspace(tmin, tmax, nt, requires_grad=True)
+
+        grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
+        self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+
+    def get_grid(self):
+        return (self.grid_x, self.grid_t)
+
+    def get_grid_sample(self):
+        x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
+        t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
+        return (x_noisy, t_noisy)
+
+    def get_solution(self, x, t):
+        sol = torch.cos(self.pi * t) * torch.sin(self.pi * x)
+        return sol
+
+    def _wave_eqn(self, u, x, t):
+        return diff(u, t, order=2) - diff(u, x, order=2)
+
+    def get_equation(self, u, x, t):
+        """ return value of residuals of equation (i.e. LHS) """
+        adj = self.adjust(u, x, t)
+        u_adj = adj['pred']
+        return self._wave_eqn(u_adj, x, t)
+
+    def adjust(self, u, x, t):
+        """ perform boundary value adjustment 
+        
+        x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
+        dx = diff(x_adj, t)
+        d2x = diff(dx, t)
+        return {'pred': x_adj, 'dx': dx, 'd2x': d2x}
+        """
+
+        x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
+        t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
+        Axt = torch.sin(self.pi * x)
+
+        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde**2))*u
+
+        return {'pred': u_adj}
+
+    def get_plot_dicts(self, pred, x, t, sol):
+        """ return appropriate pred_dict / diff_dict used for plotting """
+        adj = self.adjust(pred, x, t)
+        pred_adj = adj['pred']
+        pred_dict = {'$\hat{u}$': pred_adj.detach()}
+
+        resid = self.get_equation(pred, x, t)
+        diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
+        return pred_dict, diff_dict
+
 if __name__ == "__main__":
     import denn.utils as ut
     import matplotlib.pyplot as plt
-    print("Testing CoupledOscillator")
-    co = CoupledOscillator()
-    t = co.get_grid()
-    s = co.get_solution(t)
-    adj = co.adjust(s, t)['pred']
-    res = co.get_equation(adj, t)
-
-    plt_dict = co.get_plot_dicts(adj, t, s)
-
+    print("Testing WaveEquation")
+    we = WaveEquation()
+    x, t = we.get_grid()
+    x = x.detach()
     t = t.detach()
-    s = s.detach()
-    adj = adj.detach()
-    res = res.detach()
+    xx, tt = np.meshgrid(x, t)
+    s = we.get_solution(xx, tt)
+    #adj = we.adjust(s, xx, tt)['pred']
+    #res = we.get_equation(adj, x, t)
+    #plt_dict = we.get_plot_dicts(adj, x, t, 0)
 
-    plt.plot(t, s[:,0])
-    plt.plot(t, s[:,1])
-    plt.plot(t, adj[:, 0])
-    plt.plot(t, adj[:, 1])
-    plt.plot(t, res[:,0])
-    plt.plot(t, res[:,1])
+    #s = s.detach()
+    #adj = adj.detach()
+    #res = res.detach()
+    #print(res)
+
+    fig, ax = plt.subplots(figsize=(10,7))
+    cf = ax.contourf(xx, tt, s, cmap="Blues", levels=100)
+    cb = fig.colorbar(cf, format="%.0e", ax=ax)
     plt.show()
 
+
 # if __name__ == '__main__':
+# print("Testing CoupledOscillator")
+# co = CoupledOscillator()
+# t = co.get_grid()
+# s = co.get_solution(t)
+# adj = co.adjust(s, t)['pred']
+# res = co.get_equation(adj, t)
+
+# plt_dict = co.get_plot_dicts(adj, t, s)
+
+# t = t.detach()
+# s = s.detach()
+# adj = adj.detach()
+# res = res.detach()
+
+# plt.plot(t, s[:,0])
+# plt.plot(t, s[:,1])
+# plt.plot(t, adj[:, 0])
+# plt.plot(t, adj[:, 1])
+# plt.plot(t, res[:,0])
+# plt.plot(t, res[:,1])
+# plt.show()
 #     import denn.utils as ut
 #     import matplotlib.pyplot as plt
 #     print('Testing SIR Model')
