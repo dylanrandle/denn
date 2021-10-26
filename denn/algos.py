@@ -16,9 +16,9 @@ this_dir = os.path.dirname(os.path.abspath(__file__))
 
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
     g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
-    lr_schedule=True, gamma=0.999, momentum=0.95, noise=False, 
-    step_size=15, obs_every=1, d1=1., d2=1., G_iters=1, D_iters=1, 
-    wgan=True, gp=0.1, conditional=True, log=True, plot=True, 
+    lr_schedule=True, gamma=0.999, g_momentum=0.95, d_momentum=0.95, 
+    noise=False, step_size=15, obs_every=1, d1=1., d2=1., G_iters=1, 
+    D_iters=1, wgan=True, gp=0.1, conditional=True, log=True, plot=True, 
     save=False, dirname='train_GAN', config=None, 
     save_for_animation=False, **kwargs):
     """
@@ -53,8 +53,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         diff = 0
 
     # optimization
-    optiG = torch.optim.SGD(G.parameters(), lr=g_lr, momentum=momentum, nesterov=True)
-    optiD = torch.optim.SGD(D.parameters(), lr=d_lr, momentum=momentum, nesterov=True)
+    optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
+    optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
+    #optiG = torch.optim.SGD(G.parameters(), lr=g_lr, momentum=g_momentum, nesterov=True)
+    #optiD = torch.optim.SGD(D.parameters(), lr=d_lr, momentum=d_momentum, nesterov=True)
     if lr_schedule:
         #lmbda = lambda epoch: 1 if diff <= 0 else diff
         #lr_scheduler_G_up = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=1.01)
@@ -80,6 +82,11 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     #fig_G_log, ax_G_log = plt.subplots(1, 2, figsize=(14,7))
     #fig_D, ax_D = plt.subplots(1, 2, figsize=(14,7))
     #fig_D_log, ax_D_log = plt.subplots(1, 2, figsize=(14,7))
+
+    # Create figure and axes for plotting learning rates
+    #fig, ax = plt.subplots(figsize=(7,5))
+    #lr_vals_G = []
+    #lr_vals_D = []
 
     for epoch in range(niters):
         
@@ -208,6 +215,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         losses['G'].append(g_loss.item())
         
         if lr_schedule:
+            #last_lr_G = lr_scheduler_G.get_last_lr()
+            #ast_lr_D = lr_scheduler_D.get_last_lr()
+            #lr_vals_G.append(last_lr_G)
+            #lr_vals_D.append(last_lr_D)
             lr_scheduler_G.step()
             lr_scheduler_D.step()
             #if g_loss.item() > d_loss.item():
@@ -253,11 +264,20 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, soln, G)
         plot_results(mses, losses, grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, dirname=dirname, logloss=False, alpha=0.7)
-        # Plot and save the gradients
         min_mse = np.min(mses['val'])
         min_mse_iter = np.argmin(mses['val'])
         print('Minimum validation MSE: ', min_mse)
         print('Iteration: ', min_mse_iter)
+        # Plot the learning rates
+        #ax.plot(lr_vals_G, label='G learning rate')
+        #ax.plot(lr_vals_D, label='D learning rate')
+        #ax.legend()
+        #ax.set_xlabel('Iteration')
+        #ax.set_ylabel('Learning rate')
+        #ax.set_title(f'SIR learning rates (SGD, MSE={min_mse})')
+        #fig.tight_layout()
+        #fig.savefig('SIR_lrs.png')
+        # Plot and save the gradients
         #fig_G.suptitle(f'Generator Gradients per Iteration (min val MSE={min_mse:.3e})', fontsize=16)
         #fig_G.tight_layout()
         #fig_G.savefig('G_gradients.png')
@@ -471,10 +491,10 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         diff = 0
 
     # optimization
-    #optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
-    #optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
-    optiG = torch.optim.SGD(G.parameters(), lr=g_lr, momentum=momentum, nesterov=True)
-    optiD = torch.optim.SGD(D.parameters(), lr=g_lr, momentum=momentum, nesterov=True)
+    optiG = torch.optim.Adam(G.parameters(), lr=g_lr, betas=g_betas)
+    optiD = torch.optim.Adam(D.parameters(), lr=d_lr, betas=d_betas)
+    #optiG = torch.optim.SGD(G.parameters(), lr=g_lr, momentum=momentum, nesterov=True)
+    #optiD = torch.optim.SGD(D.parameters(), lr=g_lr, momentum=momentum, nesterov=True)
     if lr_schedule:
         #lr_scheduler_G = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiG, gamma=gamma)
         #lr_scheduler_D = torch.optim.lr_scheduler.ExponentialLR(optimizer=optiD, gamma=gamma)
@@ -515,7 +535,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
             optiG.zero_grad()
             g_loss = criterion(D(fake), real_labels)
             # g_loss = criterion(D(fake), torch.ones_like(fake))
-            g_loss.backward(retain_graph=True)
+            g_loss.backward()
             optiG.step()
 
         # Train Discriminator
@@ -531,12 +551,12 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
             # print(real.shape, fake.shape)
             real_loss = criterion(D(real), real_labels)
             # real_loss = criterion(D(real), torch.ones_like(real))
-            fake_loss = criterion(D(fake), fake_labels)
+            fake_loss = criterion(D(fake.detach()), fake_labels)
             # fake_loss = criterion(D(fake), torch.zeros_like(fake))
 
             optiD.zero_grad()
             d_loss = (real_loss + fake_loss)/2 + norm_penalty
-            d_loss.backward(retain_graph=True)
+            d_loss.backward()
             optiD.step()
 
         # update the difference between losses
