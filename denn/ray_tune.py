@@ -16,6 +16,8 @@ if __name__ == "__main__":
         help='problem to run (exp=Exponential, sho=SimpleOscillator, nlo=NonlinearOscillator)')
     args.add_argument('--classical', action='store_true', default=False,
         help='whether to use classical training, default False (use GAN))')
+    args.add_argument('--big', action='store_true', default=False, 
+        help='whether to use bigger (wider and deeper) networks for training, default False')
     args.add_argument('--ncpu', type=int, default=1)
     args.add_argument('--nsample', type=int, default=100)
     args = args.parse_args()
@@ -38,11 +40,16 @@ if __name__ == "__main__":
 
     # Bounds of Search
     lr_bound = (1e-5, 1e-1)
-    gamma_bound = (0.99, 0.9999)
-    momentum_bound = (0.9, 0.999)
+    gamma_bound = (0.9, 0.9999) # related to beta2
+    #momentum_bound = (0, 0.999) # related to beta1
+    beta_bound = (0, 0.999) # for Adam
     step_size_bound = (2, 21)
-    n_nodes = [20, 30, 40, 50]
-    n_layers = [2, 3, 4, 5]
+    if args.big:
+        n_layers = [6, 7, 8, 9]
+        n_nodes = [60, 70, 80, 90]
+    else:
+        n_layers = [2, 3, 4, 5]
+        n_nodes = [20, 30, 40, 50]
 
     # LRs
     search_space['training']['g_lr'] = tune.sample_from(lambda s: np.random.uniform(*lr_bound))
@@ -50,8 +57,11 @@ if __name__ == "__main__":
 
     # Decay / Moment
     search_space['training']['gamma'] = tune.sample_from(lambda s: np.random.uniform(*gamma_bound))
-    search_space['training']['momentum'] = tune.sample_from(lambda s: np.random.uniform(*momentum_bound))
+    #search_space['training']['g_momentum'] = tune.sample_from(lambda s: np.random.uniform(*momentum_bound)) # for SGD
+    #search_space['training']['d_momentum'] = tune.sample_from(lambda s: np.random.uniform(*momentum_bound)) # for SGD
     search_space['training']['step_size'] = tune.sample_from(lambda s: np.random.randint(*step_size_bound))
+    search_space['training']['g_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2)) # for Adam
+    search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2)) # for Adam
 
     # Generator
     search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
