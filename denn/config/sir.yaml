@@ -10,17 +10,18 @@ problem:
 
 training:
   method: 'unsupervised'
-  seed: 0
+  seed: 2
   niters: 30000
-  g_lr: 0.017764693379494486
-  d_lr: 0.000841806483501231
-  g_betas: [0.20705222, 0.16897627]
-  d_betas: [0.19268249, 0.61740443]
+  g_lr: 0.011746072513997606 #0.033969438603135428
+  d_lr: 0.0048938616305375755 #0.048353644841351323
+  g_betas: [0.23990367, 0.24735706] #[0.04489709, 0.20844875]
+  d_betas: [0.21180557, 0.12231498] #[0.16923791, 0.31905255]
+  g_momentum: 0.94114125988931008
+  d_momentum: 0.94114125988931008
   lr_schedule: True
-  gamma: 0.9952680449845132
-  momentum: 0.9352430282349314
+  gamma: 0.99422115701902469 #0.99402277349277524
   noise: False
-  step_size: 19
+  step_size: 15
   obs_every: 1
   d1: 1
   d2: 1
@@ -39,16 +40,17 @@ training:
 generator:
   in_dim: 1
   out_dim: 3
-  n_hidden_units: 20
-  n_hidden_layers: 2
+  n_hidden_units: 50 #20
+  n_hidden_layers: 3 #2
+  activation: 'Tanh'
   residual: True
   regress: True
 
 discriminator:
   in_dim: 3
   out_dim: 1
-  n_hidden_units: 30
-  n_hidden_layers: 4
+  n_hidden_units: 30 #50
+  n_hidden_layers: 3 #2
   activation: 'Tanh'
   residual: True
   regress: False
