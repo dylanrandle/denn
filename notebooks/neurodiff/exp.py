@@ -29,3 +29,6 @@ ax2.set_yscale('log')
 ax2.set_title('loss during training')
 ax2.legend()
 plt.show()
+
+print(np.min(loss_ex['valid_loss']))
+print(np.argmin(loss_ex['valid_loss']))
