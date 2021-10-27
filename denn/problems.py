@@ -710,7 +710,7 @@ class WaveEquation(Problem):
     $$ u_{tt} = c^2 u_{xx} $$
 
     d2u_dt2 - c^2 d2u_dx2 = 0
-    with c = 1 and (x, t) in [0, 1] x [0, 1]
+    with (x, t) in [0, 1] x [0, 1]
 
     Boundary conditions:
     u(x,t)     | x=0 : 0
@@ -719,9 +719,9 @@ class WaveEquation(Problem):
     du_dt(x,t) | t=0 : 0
 
     Solution:
-    u(x,t) = cos(pi*t) sin(pi*x)
+    u(x,t) = cos(c*pi*t) sin(pi*x)
     """
-    def __init__(self, nx=32, nt=32, xmin=0, xmax=1, tmin=0, tmax=1, **kwargs):
+    def __init__(self, nx=32, nt=32, c=1, xmin=0, xmax=1, tmin=0, tmax=1, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -729,6 +729,7 @@ class WaveEquation(Problem):
         self.tmax = tmax
         self.nx = nx
         self.nt = nt
+        self.c = c
         self.pi = torch.tensor(np.pi)
         self.hx = (xmax - xmin) / nx
         self.ht = (tmax - tmin) / nt
@@ -750,11 +751,11 @@ class WaveEquation(Problem):
         return (x_noisy, t_noisy)
 
     def get_solution(self, x, t):
-        sol = torch.cos(self.pi * t) * torch.sin(self.pi * x)
+        sol = torch.cos(c * self.pi * t) * torch.sin(self.pi * x)
         return sol
 
     def _wave_eqn(self, u, x, t):
-        return diff(u, t, order=2) - diff(u, x, order=2)
+        return diff(u, t, order=2) - (c**2)*diff(u, x, order=2)
 
     def get_equation(self, u, x, t):
         """ return value of residuals of equation (i.e. LHS) """
@@ -763,13 +764,7 @@ class WaveEquation(Problem):
         return self._wave_eqn(u_adj, x, t)
 
     def adjust(self, u, x, t):
-        """ perform boundary value adjustment 
-        
-        x_adj = self.x0 + (1 - torch.exp(-t)) * self.dx_dt0 + ((1 - torch.exp(-t))**2) * x
-        dx = diff(x_adj, t)
-        d2x = diff(dx, t)
-        return {'pred': x_adj, 'dx': dx, 'd2x': d2x}
-        """
+        """ perform boundary value adjustment """
 
         x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
         t_tilde = (t-self.tmin) / (self.tmax-self.tmin)

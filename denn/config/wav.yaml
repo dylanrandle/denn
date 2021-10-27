@@ -1,6 +1,7 @@
 problem:
   nx: 32
   nt: 32
+  c: 1
   perturb: True
 
 training:
