@@ -29,6 +29,8 @@ def get_problem(pkey, params):
         return pb.CoupledOscillator(**params['problem'])
     elif pkey == 'wav':
         return pb.WaveEquation(**params['problem'])
+    elif pkey == 'bur':
+        return pb.BurgersEquation(**params['problem'])
     else:
         raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
 
@@ -46,7 +48,7 @@ def L2_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    if pkey.lower().strip() in ["pos", "wav"]:
+    if pkey.lower().strip() in ["pos", "wav", "bur"]:
         res = train_L2_2D(model, problem, **params['training'], config=params)
     else:
         res = train_L2(model, problem, **params['training'], config=params)
@@ -68,7 +70,7 @@ def gan_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    if pkey.lower().strip() in ["pos", "wav"]:
+    if pkey.lower().strip() in ["pos", "wav", "bur"]:
         res = train_GAN_2D(gen, disc, problem, **params['training'], config=params)
     else:
         res = train_GAN(gen, disc, problem, **params['training'], config=params)
