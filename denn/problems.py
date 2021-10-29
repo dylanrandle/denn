@@ -751,11 +751,11 @@ class WaveEquation(Problem):
         return (x_noisy, t_noisy)
 
     def get_solution(self, x, t):
-        sol = torch.cos(c * self.pi * t) * torch.sin(self.pi * x)
+        sol = torch.cos(self.c * self.pi * t) * torch.sin(self.pi * x)
         return sol
 
     def _wave_eqn(self, u, x, t):
-        return diff(u, t, order=2) - (c**2)*diff(u, x, order=2)
+        return diff(u, t, order=2) - (self.c**2)*diff(u, x, order=2)
 
     def get_equation(self, u, x, t):
         """ return value of residuals of equation (i.e. LHS) """
@@ -784,23 +784,92 @@ class WaveEquation(Problem):
         diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
         return pred_dict, diff_dict
 
+class BurgersEquation(Problem):
+    """
+    Inviscid Burgers Equation:
+
+    u_t + u u_x = 0
+
+    with u(x,t=0) = ax + b
+
+    Solution:
+    u(x,t) = (ax + b) / (at + 1)
+    """
+    def __init__(self, nx=32, nt=32, a=1, b=1, xmin=0, xmax=1, tmin=0, tmax=1, **kwargs):
+        super().__init__(**kwargs)
+        self.xmin = xmin
+        self.xmax = xmax
+        self.tmin = tmin
+        self.tmax = tmax
+        self.nx = nx
+        self.nt = nt
+        self.a = a
+        self.b = b
+        self.pi = torch.tensor(np.pi)
+        self.hx = (xmax - xmin) / nx
+        self.ht = (tmax - tmin) / nt
+        self.noise_xstd = self.hx / 4.0
+        self.noise_tstd = self.ht / 4.0
+
+        xgrid = torch.linspace(xmin, xmax, nx, requires_grad=True)
+        tgrid = torch.linspace(tmin, tmax, nt, requires_grad=True)
+
+        grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
+        self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+
+    def get_grid(self):
+        return (self.grid_x, self.grid_t)
+
+    def get_grid_sample(self):
+        x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
+        t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
+        return (x_noisy, t_noisy)
+
+    def get_solution(self, x, t):
+        sol = (self.a * x + self.b) / (self.a * t + 1)
+        return sol
+
+    def _burgers_eqn(self, u, x, t):
+        return diff(u, t, order=1) + u*diff(u, x, order=1)
+
+    def get_equation(self, u, x, t):
+        """ return value of residuals of equation (i.e. LHS) """
+        adj = self.adjust(u, x, t)
+        u_adj = adj['pred']
+        return self._burgers_eqn(u_adj, x, t)
+
+    def adjust(self, u, x, t):
+        """ perform boundary value adjustment """
+        x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
+        t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
+        Axt = self.a * x + self.b
+
+        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde**2))*u
+
+        return {'pred': u_adj}
+
+    def get_plot_dicts(self, pred, x, t, sol):
+        """ return appropriate pred_dict / diff_dict used for plotting """
+        adj = self.adjust(pred, x, t)
+        pred_adj = adj['pred']
+        pred_dict = {'$\hat{u}$': pred_adj.detach()}
+
+        resid = self.get_equation(pred, x, t)
+        diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
+        return pred_dict, diff_dict
+
 if __name__ == "__main__":
     import denn.utils as ut
     import matplotlib.pyplot as plt
 
-    print("Testing WaveEquation")
-    we = WaveEquation()
-    x, t = we.get_grid()
-    xs, ys = we.get_grid_sample()
-    s = we.get_solution(x, t)
-    adj = we.adjust(s, x, t)['pred']
-    res = we.get_equation(adj, x, t)
-    plt_dict = we.get_plot_dicts(adj, x, t, 0)
-
-    #fig, ax = plt.subplots(figsize=(10,7))
-    #cf = ax.contourf(xx, tt, s, cmap="Blues", levels=100)
-    #cb = fig.colorbar(cf, format="%.0e", ax=ax)
-    #plt.show()
+    print("Testing Burgers")
+    be = BurgersEquation()
+    x, t = be.get_grid()
+    xs, ys = be.get_grid_sample()
+    s = be.get_solution(x, t)
+    adj = be.adjust(s, x, t)['pred']
+    res = be.get_equation(adj, x, t)
+    plt_dict = be.get_plot_dicts(adj, x, t, 0)
 
 
 # if __name__ == '__main__':
