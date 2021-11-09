@@ -765,7 +765,6 @@ class WaveEquation(Problem):
 
     def adjust(self, u, x, t):
         """ perform boundary value adjustment """
-
         x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
         t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
         Axt = torch.sin(self.pi * x)
@@ -844,7 +843,7 @@ class BurgersEquation(Problem):
         t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
         Axt = self.a * x + self.b
 
-        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde**2))*u
+        u_adj = Axt + (1 - torch.exp(-t_tilde))*u
 
         return {'pred': u_adj}
 
@@ -858,19 +857,152 @@ class BurgersEquation(Problem):
         diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
         return pred_dict, diff_dict
 
+class EinsteinEquations(Problem):
+    """ Hu-Sawicky f(R) motified Einstein equations
+        five outputs: x, y, v, Om, r
+        five equations: minimize residual sum
+
+        We use the variable change z' = (-z + z_0)/z_0 proposed
+        by Augusto Chantada to obtain the system below.
+
+        dx/dz = -z_0/(-z_0(z-1) + 1) (-Om -2v + x + 4y + xv + x^2)
+        dy/dz = -z_0/(-z_0(z-1) + 1) (vx Gam(r) - xy + 4y - 2yv)
+        dv/dz = z_0 v/(-z_0(z-1) + 1) (x Gam(r) + 4 - 2v)
+        dOm/dz = z_0 Om/(-z_0(z-1) + 1) (-1 + 2v + x)
+        dr/dz = -z_0 r Gam(r) x / (-z_0(z-1) + 1)
+    """
+    def __init__(self, z_0 = 10, Om_m_0 = 0.26, b = 1, **kwargs):
+        """
+        inputs:
+        """
+        super().__init__(**kwargs)
+        self.z_0 = z_0
+        self.Om_m_0 = Om_m_0
+        self.b = b
+        self.Om_L_0 = 1 - Om_m_0
+        self.z_prime_0 = 0
+        self.z_prime_f = 1
+        self.x_0 = 0.0
+        self.y_0 = (Om_m_0*((1 + z_0)**3) + 2*self.Om_L_0)/(2*(Om_m_0*((1 + z_0)**3) + self.Om_L_0))
+        self.v_0 = (Om_m_0*((1 + z_0)**3) + 4*self.Om_L_0)/(2*(Om_m_0*((1 + z_0)**3) + self.Om_L_0))
+        self.Om_0 = Om_m_0*((1 + z_0)**3)/((Om_m_0*((1 + z_0)**3) + self.Om_L_0))
+        self.r_0 = (Om_m_0*((1 + z_0)**3) + 4*self.Om_L_0)/self.Om_L_0
+        self.r_prime_0 = np.log(self.r_0)
+        self.dz_prime_dz = -1/z_0
+        self.grid = torch.linspace(
+            self.z_prime_0,
+            self.z_prime_f,
+            self.n,
+            dtype=torch.float,
+            requires_grad=True
+        ).reshape(-1, 1)
+        self.spacing = self.grid[1, 0] - self.grid[0, 0]
+
+    def get_grid(self):
+        return self.grid
+
+    def get_grid_sample(self):
+        return self.sample_grid(self.grid, self.spacing)
+
+    def get_solution(self, z):
+        """ read in the saved numerical solution """
+        sol = np.transpose(np.loadtxt("einstein/b=1_omega=0.26.txt"))
+        return torch.tensor(sol[1:], dtype=torch.float)
+
+    def _sir_eqn(self, z_prime, u_adj):
+        x_adj, y_adj, v_adj, Om_adj, r_prime_adj = u_adj[:,0], u_adj[:,1], u_adj[:,2], u_adj[:,3], u_adj[:,4]
+        x_adj, y_adj, v_adj, Om_adj, r_prime_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), v_adj.reshape(-1,1), Om_adj.reshape(-1,1), r_prime_adj.reshape(-1,1)
+        Gamma = (np.exp(r_prime_adj) + self.b)*(((np.exp(r_prime_adj) + self.b)**2) - 2*self.b)/(4*self.b*np.exp(r_prime_adj))
+
+        eqn1 = diff(x_adj, z_prime) * self.dz_prime_dz - (-Om_adj - 2*v_adj + x_adj + 4*y_adj + x_adj*v_adj + x_adj**2)/(z_prime + 1)
+        eqn2 = diff(y_adj, z_prime) * self.dz_prime_dz + (v_adj*x_adj*Gamma - x_adj*y_adj + 4*y_adj - 2*y_adj*v_adj)/(z_prime + 1)
+        eqn3 = diff(v_adj, z_prime) * self.dz_prime_dz + v_adj*(x_adj*Gamma + 4 - 2*v_adj)/(z_prime + 1)
+        eqn4 = diff(Om_adj, z_prime) * self.dz_prime_dz - Om_adj*(-1 + 2*v_adj + x_adj)/(z_prime + 1)
+        eqn5 = diff(r_prime_adj, z_prime) * self.dz_prime_dz + (r_prime_adj*Gamma*x_adj)/(z_prime + 1)
+        return eqn1, eqn2, eqn3, eqn4, eqn5
+
+    def get_equation(self, u, z_prime, G=None):
+        """ return value of residuals of equation (i.e. LHS) """
+        adj = self.adjust(u, z)
+        u_adj = adj['pred']
+        eqn1, eqn2, eqn3, eqn4, eqn5 = self._sir_eqn(z_prime, u_adj)
+        # it's important to return concat here and NOT the sum
+        # works much better (for point-wise loss)
+        return torch.cat((eqn1, eqn2, eqn3, eqn4, eqn5), axis=1)
+
+    def adjust(self, u, z, G=None):
+        """ perform initial value adjustment """
+        x, y, v, Om, r_prime = u[:, 0], u[:, 1], u[:, 2], u[:, 3], u[:, 4]
+
+        x_adj = self.x_0 + (1 - torch.exp(-z)) * x.reshape(-1,1)
+        y_adj = self.y_0 + (1 - torch.exp(-z)) * y.reshape(-1,1)
+        v_adj = self.v_0 + (1 - torch.exp(-z)) * v.reshape(-1,1)
+        Om_adj = self.Om_0 + (1 - torch.exp(-z)) * Om.reshape(-1,1)
+        r_prime_adj = self.r_prime_0 + (1 - torch.exp(-z)) * r_prime.reshape(-1,1)
+
+        return {'pred': torch.cat((x_adj, y_adj, v_adj, Om_adj, r_prime_adj), axis=1)}
+
+    def get_plot_dicts(self, x, t, y, G):
+        """ return appropriate pred_dict and diff_dict used for plotting """
+        adj = self.adjust(x, t)
+        x_adj = adj['pred']
+        S_adj, I_adj, R_adj = x_adj[:,0], x_adj[:,1], x_adj[:,2]
+        S_adj, I_adj, R_adj = S_adj.reshape(-1,1), I_adj.reshape(-1,1), R_adj.reshape(-1,1)
+        S_true, I_true, R_true = y[:, 0], y[:, 1], y[:, 2]
+        pred_dict = {'$\hat{S}$': S_adj.detach(), '$S$': S_true.detach(),
+                     '$\hat{I}$': I_adj.detach(), '$I$': I_true.detach(),
+                     '$\hat{R}$': R_adj.detach(), '$R$': R_true.detach(),}
+        # diff_dict = None
+        residuals = self.get_equation(x, t)
+        r1, r2, r3 = residuals[:,0], residuals[:,1], residuals[:,2]
+        diff_dict = {'$|\hat{F_1}|$': np.abs(r1.detach()),
+                     '$|\hat{F_2}|$': np.abs(r2.detach()),
+                     '$|\hat{F_3}|$': np.abs(r3.detach())}
+        return pred_dict, diff_dict
+
 if __name__ == "__main__":
     import denn.utils as ut
     import matplotlib.pyplot as plt
 
-    print("Testing Burgers")
-    be = BurgersEquation()
-    x, t = be.get_grid()
-    xs, ys = be.get_grid_sample()
-    s = be.get_solution(x, t)
-    adj = be.adjust(s, x, t)['pred']
-    res = be.get_equation(adj, x, t)
-    plt_dict = be.get_plot_dicts(adj, x, t, 0)
+    #print('Testing Hu-Sawicky Model')
+    #model = EinsteinEquations(n=100, z_0 = 10, Om_m_0 = 0.26, b = 1)
+    #z = model.get_grid()
+    #sol = model.get_solution(z)
 
+    # plot
+    print('Testing SIR Model')
+    for i, b in enumerate(np.linspace(0.5,4,20)):
+        sir = SIRModel(n=100, S0=0.99, I0=0.01, R0=0.0, beta=b, gamma=1)
+        t = sir.get_grid()
+        sol = sir.get_solution(t)
+
+        # plot
+        t = t.detach()
+        sol = sol.detach()
+        a=0.5
+        if i == 0:
+            plt.plot(t, sol[:,0], alpha=a, label='Susceptible', color='crimson')
+            plt.plot(t, sol[:,1], alpha=a, label='Infected', color='blue')
+            plt.plot(t, sol[:,2], alpha=a, label='Recovered', color='aquamarine')
+        else:
+            plt.plot(t, sol[:,0], alpha=a, color='crimson')
+            plt.plot(t, sol[:,1], alpha=a, color='blue')
+            plt.plot(t, sol[:,2], alpha=a, color='aquamarine')
+
+    plt.title('Flattening the Curve')
+    plt.xlabel('Time')
+    plt.ylabel('Proportion of Population')
+
+    plt.axhline(0.3, label='Capacity', color='k', linestyle='--', alpha=a)
+    plt.legend()
+    plt.show()
+
+    #x, t = np.linspace(0,1,32), np.linspace(0,1,32)
+    #xx, tt = np.meshgrid(x, t)
+    #sol = be.get_solution(xx, tt)
+    #fig, ax = plt.subplots(figsize=(10,7))
+    #ax.contourf(xx, tt, sol, cmap="Reds")
+    #plt.show()
 
 # if __name__ == '__main__':
 # print("Testing CoupledOscillator")
