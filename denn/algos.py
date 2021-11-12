@@ -73,7 +73,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': [], 'D real': [], 'D fake': [], 'LHS': []}
+    losses = {'G': [], 'D': [], 'LHS': []}
     mses = {'train': [], 'val': []}
     preds = {'pred': [], 'soln': []}
 
@@ -209,10 +209,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             diff = g_loss.item() - d_loss.item()
 
         losses['D'].append(d_loss.item())
-        losses['D real'].append(real_loss.item())
-        losses['D fake'].append(fake_loss.item())
-        losses['LHS'].append(torch.mean(torch.abs(fake)).item())
+        #losses['D_real'].append(real_loss.item())
+        #losses['D_fake'].append(fake_loss.item())
         losses['G'].append(g_loss.item())
+        losses['LHS'].append(torch.mean(torch.abs(fake)).item())
         
         if lr_schedule:
             #last_lr_G = lr_scheduler_G.get_last_lr()
@@ -455,8 +455,8 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
     lr_schedule=True, gamma=0.999, momentum=0.95, noise=False, 
     step_size=15, obs_every=1, d1=1., d2=1., G_iters=1, D_iters=1, 
-    wgan=True, gp=0.1, conditional=True, log=True, plot=True, 
-    save=False, dirname='train_GAN', config=None, 
+    wgan=True, gp=0.1, conditional=True, calc_mse=True, log=True, 
+    plot=True, save=False, dirname='train_GAN', config=None, 
     save_for_animation=False, **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
@@ -508,7 +508,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': []}
+    losses = {'G': [], 'D': [], 'LHS': []}
     mses = {'train': [], 'val': []}
     preds = {'pred': [], 'soln': []}
 
@@ -565,6 +565,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
 
         losses['D'].append(d_loss.item())
         losses['G'].append(g_loss.item())
+        losses['LHS'].append(torch.mean(torch.abs(fake)).item())
 
         if lr_schedule:
           lr_scheduler_G.step()
@@ -572,36 +573,49 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
 
         # train MSE: grid sample vs true soln
         # grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
-        pred = G(grid_samp)
-        pred_adj = problem.adjust(pred, xs, ys)['pred']
-        sol_samp = problem.get_solution(xs, ys)
-        train_mse = mse(pred_adj, sol_samp).item()
-        mses['train'].append(train_mse)
+        if calc_mse:
+            pred = G(grid_samp)
+            pred_adj = problem.adjust(pred, xs, ys)['pred']
+            sol_samp = problem.get_solution(xs, ys)
+            train_mse = mse(pred_adj, sol_samp).item()
+            mses['train'].append(train_mse)
 
-        # val MSE: fixed grid vs true soln
-        val_pred = G(grid)
-        val_pred_adj = problem.adjust(val_pred, x, y)['pred']
-        val_mse = mse(val_pred_adj, soln).item()
-        mses['val'].append(val_mse)
+            # val MSE: fixed grid vs true soln
+            val_pred = G(grid)
+            val_pred_adj = problem.adjust(val_pred, x, y)['pred']
+            val_mse = mse(val_pred_adj, soln).item()
+            mses['val'].append(val_mse)
 
-        # save preds for animation
-        preds['pred'].append(val_pred_adj.detach())
-        preds['soln'].append(soln.detach())
+            # save preds for animation
+            preds['pred'].append(val_pred_adj.detach())
+            preds['soln'].append(soln.detach())
 
         try:
             if (epoch+1) % 10 == 0:
+
                 # mean of val mses for last 10 steps
-                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
-                # mean of G - D loss for last 10 steps
-                # loss_diff = np.mean(np.abs(losses['G'][-10] - losses['D'][-10]))
-                # report.log(mean_squared_error=loss_diff)
+                if calc_mse:
+                    track.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                # mean of LHS for last 10 steps
+                else:
+                    track.log(mean_squared_error=np.mean(losses['LHS'][-10:]))
         except Exception as e:
             # print(f'Caught exception {e}')
             pass
 
         if log:
-            print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
+            if calc_mse:
+                print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
+            else:
+                print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | LHS {torch.mean(torch.abs(fake)).item():.4e}')
 
+    # calculate final val MSE if not calculated during training
+    if not calc_mse:
+        val_pred = G(grid)
+        val_pred_adj = problem.adjust(val_pred, x, y)['pred']
+        val_mse = mse(val_pred_adj, soln).item()
+        mses['val'].append(val_mse)
+    
     if plot:
         pred_dict, diff_dict = problem.get_plot_dicts(G(grid), x, y, soln)
         plot_results(mses, losses, grid.detach(), pred_dict, diff_dict=diff_dict,
