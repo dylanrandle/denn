@@ -6,31 +6,35 @@ import numpy as np
 from denn.algos import train_L2, train_L2_2D, train_GAN, train_GAN_2D
 from denn.models import MLP
 from denn.config.config import get_config
-from denn.utils import handle_overwrite
-import denn.problems as pb
+import denn.ode_problems as ode
+import denn.pde_problems as pde
 
 def get_problem(pkey, params):
     """ helper to parse problem key and return appropriate problem
     """
     pkey = pkey.lower().strip()
     if pkey == 'exp':
-        return pb.Exponential(**params['problem'])
+        return ode.Exponential(**params['problem'])
     elif pkey == 'sho':
-        return pb.SimpleOscillator(**params['problem'])
+        return ode.SimpleOscillator(**params['problem'])
     elif pkey == 'nlo':
-        return pb.NonlinearOscillator(**params['problem'])
+        return ode.NonlinearOscillator(**params['problem'])
     elif pkey == 'pos':
-        return pb.PoissonEquation(**params['problem'])
+        return pde.PoissonEquation(**params['problem'])
     elif pkey == 'rans':
-        return pb.ReynoldsAveragedNavierStokes(**params['problem'])
+        return ode.ReynoldsAveragedNavierStokes(**params['problem'])
     elif pkey == 'sir':
-        return pb.SIRModel(**params['problem'])
+        return ode.SIRModel(**params['problem'])
     elif pkey == 'coo':
-        return pb.CoupledOscillator(**params['problem'])
+        return ode.CoupledOscillator(**params['problem'])
+    elif pkey == 'eins':
+        return ode.EinsteinEquations(**params['problem'])
     elif pkey == 'wav':
-        return pb.WaveEquation(**params['problem'])
+        return pde.WaveEquation(**params['problem'])
     elif pkey == 'bur':
-        return pb.BurgersEquation(**params['problem'])
+        return pde.BurgersEquation(**params['problem'])
+    elif pkey == 'burv':
+        return pde.BurgersViscous(**params['problem'])
     else:
         raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
 
@@ -48,7 +52,7 @@ def L2_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    if pkey.lower().strip() in ["pos", "wav", "bur"]:
+    if pkey.lower().strip() in ["pos", "wav", "bur", "burv"]:
         res = train_L2_2D(model, problem, **params['training'], config=params)
     else:
         res = train_L2(model, problem, **params['training'], config=params)
@@ -70,7 +74,7 @@ def gan_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    if pkey.lower().strip() in ["pos", "wav", "bur"]:
+    if pkey.lower().strip() in ["pos", "wav", "bur", "burv"]:
         res = train_GAN_2D(gen, disc, problem, **params['training'], config=params)
     else:
         res = train_GAN(gen, disc, problem, **params['training'], config=params)
