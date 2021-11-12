@@ -1,6 +1,7 @@
 from copy import deepcopy
 import argparse
 import numpy as np
+import os
 
 import ray
 from ray import tune
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     search_space = deepcopy(params)
 
     # Bounds of Search
-    lr_bound = (1e-5, 1e-1)
+    lr_bound = (1e-6, 0.02) #(1e-5, 1e-1)
     gamma_bound = (0.9, 0.9999) # related to beta2
     #momentum_bound = (0, 0.999) # related to beta1
     beta_bound = (0, 0.999) # for Adam

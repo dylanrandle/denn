@@ -36,7 +36,10 @@ if __name__ == '__main__':
     seeds = list(range(args.nreps))
     print("Using seeds: ", seeds)
 
-    results = []
+    # initialize lists to hold validation mse and lhs values
+    val_mse = []
+    lhs_vals = []
+
     for s in seeds:
         print(f'Seed = {s}')
         params['training']['seed'] = s
@@ -48,7 +51,10 @@ if __name__ == '__main__':
             print(f'Running classical training for {args.pkey} problem...')
             res = L2_experiment(args.pkey, params)
 
-        results.append(res['mses']['val'])
+        val_mse.append(res['mses']['val'])
+        lhs_vals.append(res['losses']['LHS'])
 
-    results = np.vstack(results)
-    np.save(args.fname, results)
+    val_mse = np.vstack(val_mse)
+    lhs_vals = np.vstack(lhs_vals)
+    np.save(args.fname, val_mse)
+    np.save(args.fname+'_lhs', lhs_vals)
