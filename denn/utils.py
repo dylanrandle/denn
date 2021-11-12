@@ -52,11 +52,11 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     else:
         fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 
-    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*2
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*3
     linewidth = 2
     alphas = [alpha]*10
     colors = ['crimson', 'blue', 'skyblue', 'limegreen',
-        'aquamarine', 'violet', 'black']
+        'aquamarine', 'violet', 'black', 'brown', 'pink', 'gold']
 
     # MSEs (Pred vs Actual)
     for i, (k, v) in enumerate(mse_dict.items()):
@@ -156,9 +156,9 @@ def plot_reps_results(arrs_dict,
     plt.rc('xtick', labelsize=20)
     plt.rc('ytick', labelsize=20)
 
-    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*2
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*3
     colors = ['crimson', 'blue', 'skyblue', 'limegreen',
-        'aquamarine', 'violet', 'black']
+        'aquamarine', 'violet', 'black', 'brown', 'pink', 'gold']
 
     plt.figure(figsize=figsize)
     plt.yscale('log')
