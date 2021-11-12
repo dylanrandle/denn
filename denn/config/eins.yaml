@@ -1,0 +1,54 @@
+problem:
+  n: 100
+  perturb: True
+  z_0: 10
+  Om_m_0: 0.26
+  b: 1
+
+training:
+  method: 'unsupervised'
+  seed: 0
+  niters: 5000
+  g_lr: 0.033969438603135428
+  d_lr: 0.048353644841351323
+  g_betas: [0.04489709, 0.20844875]
+  d_betas: [0.16923791, 0.31905255]
+  g_momentum: 0.94114125988931008
+  d_momentum: 0.94114125988931008
+  lr_schedule: True
+  gamma: 0.99402277349277524
+  noise: False
+  step_size: 15
+  obs_every: 1
+  d1: 1
+  d2: 1
+  G_iters: 1
+  D_iters: 1
+  loss_fn: MSELoss
+  wgan: False
+  gp: 0.1
+  conditional: False
+  log: True
+  plot: True
+  save: True
+  save_for_animation: False
+  dirname: 'EINS_run'
+
+generator:
+  in_dim: 1
+  out_dim: 5
+  n_hidden_units: 20
+  n_hidden_layers: 2
+  activation: 'Tanh'
+  residual: True
+  regress: True
+
+discriminator:
+  in_dim: 5
+  out_dim: 1
+  n_hidden_units: 50
+  n_hidden_layers: 2
+  activation: 'Tanh'
+  residual: True
+  regress: False
+  spectral_norm: True
