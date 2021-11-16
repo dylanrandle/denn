@@ -26,6 +26,7 @@ training:
   wgan: False
   gp: 0.1
   conditional: False
+  train_mse: True
   log: True
   plot: True
   save: True

@@ -1,21 +1,21 @@
 problem:
-  nx: 64
-  nt: 64
-  nu: 0.001
+  nx: 32
+  nt: 32
+  c: 1
   perturb: True
 
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 10000
-  g_lr: 0.019800342715973147
-  d_lr: 0.0090165506319632247
-  g_betas: [0.57938189, 0.66437676]
-  d_betas: [0.38923585, 0.20515148]
+  niters: 4000
+  g_lr: 0.010861668337087982
+  d_lr: 0.00195769840854613
+  g_betas: [0.2306765, 0.65763986]
+  d_betas: [0.12032453, 0.25102168]
   lr_schedule: True
-  gamma: 0.99577585945489011
+  gamma: 0.95003910549481241
   noise: False
-  step_size: 12
+  step_size: 10
   obs_every: 1
   d1: 1
   d2: 1
@@ -25,18 +25,18 @@ training:
   wgan: False
   gp: 0.1
   conditional: False
-  train_mse: False
+  train_mse: True
   log: True
   plot: True
   save: True
   save_for_animation: False
-  dirname: 'BURV_run'
+  dirname: 'HEA_run'
 
 generator:
   in_dim: 2
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 2
+  n_hidden_units: 40
+  n_hidden_layers: 4
   activation: 'Tanh'
   residual: True
   regress: True
@@ -44,8 +44,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 50
-  n_hidden_layers: 5
+  n_hidden_units: 30
+  n_hidden_layers: 2
   activation: 'Tanh'
   residual: True
   regress: False
