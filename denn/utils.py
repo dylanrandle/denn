@@ -1,4 +1,5 @@
 import os
+from matplotlib import lines
 import torch
 from torch import autograd
 import numpy as np
@@ -33,7 +34,7 @@ def diff(x, t, order=1):
     return der
 
 def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=False,
-    save=False, dirname=None, logloss=False, alpha=0.8):
+    save=False, dirname=None, logloss=False, alpha=0.8, plot_sep_curves=False):
     """ helpful plotting function """
 
     plt.rc('axes', titlesize=15, labelsize=15)
@@ -47,10 +48,14 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     if save and not dirname:
         raise RuntimeError('Please provide a directory name `dirname` when `save=True`.')
 
-    if diff_dict:   # add derivatives plot
-        fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+    if plot_sep_curves:
+        n_curves = int(len(pred_dict.keys())/2)
+        fig, ax = plt.subplots(n_curves+1, 2, figsize=(8, 4*(n_curves+1)))
     else:
-        fig, ax = plt.subplots(1, 3, figsize=(12, 4))
+        if diff_dict:   # add derivatives plot
+            fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+        else:
+            fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 
     linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*3
     linewidth = 2
@@ -60,28 +65,53 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
     # MSEs (Pred vs Actual)
     for i, (k, v) in enumerate(mse_dict.items()):
-        ax[0].plot(np.arange(len(v)), v, label=k,
-            alpha=alphas[i], linewidth=linewidth, color=colors[i],
-            linestyle=linestyles[i])
+        if plot_sep_curves:
+            ax[0][0].plot(np.arange(len(v)), v, label=k,
+                alpha=alphas[i], linewidth=linewidth, color=colors[i],
+                linestyle=linestyles[i])
+        else:
+            ax[0].plot(np.arange(len(v)), v, label=k,
+                alpha=alphas[i], linewidth=linewidth, color=colors[i],
+                linestyle=linestyles[i])
 
-    if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
-        ax[0].legend(loc='upper right')
-    ax[0].set_ylabel('Mean Squared Error')
-    ax[0].set_xlabel('Step')
-    ax[0].set_yscale('log')
+    if plot_sep_curves:
+        if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
+            ax[0][0].legend(loc='upper right')
+        ax[0][0].set_ylabel('Mean Squared Error')
+        ax[0][0].set_xlabel('Step')
+        ax[0][0].set_yscale('log')
+    else:
+        if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
+            ax[0].legend(loc='upper right')
+        ax[0].set_ylabel('Mean Squared Error')
+        ax[0].set_xlabel('Step')
+        ax[0].set_yscale('log')
 
     # Losses
     for i, (k, v) in enumerate(loss_dict.items()):
-        ax[1].plot(np.arange(len(v)), v, label=k,
-            alpha=alphas[i], linewidth=linewidth, color=colors[i],
-            linestyle=linestyles[i])
+        if plot_sep_curves:
+            ax[0][1].plot(np.arange(len(v)), v, label=k,
+                alpha=alphas[i], linewidth=linewidth, color=colors[i],
+                linestyle=linestyles[i])
+        else:
+            ax[1].plot(np.arange(len(v)), v, label=k,
+                alpha=alphas[i], linewidth=linewidth, color=colors[i],
+                linestyle=linestyles[i])
 
-    if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
-        ax[1].legend(loc='upper right')
-    ax[1].set_xlabel('Step')
-    ax[1].set_ylabel('Loss')
-    if logloss:
-        ax[1].set_yscale('log')
+    if plot_sep_curves:
+        if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
+            ax[0][1].legend(loc='upper right')
+        ax[0][1].set_xlabel('Step')
+        ax[0][1].set_ylabel('Loss')
+        if logloss:
+            ax[0][1].set_yscale('log')
+    else:
+        if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
+            ax[1].legend(loc='upper right')
+        ax[1].set_xlabel('Step')
+        ax[1].set_ylabel('Loss')
+        if logloss:
+            ax[1].set_yscale('log')
 
     # Predictions
     if grid.shape[1] == 2: # PDE
@@ -95,14 +125,27 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
         ax[2].set_xlabel('$x$')
         ax[2].set_ylabel('$y$')
     else: # ODE
-        for i, (k, v) in enumerate(pred_dict.items()):
-            ax[2].plot(grid, v, label=k,
-                alpha=alphas[i], linestyle=linestyles[i],
-                linewidth=linewidth, color=colors[i])
-        ax[2].set_xlabel('$t$')
-        ax[2].set_ylabel('$x$')
-    if len(pred_dict.keys()) > 1:
-        ax[2].legend(loc='upper right')
+        if plot_sep_curves:
+            for i, (k, v) in enumerate(pred_dict.items()):
+                if i%2 == 0:
+                    plot_id = int((i/2)+1)
+                    style_id = 0
+                else:
+                    style_id = 1
+                ax[plot_id][0].plot(grid, v, label=k, 
+                alpha=alphas[style_id], linestyle=linestyles[style_id], 
+                linewidth=linewidth, color=colors[style_id])
+                ax[plot_id][0].set_xlabel('$t$')
+                ax[plot_id][0].legend()
+        else:
+            for i, (k, v) in enumerate(pred_dict.items()):
+                ax[2].plot(grid, v, label=k,
+                    alpha=alphas[i], linestyle=linestyles[i],
+                    linewidth=linewidth, color=colors[i])
+            ax[2].set_xlabel('$t$')
+            ax[2].set_ylabel('$x$')
+            if len(pred_dict.keys()) > 1:
+                ax[2].legend(loc='upper right')
 
     # Derivatives
     if diff_dict:
@@ -117,15 +160,25 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
             ax[3].set_xlabel('$x$')
             ax[3].set_ylabel('$y$')
         else:
-            for i, (k, v) in enumerate(diff_dict.items()):
-                ax[3].plot(grid, v, label=k,
-                    alpha=alphas[i], linestyle=linestyles[i],
-                    linewidth=linewidth, color=colors[i])
-            ax[3].legend(loc='upper right')
-            ax[3].set_xlabel('$t$')
-            # ax[3].set_ylabel('$x$')
-            ax[3].set_ylabel('$F$')
-            ax[3].set_yscale('log')
+            if plot_sep_curves:
+                for i, (k, v) in enumerate(diff_dict.items()):
+                    plot_id = i+1
+                    ax[plot_id][1].plot(grid, v, label=k, 
+                    alpha=alphas[i], linestyle=linestyles[0], 
+                    linewidth=linewidth, color=colors[0])
+                    ax[plot_id][1].set_xlabel('$t$')
+                    ax[plot_id][1].set_ylabel('$F$')
+                    ax[plot_id][1].set_yscale('log')
+                    ax[plot_id][1].legend()
+            else:
+                for i, (k, v) in enumerate(diff_dict.items()):
+                    ax[3].plot(grid, v, label=k,
+                        alpha=alphas[i], linestyle=linestyles[i],
+                        linewidth=linewidth, color=colors[i])
+                ax[3].legend(loc='upper right')
+                ax[3].set_xlabel('$t$')
+                ax[3].set_ylabel('$F$')
+                ax[3].set_yscale('log')
 
     plt.tight_layout()
     if save:
@@ -138,7 +191,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
             np.save(os.path.join(dirname, f"{k}_mse"), v)
         for k, v in loss_dict.items():
             np.save(os.path.join(dirname, f"{k}_loss"), v)
-        # Blake comment: commented out because saving pred_dict and diff_dict currently throw errors
+        # commented out because saving pred_dict and diff_dict currently throw errors
         #for k, v in pred_dict.items():
         #    np.save(os.path.join(dirname, f"{k}_pred"), v)
         #if diff_dict:
