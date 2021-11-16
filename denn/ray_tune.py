@@ -40,10 +40,11 @@ if __name__ == "__main__":
     search_space = deepcopy(params)
 
     # Bounds of Search
-    lr_bound = (1e-6, 0.02) #(1e-5, 1e-1)
-    gamma_bound = (0.9, 0.9999) # related to beta2
-    #momentum_bound = (0, 0.999) # related to beta1
-    beta_bound = (0, 0.999) # for Adam
+    lr_bound = (1e-5, 0.02) #(1e-5, 1e-1)
+    gamma_bound = (0.9, 0.9999) 
+    beta_bound = (0, 0.999)
+    beta_bound_low = (0, 0.333)
+    beta_bound_high = (0.666, 0.999)
     step_size_bound = (2, 21)
     if args.big:
         n_layers = [6, 7, 8, 9]
@@ -58,11 +59,12 @@ if __name__ == "__main__":
 
     # Decay / Moment
     search_space['training']['gamma'] = tune.sample_from(lambda s: np.random.uniform(*gamma_bound))
-    #search_space['training']['g_momentum'] = tune.sample_from(lambda s: np.random.uniform(*momentum_bound)) # for SGD
-    #search_space['training']['d_momentum'] = tune.sample_from(lambda s: np.random.uniform(*momentum_bound)) # for SGD
     search_space['training']['step_size'] = tune.sample_from(lambda s: np.random.randint(*step_size_bound))
-    search_space['training']['g_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2)) # for Adam
-    search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2)) # for Adam
+    #g_betas_0 = tune.sample_from(lambda s: np.random.uniform(*beta_bound_low))
+    #g_betas_1 = tune.sample_from(lambda s: np.random.uniform(*beta_bound_high))
+    #search_space['training']['g_betas'] = [g_betas_0, g_betas_1]
+    search_space['training']['g_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
+    search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
 
     # Generator
     search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
@@ -108,6 +110,7 @@ if __name__ == "__main__":
         config=search_space,
         scheduler=scheduler,
         num_samples=args.nsample,
+        raise_on_failed_trial=False
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")
