@@ -561,7 +561,7 @@ class EinsteinEquations(Problem):
         dOm/dz = z_0 Om/(-z_0(z-1) + 1) (-1 + 2v + x)
         dr/dz = -z_0 r Gam(r) x / (-z_0(z-1) + 1)
     """
-    def __init__(self, z_0 = 10, Om_m_0 = 0.26, b = 1, **kwargs):
+    def __init__(self, z_0 = 10, Om_m_0 = 0.15, b = 5, **kwargs):
         """
         inputs:
         """
@@ -592,7 +592,7 @@ class EinsteinEquations(Problem):
                 self.v_0_condition(self.z_prime_0), 
                 self.Om_0_condition(self.z_prime_0), 
                 self._r_prime_to_r(self.r_prime_0_condition(self.z_prime_0))],
-            t_eval = np.linspace(self.z_0, 0, 100), # don't need this!
+            dense_output=True,
             atol=atol,
             rtol=rtol,
         )
@@ -604,12 +604,16 @@ class EinsteinEquations(Problem):
         return self.sample_grid(self.grid, self.spacing)
 
     def get_solution(self, z):
-        """ read in the saved numerical solution """
-        #sol = np.transpose(np.loadtxt(os.path.join(_THIS_DIR, "eins_sol.txt")))
-        #return torch.tensor(sol[1:], dtype=torch.float).T
-        #zs = self.sol.t[::-1]
-        x_num, y_num, v_num, Om_num, r_num = [s[::-1] for s in self.sol.y]
-        return torch.tensor([x_num, y_num, v_num, Om_num, r_num], dtype=torch.float).T
+        """ uses scipy to solve """
+        try:
+            z = z.detach().numpy() # if torch tensor, convert to numpy
+        except:
+            pass
+
+        z = self._z_prime_to_z(z).reshape(-1)
+        x_num, y_num, v_num, Om_num, r_num = [s[::-1] for s in self.sol.sol(z)]
+        r_prime_num = self._r_to_r_prime(r_num)
+        return torch.tensor([x_num, y_num, v_num, Om_num, r_prime_num], dtype=torch.float).T
 
     def _z_to_z_prime(self, z):
         return 1 - z/self.z_0
@@ -666,15 +670,21 @@ class EinsteinEquations(Problem):
         x_adj, y_adj, v_adj, Om_adj, r_prime_adj = u_adj[:,0], u_adj[:,1], u_adj[:,2], u_adj[:,3], u_adj[:,4]
         x_adj, y_adj, v_adj, Om_adj, r_prime_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), v_adj.reshape(-1,1), Om_adj.reshape(-1,1), r_prime_adj.reshape(-1,1)
         #Gamma = (torch.exp(r_prime_adj) + self.b)*(((torch.exp(r_prime_adj) + self.b)**2) - 2*self.b)/(4*self.b*torch.exp(r_prime_adj))
-        z = self._z_prime_to_z(z_prime)
+        #z = self._z_prime_to_z(z_prime)
         r_adj = self._r_prime_to_r(r_prime_adj)
         Gamma = (r_adj + self.b)*(((r_adj + self.b)**2) - 2*self.b)/(4*r_adj*self.b)
         
-        eqn1 = diff(x_adj, z_prime) * self.dz_prime_dz - (-Om_adj - 2*v_adj + x_adj + 4*y_adj + x_adj*v_adj + x_adj**2)/(z + 1)
-        eqn2 = diff(y_adj, z_prime) * self.dz_prime_dz + (v_adj*x_adj*Gamma - x_adj*y_adj + 4*y_adj - 2*y_adj*v_adj)/(z + 1)
-        eqn3 = diff(v_adj, z_prime) * self.dz_prime_dz + v_adj*(x_adj*Gamma + 4 - 2*v_adj)/(z + 1)
-        eqn4 = diff(Om_adj, z_prime) * self.dz_prime_dz - Om_adj*(-1 + 2*v_adj + x_adj)/(z + 1)
-        eqn5 = diff(r_prime_adj, z_prime) * self.dz_prime_dz + (Gamma*x_adj)/(z + 1)
+        #eqn1 = diff(x_adj, z_prime) * self.dz_prime_dz - (-Om_adj - 2*v_adj + x_adj + 4*y_adj + x_adj*v_adj + x_adj**2)/(z + 1)
+        #eqn2 = diff(y_adj, z_prime) * self.dz_prime_dz + (v_adj*x_adj*Gamma - x_adj*y_adj + 4*y_adj - 2*y_adj*v_adj)/(z + 1)
+        #eqn3 = diff(v_adj, z_prime) * self.dz_prime_dz + v_adj*(x_adj*Gamma + 4 - 2*v_adj)/(z + 1)
+        #eqn4 = diff(Om_adj, z_prime) * self.dz_prime_dz - Om_adj*(-1 + 2*v_adj + x_adj)/(z + 1)
+        #eqn5 = diff(r_prime_adj, z_prime) * self.dz_prime_dz + (Gamma*x_adj)/(z + 1)
+
+        eqn1 = diff(x_adj, z_prime) + self.z_0*(-Om_adj - 2*v_adj + x_adj + 4*y_adj + x_adj*v_adj + x_adj**2)/(-self.z_0*(z_prime - 1) + 1)
+        eqn2 = diff(y_adj, z_prime) + self.z_0*(v_adj*x_adj*Gamma - x_adj*y_adj + 4*y_adj - 2*y_adj*v_adj)/(-self.z_0*(z_prime - 1) + 1)
+        eqn3 = diff(v_adj, z_prime) - self.z_0*v_adj*(x_adj*Gamma + 4 - 2*v_adj)/(-self.z_0*(z_prime - 1) + 1)
+        eqn4 = diff(Om_adj, z_prime) + self.z_0*Om_adj*(-1 + 2*v_adj + x_adj)/(-self.z_0*(z_prime - 1) + 1)
+        eqn5 = diff(r_prime_adj, z_prime) + self.z_0*(Gamma*x_adj)/(-self.z_0*(z_prime - 1) + 1)
         return eqn1, eqn2, eqn3, eqn4, eqn5
 
     def get_equation(self, u, z_prime, G=None):
@@ -702,13 +712,13 @@ class EinsteinEquations(Problem):
         u_adj = adj['pred']
         x_adj, y_adj, v_adj, Om_adj, r_prime_adj = u_adj[:,0], u_adj[:,1], u_adj[:,2], u_adj[:,3], u_adj[:,4]
         x_adj, y_adj, v_adj, Om_adj, r_prime_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), v_adj.reshape(-1,1), Om_adj.reshape(-1,1), r_prime_adj.reshape(-1,1)
-        r_adj = self._r_prime_to_r(r_prime_adj)
-        x_true, y_true, v_true, Om_true, r_true = sol[:, 0], sol[:, 1], sol[:, 2], sol[:, 3], sol[:, 4]
+        #r_adj = self._r_prime_to_r(r_prime_adj)
+        x_true, y_true, v_true, Om_true, r_prime_true = sol[:, 0], sol[:, 1], sol[:, 2], sol[:, 3], sol[:, 4]
         pred_dict = {'$\hat{x}$': x_adj.detach(), '$x$': x_true.detach(),
                      '$\hat{y}$': y_adj.detach(), '$y$': y_true.detach(),
                      '$\hat{v}$': v_adj.detach(), '$v$': v_true.detach(),
                      '$\hat{\Omega}$': Om_adj.detach(), '$\Omega$': Om_true.detach(),
-                     '$\hat{r}$': r_adj.detach(), '$r$': r_true.detach()}
+                     "$\hat{r'}$": r_prime_adj.detach(), "$r'$": r_prime_true.detach()}
         residuals = self.get_equation(u, z_prime)
         r1, r2, r3, r4, r5 = residuals[:,0], residuals[:,1], residuals[:,2], residuals[:,3], residuals[:,4]
         diff_dict = {'$|\hat{F_1}|$': np.abs(r1.detach()),
@@ -723,15 +733,17 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     print('Testing Hu-Sawicky Model')
-    model = EinsteinEquations(n=100, z_0 = 10, Om_m_0 = 0.26, b = 1)
+    model = EinsteinEquations(n=100, z_0 = 10, Om_m_0 = 0.15, b = 5)
     z_prime = model.get_grid()
     sol = model.get_solution(z_prime)
-    #adj = model.adjust(sol, z_prime)['pred']
-    #res = model.get_equation(adj, z_prime)
-    #pred_dict, diff_dict = model.get_plot_dicts(adj, z_prime, sol, None)
+    adj = model.adjust(sol, z_prime)['pred']
+    res = model.get_equation(adj, z_prime)
+    pred_dict, diff_dict = model.get_plot_dicts(adj, z_prime, sol, None)
     z_prime = z_prime.detach()
-    plt.plot(z_prime, sol[:,0])
-    plt.plot(z_prime, sol[:,4])
+    sol = sol.detach()
+    fig, axs = plt.subplots(1, 5, figsize=(14,5))
+    for i in range(5):
+        axs[i].plot(z_prime, sol[:,i])
     plt.show()
 
     #x, t = np.linspace(0,1,32), np.linspace(0,1,32)
