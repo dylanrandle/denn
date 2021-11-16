@@ -3,7 +3,7 @@ import torch
 from denn.problem import Problem
 from denn.utils import diff
 from denn.burgers.numerical import burgers_viscous_time_exact1
-import os
+from denn.burgers.fft_burgers import fft_burgers
 
 class PoissonEquation(Problem):
     """
@@ -115,9 +115,6 @@ class WaveEquation(Problem):
     Wave Equation:
 
     $$ u_{tt} = c^2 u_{xx} $$
-
-    d2u_dt2 - c^2 d2u_dx2 = 0
-    with (x, t) in [0, 1] x [0, 1]
 
     Boundary conditions:
     u(x,t)     | x=0 : 0
@@ -270,11 +267,11 @@ class BurgersViscous(Problem):
     u_t + u u_x - \nu u_xx = 0
 
     Boundary conditions:
-    u(x,t)     | x=-1 : 0
-    u(x,t)     | x=1  : 0
-    u(x,t)     | t=0  : -sin(pi*x)
+    u(x,t)     | x=-10 : 0
+    u(x,t)     | x=10  : 0
+    u(x,t)     | t=0   : 1/cosh(x)
     """
-    def __init__(self, nx=32, nt=32, nu=0.01/np.pi, xmin=-1, xmax=1, tmin=0, tmax=1, **kwargs):
+    def __init__(self, nx=32, nt=32, nu=0.001, xmin=-5, xmax=5, tmin=0, tmax=2.5, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -283,6 +280,97 @@ class BurgersViscous(Problem):
         self.nx = nx
         self.nt = nt
         self.nu = nu
+        self.pi = torch.tensor(np.pi)
+        self.hx = (xmax - xmin) / nx
+        self.ht = (tmax - tmin) / nt
+        self.noise_xstd = self.hx / 4.0
+        self.noise_tstd = self.ht / 4.0
+
+        self.xgrid = torch.linspace(xmin, xmax, nx, requires_grad=True)
+        self.tgrid = torch.linspace(tmin, tmax, nt, requires_grad=True)
+
+        grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid)
+        self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+
+    def get_grid(self):
+        return (self.grid_x, self.grid_t)
+
+    def get_grid_sample(self):
+        x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
+        t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
+        return (x_noisy, t_noisy)
+
+    def get_solution(self, x, t):
+        """ use numerical solver from: https://people.sc.fsu.edu/~jburkardt/py_src/burgers_solution/burgers_solution.py"""
+        try:
+            x = self.xgrid.detach().numpy()
+            t = self.tgrid.detach().numpy()
+        except:
+            pass
+
+        sol = fft_burgers(self.nu, self.nx, x, self.nt, t)
+
+        #sol = burgers_viscous_time_exact1(self.nu, self.nx, x, self.nt, t)
+        sol = sol.T
+        sol = torch.tensor(sol.reshape(-1,1))
+        return sol
+
+    def _burgers_eqn(self, u, x, t):
+        return diff(u, t, order=1) + u*diff(u, x, order=1) - self.nu*diff(u, x, order=2)
+
+    def get_equation(self, u, x, t):
+        """ return value of residuals of equation (i.e. LHS) """
+        adj = self.adjust(u, x, t)
+        u_adj = adj['pred']
+        return self._burgers_eqn(u_adj, x, t)
+
+    def adjust(self, u, x, t):
+        """ perform boundary value adjustment """
+        x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
+        t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
+        #t_0 = self.tmin*torch.ones_like(t, requires_grad=True)
+        #Axt = -torch.sin(self.pi*x) + \
+        #      x_tilde*(torch.zeros_like(t) - torch.zeros_like(t_0)) + \
+        #      (1 - x_tilde)*(torch.zeros_like(t) - torch.zeros_like(t_0))
+        Axt = 1/torch.cosh(x)
+
+        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
+
+        return {'pred': u_adj}
+
+    def get_plot_dicts(self, pred, x, t, sol):
+        """ return appropriate pred_dict / diff_dict used for plotting """
+        adj = self.adjust(pred, x, t)
+        pred_adj = adj['pred']
+        pred_dict = {'$\hat{u}$': pred_adj.detach()}
+
+        resid = self.get_equation(pred, x, t)
+        diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
+        return pred_dict, diff_dict
+
+class HeatEquation(Problem):
+    """
+    Heat Equation:
+
+    $$ u_t - c^2 u_{xx} = 0 $$
+
+    Boundary conditions:
+    u(x,t)     | x=0 : 0
+    u(x,t)     | x=1 : 0
+    u(x,t)     | t=0 : sin(pi*x)
+
+    Solution:
+    u(x,t) = exp(-c^2 pi^2 t) sin(pi x)
+    """
+    def __init__(self, nx=32, nt=32, c=1, xmin=0, xmax=1, tmin=0, tmax=0.2, **kwargs):
+        super().__init__(**kwargs)
+        self.xmin = xmin
+        self.xmax = xmax
+        self.tmin = tmin
+        self.tmax = tmax
+        self.nx = nx
+        self.nt = nt
+        self.c = c
         self.pi = torch.tensor(np.pi)
         self.hx = (xmax - xmin) / nx
         self.ht = (tmax - tmin) / nt
@@ -304,31 +392,23 @@ class BurgersViscous(Problem):
         return (x_noisy, t_noisy)
 
     def get_solution(self, x, t):
-        """ use numerical solver from: https://people.sc.fsu.edu/~jburkardt/py_src/burgers_solution/burgers_solution.py"""
-        try:
-            x = x.detach()
-            t = t.detach()
-        except:
-            pass
-
-        sol = burgers_viscous_time_exact1(self.nu, self.nx, x, self.nt, t)
-        sol = torch.tensor(sol.reshape(-1,1))
+        sol = torch.exp((-self.c**2)*(self.pi**2)*t) * torch.sin(self.pi * x)
         return sol
 
-    def _burgers_eqn(self, u, x, t):
-        return diff(u, t, order=1) + u*diff(u, x, order=1) - self.nu*diff(u, x, order=2)
+    def _heat_eqn(self, u, x, t):
+        return diff(u, t, order=1) - (self.c**2)*diff(u, x, order=2)
 
     def get_equation(self, u, x, t):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(u, x, t)
         u_adj = adj['pred']
-        return self._burgers_eqn(u_adj, x, t)
+        return self._heat_eqn(u_adj, x, t)
 
     def adjust(self, u, x, t):
         """ perform boundary value adjustment """
         x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
         t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
-        Axt = -torch.sin(self.pi * x)
+        Axt = torch.sin(self.pi * x)
 
         u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
 
@@ -349,13 +429,12 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     be = BurgersViscous()
-    xgrid = torch.linspace(be.xmin, be.xmax, be.nx, requires_grad=False)
-    tgrid = torch.linspace(be.tmin, be.tmax, be.nt, requires_grad=False)
+    xgrid, tgrid = be.xgrid, be.tgrid
     grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
-    soln = be.get_solution(xgrid, tgrid)
-    print(grid_x.shape, grid_t.shape, soln.shape)
+    grid_x, grid_t = grid_x.detach(), grid_t.detach()
+    soln = be.get_solution(7, 42)
     fig, ax = plt.subplots(figsize=(10,7))
-    cf = ax.contourf(grid_x, grid_t, soln, cmap="Reds", levels=100)
+    cf = ax.contourf(grid_x, grid_t, soln, cmap="Reds")
     cb = fig.colorbar(cf, format='%.0e', ax=ax)
     ax.set_xlabel('x')
     ax.set_ylabel('t')
