@@ -271,7 +271,7 @@ class BurgersViscous(Problem):
     u(x,t)     | x=10  : 0
     u(x,t)     | t=0   : 1/cosh(x)
     """
-    def __init__(self, nx=32, nt=32, nu=0.001, xmin=-5, xmax=5, tmin=0, tmax=2.5, **kwargs):
+    def __init__(self, nx=64, nt=64, nu=0.001, xmin=-5, xmax=5, tmin=0, tmax=2.5, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -301,7 +301,7 @@ class BurgersViscous(Problem):
         return (x_noisy, t_noisy)
 
     def get_solution(self, x, t):
-        """ use numerical solver from: https://people.sc.fsu.edu/~jburkardt/py_src/burgers_solution/burgers_solution.py"""
+        """ use FFT method """
         try:
             x = self.xgrid.detach().numpy()
             t = self.tgrid.detach().numpy()
@@ -342,7 +342,7 @@ class BurgersViscous(Problem):
         """ return appropriate pred_dict / diff_dict used for plotting """
         adj = self.adjust(pred, x, t)
         pred_adj = adj['pred']
-        pred_dict = {'$\hat{u}$': pred_adj.detach()}
+        pred_dict = {'$\hat{u}$': pred_adj.detach(), '$u$': sol.detach()}
 
         resid = self.get_equation(pred, x, t)
         diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
@@ -429,16 +429,30 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     be = BurgersViscous()
-    xgrid, tgrid = be.xgrid, be.tgrid
-    grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
-    grid_x, grid_t = grid_x.detach(), grid_t.detach()
-    soln = be.get_solution(7, 42)
-    fig, ax = plt.subplots(figsize=(10,7))
-    cf = ax.contourf(grid_x, grid_t, soln, cmap="Reds")
-    cb = fig.colorbar(cf, format='%.0e', ax=ax)
-    ax.set_xlabel('x')
-    ax.set_ylabel('t')
+    #xgrid, tgrid = be.xgrid, be.tgrid
+    #grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
+    x, y = be.get_grid()
+    print(float(y.detach()[0]), float(y.detach()[-1]))
+    grid = torch.cat((x, y), 1)
+    grid = grid.detach()
+    soln = be.get_solution(x, y)
+    x, y = grid[:, 0], grid[:, 1]
+    xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
+    soln = soln.reshape((xdim, ydim))
+    print(xdim, ydim)
+    print(soln.shape)
+    fig, ax = plt.subplots(1, 4, figsize=(16,4))
+    ax[0].plot(be.xgrid.detach(), soln[:, 0])
+    ax[1].plot(be.xgrid.detach(), soln[:, 15])
+    ax[2].plot(be.xgrid.detach(), soln[:, 31])
+    ax[3].plot(be.xgrid.detach(), soln[:, 63])
     plt.show()
+    #fig, ax = plt.subplots(figsize=(10,7))
+    #cf = ax.contourf(grid_x, grid_t, soln, cmap="Reds")
+    #cb = fig.colorbar(cf, format='%.0e', ax=ax)
+    #ax.set_xlabel('x')
+    #ax.set_ylabel('t')
+    #plt.show()
 
 # if __name__ == '__main__':
 # print("Testing CoupledOscillator")
