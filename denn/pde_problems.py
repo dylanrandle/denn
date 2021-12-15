@@ -2,8 +2,8 @@ import numpy as np
 import torch
 from denn.problem import Problem
 from denn.utils import diff
-from denn.burgers.numerical import burgers_viscous_time_exact1
 from denn.burgers.fft_burgers import fft_burgers
+from denn.allen_cahn.etdrk_allen_cahn import etdrk_allen_cahn
 
 class PoissonEquation(Problem):
     """
@@ -54,6 +54,9 @@ class PoissonEquation(Problem):
 
         grid_x, grid_y = torch.meshgrid(xgrid, ygrid)
         self.grid_x, self.grid_y = grid_x.reshape(-1,1), grid_y.reshape(-1,1)
+
+    def get_dims(self):
+        return {'x': self.nx, 'y': self.ny}
 
     def get_grid(self):
         return (self.grid_x, self.grid_y)
@@ -119,6 +122,8 @@ class WaveEquation(Problem):
     Boundary conditions:
     u(x,t)     | x=0 : 0
     u(x,t)     | x=1 : 0
+
+    Initial conditions:
     u(x,t)     | t=0 : sin(pi*x)
     du_dt(x,t) | t=0 : 0
 
@@ -145,6 +150,9 @@ class WaveEquation(Problem):
 
         grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+
+    def get_dims(self):
+        return {'x': self.nx, 't': self.nt}
 
     def get_grid(self):
         return (self.grid_x, self.grid_t)
@@ -219,6 +227,9 @@ class BurgersEquation(Problem):
         grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
 
+    def get_dims(self):
+        return {'x': self.nx, 't': self.nt}
+
     def get_grid(self):
         return (self.grid_x, self.grid_t)
 
@@ -264,11 +275,13 @@ class BurgersViscous(Problem):
     """
     Burgers Equation with viscocity:
 
-    u_t + u u_x - \nu u_xx = 0
+    u_t + u u_x - \nu u_{xx} = 0
 
     Boundary conditions:
-    u(x,t)     | x=-10 : 0
-    u(x,t)     | x=10  : 0
+    u(x,t)     | x=-5 : 0
+    u(x,t)     | x=5  : 0
+
+    Initial condition:
     u(x,t)     | t=0   : 1/cosh(x)
     """
     def __init__(self, nx=64, nt=64, nu=0.001, xmin=-5, xmax=5, tmin=0, tmax=2.5, **kwargs):
@@ -291,6 +304,9 @@ class BurgersViscous(Problem):
 
         grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+
+    def get_dims(self):
+        return {'x': self.nx, 't': self.nt}
 
     def get_grid(self):
         return (self.grid_x, self.grid_t)
@@ -328,10 +344,6 @@ class BurgersViscous(Problem):
         """ perform boundary value adjustment """
         x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
         t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
-        #t_0 = self.tmin*torch.ones_like(t, requires_grad=True)
-        #Axt = -torch.sin(self.pi*x) + \
-        #      x_tilde*(torch.zeros_like(t) - torch.zeros_like(t_0)) + \
-        #      (1 - x_tilde)*(torch.zeros_like(t) - torch.zeros_like(t_0))
         Axt = 1/torch.cosh(x)
 
         u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
@@ -357,6 +369,8 @@ class HeatEquation(Problem):
     Boundary conditions:
     u(x,t)     | x=0 : 0
     u(x,t)     | x=1 : 0
+
+    Initial condition:
     u(x,t)     | t=0 : sin(pi*x)
 
     Solution:
@@ -382,6 +396,9 @@ class HeatEquation(Problem):
 
         grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+
+    def get_dims(self):
+        return {'x': self.nx, 't': self.nt}
 
     def get_grid(self):
         return (self.grid_x, self.grid_t)
@@ -424,35 +441,104 @@ class HeatEquation(Problem):
         diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
         return pred_dict, diff_dict
 
+class AllenCahn(Problem):
+    """
+    Allen-Cahn equation:
+
+    u_t - \epsilon u_{xx} - u + u^3 = 0
+
+    Boundary conditions:
+    u(x,t)     | x=-1 : -1
+    u(x,t)     | x=1  : 1
+
+    Initial condition:
+    u(x,t)     | t=0  : 0.53*x + 0.47*sin(-1.5*pi*x)
+    """
+    def __init__(self, nx=100, nt=70, epsilon=0.01, xmin=-1, xmax=1, tmin=0, tmax=1, **kwargs):
+        super().__init__(**kwargs)
+        self.xmin = xmin
+        self.xmax = xmax
+        self.tmin = tmin
+        self.tmax = tmax
+        self.nx = nx
+        self.nt = nt
+        self.epsilon = epsilon
+        self.pi = torch.tensor(np.pi)
+        self.hx = (xmax - xmin) / nx
+        self.ht = (tmax - tmin) / nt
+        self.noise_xstd = self.hx / 4.0
+        self.noise_tstd = self.ht / 4.0
+
+        xgrid, tgrid, sol = etdrk_allen_cahn(nx, nt)
+        self.xgrid = torch.tensor(xgrid, requires_grad=True)
+        self.tgrid = torch.tensor(tgrid, requires_grad=True)
+        self.sol = sol
+
+        grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid)
+        self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+
+    def get_dims(self):
+        return {'x': self.nx+1, 't': self.nt+1}
+
+    def get_grid(self):
+        return (self.grid_x.float(), self.grid_t.float())
+
+    def get_grid_sample(self):
+        x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
+        t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
+        return (x_noisy.float(), t_noisy.float())
+
+    def get_solution(self, x, t):
+        """ use ETDRK4 method """
+        sol = torch.tensor(self.sol.reshape(-1,1))
+        return sol
+
+    def _allen_cahn_eqn(self, u, x, t):
+        return (1/70)*diff(u, t, order=1) - self.epsilon*diff(u, x, order=2) - u + u**3
+
+    def get_equation(self, u, x, t):
+        """ return value of residuals of equation (i.e. LHS) """
+        adj = self.adjust(u, x, t)
+        u_adj = adj['pred']
+        return self._allen_cahn_eqn(u_adj, x, t)
+
+    def adjust(self, u, x, t):
+        """ perform boundary value adjustment """
+        x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
+        t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
+        Axt = 0.53*x + 0.47*torch.sin(-1.5*self.pi*x)
+
+        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
+
+        return {'pred': u_adj}
+
+    def get_plot_dicts(self, pred, x, t, sol):
+        """ return appropriate pred_dict / diff_dict used for plotting """
+        adj = self.adjust(pred, x, t)
+        pred_adj = adj['pred']
+        pred_dict = {'$\hat{u}$': pred_adj.detach(), '$u$': sol.detach()}
+
+        resid = self.get_equation(pred, x, t)
+        diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
+        return pred_dict, diff_dict
+
+
 if __name__ == "__main__":
     import denn.utils as ut
     import matplotlib.pyplot as plt
 
-    be = BurgersViscous()
-    #xgrid, tgrid = be.xgrid, be.tgrid
-    #grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
-    x, y = be.get_grid()
-    print(float(y.detach()[0]), float(y.detach()[-1]))
-    grid = torch.cat((x, y), 1)
+    ac = AllenCahn()
+    x, t = ac.get_grid()
+    grid = torch.cat((x, t), 1)
     grid = grid.detach()
-    soln = be.get_solution(x, y)
-    x, y = grid[:, 0], grid[:, 1]
-    xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
-    soln = soln.reshape((xdim, ydim))
-    print(xdim, ydim)
-    print(soln.shape)
-    fig, ax = plt.subplots(1, 4, figsize=(16,4))
-    ax[0].plot(be.xgrid.detach(), soln[:, 0])
-    ax[1].plot(be.xgrid.detach(), soln[:, 15])
-    ax[2].plot(be.xgrid.detach(), soln[:, 31])
-    ax[3].plot(be.xgrid.detach(), soln[:, 63])
+    x, t = grid[:, 0], grid[:, 1]
+    xdim, tdim = ac.get_dims().values()
+    xx, tt = x.reshape((xdim, tdim)), t.reshape((xdim, tdim))
+    sol = ac.get_solution(x, t)
+    sol = sol.reshape((xdim, tdim))
+    fig, ax = plt.subplots(figsize=(6,5))
+    cf = ax.contourf(xx, tt, sol, cmap='Reds')
     plt.show()
-    #fig, ax = plt.subplots(figsize=(10,7))
-    #cf = ax.contourf(grid_x, grid_t, soln, cmap="Reds")
-    #cb = fig.colorbar(cf, format='%.0e', ax=ax)
-    #ax.set_xlabel('x')
-    #ax.set_ylabel('t')
-    #plt.show()
 
 # if __name__ == '__main__':
 # print("Testing CoupledOscillator")
