@@ -7,7 +7,7 @@ import itertools
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D  
 from IPython.display import clear_output
-import pandas as pd
+import pandas as pd 
 
 # global plot params
 plt.rc('axes', titlesize=15, labelsize=15)
@@ -35,7 +35,7 @@ def diff(x, t, order=1):
 
 def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=False,
     save=False, dirname=None, logloss=False, alpha=0.8, plot_sep_curves=False, 
-    plot_curves=False):
+    dims=None, plot_1d_curves=False):
     """ helpful plotting function """
 
     plt.rc('axes', titlesize=15, labelsize=15)
@@ -52,7 +52,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     if plot_sep_curves:
         n_curves = int(len(pred_dict.keys())/2)
         fig, ax = plt.subplots(n_curves+1, 2, figsize=(8, 4*(n_curves+1)))
-    elif plot_curves:
+    elif plot_1d_curves:
         fig, ax = plt.subplots(2, 4, figsize=(16, 8))
         ax = ax.ravel()
     else:
@@ -120,15 +120,17 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     # Predictions
     if grid.shape[1] == 2: # PDE
         x, y = grid[:, 0], grid[:, 1]
-        xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
+        xdim, ydim = dims.values()
+        #xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
         xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
         for i, (k, v) in enumerate(pred_dict.items()):
             v = v.reshape((xdim, ydim))
             cf = ax[2].contourf(xx, yy, v, cmap='Reds')
             cb = fig.colorbar(cf, format='%.0e', ax=ax[2])
             break
-        ax[2].set_xlabel('$x$')
-        ax[2].set_ylabel('$y$')
+        xlab, ylab = dims.keys()
+        ax[2].set_xlabel(f'${xlab}$')
+        ax[2].set_ylabel(f'${ylab}$')
     else: # ODE
         if plot_sep_curves:
             for i, (k, v) in enumerate(pred_dict.items()):
@@ -153,7 +155,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
                 ax[2].legend(loc='upper right')
 
     # 1-dimensional curves for PDE
-    if plot_curves:
+    if plot_1d_curves:
         xvals = grid[:, 0].reshape((xdim, ydim))
         tvals = grid[:, 1].reshape((xdim, ydim))
         t_ids = [0, int(ydim/3), int(2*ydim/3), ydim-1]
@@ -163,26 +165,26 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
                 ax[i].plot(xvals[:, 0], v[:, t_ids[i-4]], label=k, 
                         alpha=alphas[j], linestyle=linestyles[j], 
                         linewidth=linewidth, color=colors[j])
-            ax[i].set_xlabel('$x$')
+            ax[i].set_xlabel(f'${xlab}$')
             ax[i].set_ylabel('$u$')
             t = float(tvals[0, :][t_ids][i-4])
             ax[i].set_title(f'$t={t:.3f}$')
             if len(pred_dict.keys()) > 1:
                 ax[i].legend(loc='upper right')
 
-
     # Derivatives
     if diff_dict:
         if grid.shape[1] == 2: # PDE
             x, y = grid[:, 0], grid[:, 1]
-            xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
+            xdim, ydim = dims.values()
+            #xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
             xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
             for i, (k, v) in enumerate(diff_dict.items()):
                 v = v.reshape((xdim, ydim))
                 cf = ax[3].contourf(xx, yy, v, cmap='Reds')
                 cb = fig.colorbar(cf, format='%.0e', ax=ax[3])
-            ax[3].set_xlabel('$x$')
-            ax[3].set_ylabel('$y$')
+            ax[3].set_xlabel(f'${xlab}$')
+            ax[3].set_ylabel(f'${ylab}$')
         else:
             if plot_sep_curves:
                 for i, (k, v) in enumerate(diff_dict.items()):

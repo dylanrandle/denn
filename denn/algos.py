@@ -456,7 +456,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     lr_schedule=True, gamma=0.999, momentum=0.95, noise=False, 
     step_size=15, obs_every=1, d1=1., d2=1., G_iters=1, D_iters=1, 
     wgan=True, gp=0.1, conditional=True, train_mse=True, log=True, 
-    plot=True, plot_curves=False, save=False, dirname='train_GAN', 
+    plot=True, plot_1d_curves=False, save=False, dirname='train_GAN', 
     config=None, save_for_animation=False, **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
@@ -609,7 +609,8 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     if plot:
         pred_dict, diff_dict = problem.get_plot_dicts(G(grid), x, y, soln)
         plot_results(mses, losses, grid.detach(), pred_dict, diff_dict=diff_dict,
-            save=save, dirname=dirname, logloss=False, alpha=0.7, plot_curves=plot_curves)
+            save=save, dirname=dirname, logloss=False, alpha=0.7, dims=problem.get_dims(),
+            plot_1d_curves=plot_1d_curves)
         min_mse = np.min(mses['val'])
         min_mse_iter = np.argmin(mses['val'])
         print('Minimum validation MSE: ', min_mse)
