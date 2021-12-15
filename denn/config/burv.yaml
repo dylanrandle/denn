@@ -28,7 +28,7 @@ training:
   train_mse: False
   log: True
   plot: True
-  plot_curves: True
+  plot_1d_curves: True
   save: True
   save_for_animation: False
   dirname: 'BURV_run'

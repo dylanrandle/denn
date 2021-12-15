@@ -1,24 +1,21 @@
 problem:
-  n: 100
+  nx: 100
+  nt: 70
+  epsilon: 0.01
   perturb: True
-  z_0: 10
-  Om_m_0: 0.15
-  b: 5
 
 training:
   method: 'unsupervised'
-  seed: 3
-  niters: 200000
-  g_lr: 0.016341959189231651
-  d_lr: 0.014747434998428817
-  g_betas: [0.13979895, 0.69997109]
-  d_betas: [0.04317054, 0.52559446]
-  g_momentum: 0.94114125988931008
-  d_momentum: 0.94114125988931008
+  seed: 4
+  niters: 20000
+  g_lr: 0.0014148811247197426
+  d_lr: 0.00093618095162488891
+  g_betas: [0.65372654, 0.55785936]
+  d_betas: [0.68166835, 0.54224536]
   lr_schedule: True
-  gamma: 0.99130678856012755
+  gamma: 0.99956297859137611
   noise: False
-  step_size: 13
+  step_size: 20
   obs_every: 1
   d1: 1
   d2: 1
@@ -28,28 +25,28 @@ training:
   wgan: False
   gp: 0.1
   conditional: False
-  train_mse: True
+  train_mse: False
   log: True
   plot: True
-  plot_sep_curves: True
+  plot_1d_curves: True
   save: True
   save_for_animation: False
-  dirname: 'EINS_run'
+  dirname: 'ACA_run'
 
 generator:
-  in_dim: 1
-  out_dim: 5
-  n_hidden_units: 40
+  in_dim: 2
+  out_dim: 1
+  n_hidden_units: 30
   n_hidden_layers: 3
   activation: 'Tanh'
   residual: True
   regress: True
 
 discriminator:
-  in_dim: 5
+  in_dim: 1
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 4
+  n_hidden_units: 50
+  n_hidden_layers: 3
   activation: 'Tanh'
   residual: True
   regress: False
