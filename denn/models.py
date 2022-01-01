@@ -28,7 +28,8 @@ class MLP(nn.Module):
     Default is sigmoid output
     """
     def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2,
-        activation=nn.Tanh(), residual=False, regress=False, spectral_norm=False):
+        activation=nn.Tanh(), residual=False, regress=False, spectral_norm=False, 
+        pretrained=False): # maybe can incorporate pretrained model in here?
 
         super().__init__()
 
@@ -81,3 +82,24 @@ class TorchSin(nn.Module):
 
     def forward(self, x):
         return torch.sin(x)
+
+class MLP_pretrained(nn.Module):
+    
+    def __init__(self):
+        super().__init__()
+        
+        # add layers
+        self.hidden1 = nn.Linear(2,80)
+        self.hidden2 = nn.Linear(80,80)
+        self.hidden3 = nn.Linear(80,80)
+        self.hidden4 = nn.Linear(80,40)
+        self.out = nn.Linear(40,1)
+        self.tn = nn.Tanh()
+        self.layers = nn.ModuleList([self.hidden1, self.hidden2, self.hidden3, self.hidden4, self.out])
+        
+    def forward(self, x):
+        # do forward pass
+        x = self.hidden1(x)
+        for l in self.layers[1:]:
+            x = l(self.tn(x))
+        return x
