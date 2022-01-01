@@ -40,6 +40,7 @@ generator:
   activation: 'Tanh'
   residual: True
   regress: True
+  pretrained: False
 
 discriminator:
   in_dim: 1

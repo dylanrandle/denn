@@ -7,9 +7,9 @@ problem:
 training:
   method: 'unsupervised'
   seed: 4
-  niters: 20000
-  g_lr: 0.0014148811247197426
-  d_lr: 0.00093618095162488891
+  niters: 0
+  g_lr: 0.14148811247197426 #0.0014148811247197426
+  d_lr: 0.093618095162488891 #0.00093618095162488891
   g_betas: [0.65372654, 0.55785936]
   d_betas: [0.68166835, 0.54224536]
   lr_schedule: True
@@ -41,6 +41,7 @@ generator:
   activation: 'Tanh'
   residual: True
   regress: True
+  pretrained: 'weights_allen_cahn.t.45'
 
 discriminator:
   in_dim: 1
