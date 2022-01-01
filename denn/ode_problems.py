@@ -48,9 +48,15 @@ class Exponential(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
     def get_solution(self, t):
         """ return the analytic solution @ t for this problem """
         return torch.exp(-self.L * t)
+
+    def get_plot_solution(self, t):
+        return self.get_solution(t)
 
     def get_equation(self, x, t, G=None):
         """ return value of residuals of equation (i.e. LHS) """
@@ -81,7 +87,6 @@ class Exponential(Problem):
             residual = self.get_equation(x, t)
         xadj, dx = adj['pred'], adj['dx']
         pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
-        # diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\dot{x}}$': (-dx).detach()}
         diff_dict = {'$|\hat{F}|$': np.abs(residual.detach())}
         return pred_dict, diff_dict
 
@@ -121,9 +126,15 @@ class SimpleOscillator(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
     def get_solution(self, t):
         """ return the analytic solution @ t for this problem """
         return self.dx_dt0 * torch.sin(t)
+
+    def get_plot_solution(self, t):
+        return self.get_solution(t)
 
     def get_equation(self, x, t, G=None):
         """ return value of residuals of equation (i.e. LHS) """
@@ -144,7 +155,6 @@ class SimpleOscillator(Problem):
         xadj, dx, d2x = adj['pred'], adj['dx'], adj['d2x']
         pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
         residual = self.get_equation(x, t)
-        # diff_dict = {'$\hat{x}$': xadj.detach(), '$-\hat{\ddot{x}}$': (-d2x).detach()}
         diff_dict = {'$|\hat{F}|$': np.abs(residual.detach())}
         return pred_dict, diff_dict
 
@@ -205,6 +215,9 @@ class NonlinearOscillator(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
     def get_solution(self, t, atol=1e-8, rtol=1e-8):
         """ uses scipy to solve NLO """
         try:
@@ -216,6 +229,9 @@ class NonlinearOscillator(Problem):
 
         sol = self.sol.sol(t)
         return torch.tensor(sol[0,:], dtype=torch.float).reshape(-1, 1)
+
+    def get_plot_solution(self, t):
+        return self.get_solution(t)
 
     def _nlo_system(self, t, z):
         """ NLO decomposed as system of first order equations """
@@ -285,6 +301,9 @@ class ReynoldsAveragedNavierStokes(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
     def get_solution(self, y, max_nodes=1000, tol=1e-3):
         try:
             y = y.detach().numpy() # if torch tensor, convert to numpy
@@ -297,6 +316,9 @@ class ReynoldsAveragedNavierStokes(Problem):
             dpdx=self.dp_dx, delta=self.delta, max_nodes=max_nodes, tol=tol)
         soln = res.sol(y)[0]
         return torch.tensor(soln, dtype=torch.float).reshape(-1,1)
+
+    def get_plot_solution(self, y):
+        return self.get_solution(y)
 
     def _reynolds_stress(self, y, du_dy):
         a = self.kappa * (torch.abs(y)-self.delta) # / (2*self.delta)
@@ -391,6 +413,9 @@ class SIRModel(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
     def get_solution(self, t):
         """ uses scipy to solve """
         try:
@@ -402,6 +427,9 @@ class SIRModel(Problem):
 
         sol = self.sol.sol(t)
         return torch.tensor(sol.T, dtype=torch.float)
+
+    def get_plot_solution(self, t):
+        return self.get_solution(t)
 
     def _sir_system(self, t, x):
         S, I, R = x[0], x[1], x[2]
@@ -451,7 +479,6 @@ class SIRModel(Problem):
         pred_dict = {'$\hat{S}$': S_adj.detach(), '$S$': S_true.detach(),
                      '$\hat{I}$': I_adj.detach(), '$I$': I_true.detach(),
                      '$\hat{R}$': R_adj.detach(), '$R$': R_true.detach(),}
-        # diff_dict = None
         residuals = self.get_equation(x, t)
         r1, r2, r3 = residuals[:,0], residuals[:,1], residuals[:,2]
         diff_dict = {'$|\hat{F_1}|$': np.abs(r1.detach()),
@@ -498,12 +525,18 @@ class CoupledOscillator(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
     def get_solution(self, t):
         """ use analytical solution """
         t = t.reshape(-1, 1)
         xsol = torch.cos((t**2) / 2)
         ysol = torch.sin((t**2) / 2)
         return torch.cat((xsol, ysol), axis=1)
+
+    def get_plot_solution(self, t):
+        return self.get_solution(t)
 
     def _co_eqn(self, t, sol_adj):
         """ compute residuals LHS """
@@ -540,7 +573,6 @@ class CoupledOscillator(Problem):
         x_true, y_true = true[:, 0], true[:, 1]
         pred_dict = {'$\hat{x}$': x_adj.detach(), '$x$': x_true.detach(),
                      '$\hat{y}$': y_adj.detach(), '$y$': y_true.detach(),}
-        # diff_dict = None
         residuals = self.get_equation(sol, t)
         r1, r2 = residuals[:,0], residuals[:,1]
         diff_dict = {'$|\hat{F_1}|$': np.abs(r1.detach()),
@@ -603,6 +635,9 @@ class EinsteinEquations(Problem):
     def get_grid_sample(self):
         return self.sample_grid(self.grid, self.spacing)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
     def get_solution(self, z):
         """ uses scipy to solve """
         try:
@@ -614,6 +649,9 @@ class EinsteinEquations(Problem):
         x_num, y_num, v_num, Om_num, r_num = [s[::-1] for s in self.sol.sol(z)]
         r_prime_num = self._r_to_r_prime(r_num)
         return torch.tensor([x_num, y_num, v_num, Om_num, r_prime_num], dtype=torch.float).T
+
+    def get_plot_solution(self, z):
+        return self.get_solution(z)
 
     def _z_to_z_prime(self, z):
         return 1 - z/self.z_0

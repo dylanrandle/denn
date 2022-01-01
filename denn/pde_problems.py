@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.integrate._ivp.radau import P
 import torch
 from denn.problem import Problem
 from denn.utils import diff
@@ -55,9 +56,6 @@ class PoissonEquation(Problem):
         grid_x, grid_y = torch.meshgrid(xgrid, ygrid)
         self.grid_x, self.grid_y = grid_x.reshape(-1,1), grid_y.reshape(-1,1)
 
-    def get_dims(self):
-        return {'x': self.nx, 'y': self.ny}
-
     def get_grid(self):
         return (self.grid_x, self.grid_y)
 
@@ -66,9 +64,18 @@ class PoissonEquation(Problem):
         y_noisy = torch.normal(mean=self.grid_y, std=self.noise_ystd)
         return (x_noisy, y_noisy)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
+    def get_plot_dims(self):
+        return {'x': self.nx, 'y': self.ny}
+
     def get_solution(self, x, y):
         sol = x * (1-x) * y * (1-y) * torch.exp(x - y)
         return sol
+
+    def get_plot_solution(self, x, y):
+        return self.get_solution(x, y)
 
     def _poisson_eqn(self, u, x, y):
         return diff(u, x, order=2) + diff(u, y, order=2) - 2*x * (y - 1) * (y - 2*x + x*y + 2) * torch.exp(x - y)
@@ -151,9 +158,6 @@ class WaveEquation(Problem):
         grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
 
-    def get_dims(self):
-        return {'x': self.nx, 't': self.nt}
-
     def get_grid(self):
         return (self.grid_x, self.grid_t)
 
@@ -162,9 +166,18 @@ class WaveEquation(Problem):
         t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
         return (x_noisy, t_noisy)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
+    def get_plot_dims(self):
+        return {'x': self.nx, 't': self.nt}
+
     def get_solution(self, x, t):
         sol = torch.cos(self.c * self.pi * t) * torch.sin(self.pi * x)
         return sol
+
+    def get_plot_solution(self, x, t):
+        return self.get_solution(x, t)
 
     def _wave_eqn(self, u, x, t):
         return diff(u, t, order=2) - (self.c**2)*diff(u, x, order=2)
@@ -227,9 +240,6 @@ class BurgersEquation(Problem):
         grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
 
-    def get_dims(self):
-        return {'x': self.nx, 't': self.nt}
-
     def get_grid(self):
         return (self.grid_x, self.grid_t)
 
@@ -238,9 +248,18 @@ class BurgersEquation(Problem):
         t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
         return (x_noisy, t_noisy)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
+    def get_plot_dims(self):
+        return {'x': self.nx, 't': self.nt}
+
     def get_solution(self, x, t):
         sol = (self.a * x + self.b) / (self.a * t + 1)
         return sol
+
+    def get_plot_solution(self, x, t):
+        return self.get_solution(x, t)
 
     def _burgers_eqn(self, u, x, t):
         return diff(u, t, order=1) + u*diff(u, x, order=1)
@@ -305,9 +324,6 @@ class BurgersViscous(Problem):
         grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
 
-    def get_dims(self):
-        return {'x': self.nx, 't': self.nt}
-
     def get_grid(self):
         return (self.grid_x, self.grid_t)
 
@@ -315,6 +331,12 @@ class BurgersViscous(Problem):
         x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
         t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
         return (x_noisy, t_noisy)
+
+    def get_plot_grid(self):
+        return self.get_grid()
+
+    def get_plot_dims(self):
+        return {'x': self.nx, 't': self.nt}
 
     def get_solution(self, x, t):
         """ use FFT method """
@@ -330,6 +352,9 @@ class BurgersViscous(Problem):
         sol = sol.T
         sol = torch.tensor(sol.reshape(-1,1))
         return sol
+
+    def get_plot_solution(self, x, t):
+        return self.get_solution(x, t)
 
     def _burgers_eqn(self, u, x, t):
         return diff(u, t, order=1) + u*diff(u, x, order=1) - self.nu*diff(u, x, order=2)
@@ -397,9 +422,6 @@ class HeatEquation(Problem):
         grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
 
-    def get_dims(self):
-        return {'x': self.nx, 't': self.nt}
-
     def get_grid(self):
         return (self.grid_x, self.grid_t)
 
@@ -408,9 +430,18 @@ class HeatEquation(Problem):
         t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
         return (x_noisy, t_noisy)
 
+    def get_plot_grid(self):
+        return self.get_grid()
+
+    def get_plot_dims(self):
+        return {'x': self.nx, 't': self.nt}
+
     def get_solution(self, x, t):
         sol = torch.exp((-self.c**2)*(self.pi**2)*t) * torch.sin(self.pi * x)
         return sol
+
+    def get_plot_solution(self, x, t):
+        return self.get_solution(x, t)
 
     def _heat_eqn(self, u, x, t):
         return diff(u, t, order=1) - (self.c**2)*diff(u, x, order=2)
@@ -454,7 +485,8 @@ class AllenCahn(Problem):
     Initial condition:
     u(x,t)     | t=0  : 0.53*x + 0.47*sin(-1.5*pi*x)
     """
-    def __init__(self, nx=100, nt=70, epsilon=0.01, xmin=-1, xmax=1, tmin=0, tmax=1, **kwargs):
+    def __init__(self, nx=100, nt=70, epsilon=0.01, xmin=-1, xmax=1, tmin=0, tmax=1, 
+        plot_xmin=-1, plot_xmax=1, plot_tmin=0, plot_tmax=0.45, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -468,17 +500,25 @@ class AllenCahn(Problem):
         self.ht = (tmax - tmin) / nt
         self.noise_xstd = self.hx / 4.0
         self.noise_tstd = self.ht / 4.0
-
         xgrid, tgrid, sol = etdrk_allen_cahn(nx, nt)
         self.xgrid = torch.tensor(xgrid, requires_grad=True)
         self.tgrid = torch.tensor(tgrid, requires_grad=True)
         self.sol = sol
-
         grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
 
-    def get_dims(self):
-        return {'x': self.nx+1, 't': self.nt+1}
+        self.plot_xmin = plot_xmin
+        self.plot_xmax = plot_xmax
+        self.plot_tmin = plot_tmin
+        self.plot_tmax = plot_tmax
+        self.plot_nx = self.nx
+        self.plot_nt = int(np.ceil(70*self.plot_tmax))
+        plot_xgrid, plot_tgrid, plot_sol = etdrk_allen_cahn(self.plot_nx, self.plot_nt)
+        self.plot_xgrid = torch.tensor(plot_xgrid, requires_grad=True)
+        self.plot_tgrid = torch.tensor(plot_tgrid, requires_grad=True)
+        self.plot_sol = plot_sol
+        plot_grid_x, plot_grid_t = torch.meshgrid(self.plot_xgrid, self.plot_tgrid)
+        self.plot_grid_x, self.plot_grid_t = plot_grid_x.reshape(-1,1), plot_grid_t.reshape(-1,1)
 
     def get_grid(self):
         return (self.grid_x.float(), self.grid_t.float())
@@ -488,10 +528,20 @@ class AllenCahn(Problem):
         t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
         return (x_noisy.float(), t_noisy.float())
 
+    def get_plot_grid(self):
+        return (self.plot_grid_x.float(), self.plot_grid_t.float())
+
+    def get_plot_dims(self):
+        return {'x': self.plot_nx+1, 't': self.plot_nt+1}
+
     def get_solution(self, x, t):
         """ use ETDRK4 method """
         sol = torch.tensor(self.sol.reshape(-1,1))
         return sol
+
+    def get_plot_solution(self, x, t):
+        plot_sol = torch.tensor(self.plot_sol.reshape(-1,1))
+        return plot_sol
 
     def _allen_cahn_eqn(self, u, x, t):
         return (1/70)*diff(u, t, order=1) - self.epsilon*diff(u, x, order=2) - u + u**3
