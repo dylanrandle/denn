@@ -31,8 +31,16 @@ class Problem():
         """ sample from grid (if perturb=False, returns grid) """
         raise NotImplementedError()
 
+    def get_plot_grid(self):
+        """ return grid to predict over for plotting """
+        raise NotImplementedError()
+
     def get_solution(self):
         """ return solution to problem """
+        raise NotImplementedError()
+
+    def get_plot_solution(self):
+        """ return solution to problem over plotting grid """
         raise NotImplementedError()
 
     def get_equation(self, *args):
