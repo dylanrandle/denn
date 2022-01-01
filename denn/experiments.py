@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 
 from denn.algos import train_L2, train_L2_2D, train_GAN, train_GAN_2D
-from denn.models import MLP
+from denn.models import MLP, MLP_pretrained
 from denn.config.config import get_config
 import denn.ode_problems as ode
 import denn.pde_problems as pde
@@ -69,7 +69,11 @@ def gan_experiment(pkey, params):
     np.random.seed(0)
 
     # models
-    gen = MLP(**params['generator'])
+    if params['generator']['pretrained']:
+        gen = MLP_pretrained()
+        gen.load_state_dict(torch.load('config/pretrained_nn/'+params['generator']['pretrained']))
+    else:
+        gen = MLP(**params['generator'])
     disc = MLP(**params['discriminator'])
 
     # experiment seed

@@ -200,11 +200,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             #    plot_grads(D.named_parameters(), ax_D)
             #    plot_grads(D.named_parameters(), ax_D_log, logscale=True)
             optiD.step()
-        
-        # Blake edit: update scaling parameters
-        #alpha = g_loss.item() / d_loss.item() # unbounded
-        #beta = g_loss.item() / (d_loss.item() + g_loss.item()) # bounded between (0, 1)
-        #gam = 2 / (1 + np.exp(-4*(g_loss.item() / d_loss.item()) + 4)) # bounded between (0, 2)
+
         if noise:
             diff = g_loss.item() - d_loss.item()
 
@@ -261,8 +257,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Train MSE {train_mse:.4e} | Val MSE {val_mse:.4e}')
 
     if plot:
-        pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, soln, G)
-        plot_results(mses, losses, grid.detach(), pred_dict, diff_dict=diff_dict,
+        plot_grid = problem.get_plot_grid()
+        plot_soln = problem.get_plot_solution(plot_grid)
+        pred_dict, diff_dict = problem.get_plot_dicts(G(plot_grid), plot_grid, plot_soln, G)
+        plot_results(mses, losses, plot_grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, dirname=dirname, logloss=False, alpha=0.7, plot_sep_curves=plot_sep_curves)
         min_mse = np.min(mses['val'])
         min_mse_iter = np.argmin(mses['val'])
@@ -607,14 +605,17 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
                 print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Val MSE {val_mse:.4e}')
     
     if plot:
-        pred_dict, diff_dict = problem.get_plot_dicts(G(grid), x, y, soln)
-        plot_results(mses, losses, grid.detach(), pred_dict, diff_dict=diff_dict,
-            save=save, dirname=dirname, logloss=False, alpha=0.7, dims=problem.get_dims(),
+        plot_x, plot_y = problem.get_plot_grid()
+        plot_grid = torch.cat((plot_x, plot_y), 1)
+        plot_soln = problem.get_plot_solution(plot_x, plot_y)
+        pred_dict, diff_dict = problem.get_plot_dicts(G(plot_grid), plot_x, plot_y, plot_soln)
+        plot_results(mses, losses, plot_grid.detach(), pred_dict, diff_dict=diff_dict,
+            save=save, dirname=dirname, logloss=False, alpha=0.7, dims=problem.get_plot_dims(),
             plot_1d_curves=plot_1d_curves)
-        min_mse = np.min(mses['val'])
-        min_mse_iter = np.argmin(mses['val'])
-        print('Minimum validation MSE: ', min_mse)
-        print('Iteration: ', min_mse_iter)
+        #min_mse = np.min(mses['val'])
+        #min_mse_iter = np.argmin(mses['val'])
+        #print('Minimum validation MSE: ', min_mse)
+        #print('Iteration: ', min_mse_iter)
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
