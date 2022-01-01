@@ -78,7 +78,7 @@ def etdrk_allen_cahn(nx, nt):
             uu = np.append(uu, u, axis=1)
             tt.append(t)
     tt = np.array(tt)
-    tt /= nt
+    tt /= 70
     x = np.insert(x.flatten(),0,1)
     x = np.append(x, -1)
 
