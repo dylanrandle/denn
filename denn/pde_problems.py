@@ -5,6 +5,7 @@ from denn.problem import Problem
 from denn.utils import diff
 from denn.burgers.fft_burgers import fft_burgers
 from denn.allen_cahn.etdrk_allen_cahn import etdrk_allen_cahn
+from denn.allen_cahn.fft_allen_cahn import fft_allen_cahn
 
 class PoissonEquation(Problem):
     """
@@ -346,8 +347,7 @@ class BurgersViscous(Problem):
         except:
             pass
 
-        sol = fft_burgers(self.nu, self.nx, x, self.nt, t)
-
+        sol = fft_burgers(x, t, self.nu)
         #sol = burgers_viscous_time_exact1(self.nu, self.nx, x, self.nt, t)
         sol = sol.T
         sol = torch.tensor(sol.reshape(-1,1))
@@ -485,8 +485,8 @@ class AllenCahn(Problem):
     Initial condition:
     u(x,t)     | t=0  : 0.53*x + 0.47*sin(-1.5*pi*x)
     """
-    def __init__(self, nx=100, nt=70, epsilon=0.01, xmin=-1, xmax=1, tmin=0, tmax=1, 
-        plot_xmin=-1, plot_xmax=1, plot_tmin=0, plot_tmax=0.45, **kwargs):
+    def __init__(self, nx=64, nt=64, epsilon=0.001, xmin=0, xmax=2*np.pi, tmin=0, tmax=5, 
+        plot_xmin=0, plot_xmax=2*np.pi, plot_tmin=0, plot_tmax=5, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -500,10 +500,8 @@ class AllenCahn(Problem):
         self.ht = (tmax - tmin) / nt
         self.noise_xstd = self.hx / 4.0
         self.noise_tstd = self.ht / 4.0
-        xgrid, tgrid, sol = etdrk_allen_cahn(nx, nt)
-        self.xgrid = torch.tensor(xgrid, requires_grad=True)
-        self.tgrid = torch.tensor(tgrid, requires_grad=True)
-        self.sol = sol
+        self.xgrid = torch.linspace(xmin, xmax, nx, requires_grad=True)
+        self.tgrid = torch.linspace(tmin, tmax, nt, requires_grad=True)
         grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
 
@@ -511,12 +509,10 @@ class AllenCahn(Problem):
         self.plot_xmax = plot_xmax
         self.plot_tmin = plot_tmin
         self.plot_tmax = plot_tmax
-        self.plot_nx = self.nx
-        self.plot_nt = int(np.ceil(70*self.plot_tmax))
-        plot_xgrid, plot_tgrid, plot_sol = etdrk_allen_cahn(self.plot_nx, self.plot_nt)
-        self.plot_xgrid = torch.tensor(plot_xgrid, requires_grad=True)
-        self.plot_tgrid = torch.tensor(plot_tgrid, requires_grad=True)
-        self.plot_sol = plot_sol
+        self.plot_nx = 8000 #100
+        self.plot_nt = 100 #int(np.ceil(70*self.plot_tmax))
+        self.plot_xgrid = torch.linspace(plot_xmin, plot_xmax, self.plot_nx, requires_grad=True)
+        self.plot_tgrid = torch.linspace(plot_tmin, plot_tmax, self.plot_nt, requires_grad=True)
         plot_grid_x, plot_grid_t = torch.meshgrid(self.plot_xgrid, self.plot_tgrid)
         self.plot_grid_x, self.plot_grid_t = plot_grid_x.reshape(-1,1), plot_grid_t.reshape(-1,1)
 
@@ -532,19 +528,35 @@ class AllenCahn(Problem):
         return (self.plot_grid_x.float(), self.plot_grid_t.float())
 
     def get_plot_dims(self):
-        return {'x': self.plot_nx+1, 't': self.plot_nt+1}
+        return {'x': self.plot_nx, 't': self.plot_nt}
 
     def get_solution(self, x, t):
         """ use ETDRK4 method """
-        sol = torch.tensor(self.sol.reshape(-1,1))
+        try:
+            x = self.xgrid.detach().numpy()
+            t = self.tgrid.detach().numpy()
+        except:
+            pass
+
+        sol = fft_allen_cahn(x, t, self.epsilon)
+        sol = sol.T
+        sol = torch.tensor(sol.reshape(-1,1))
         return sol
 
     def get_plot_solution(self, x, t):
-        plot_sol = torch.tensor(self.plot_sol.reshape(-1,1))
+        try:
+            x = self.plot_xgrid.detach().numpy()
+            t = self.plot_tgrid.detach().numpy()
+        except:
+            pass
+
+        plot_sol = fft_allen_cahn(x, t, self.epsilon)
+        plot_sol = plot_sol.T
+        plot_sol = torch.tensor(plot_sol.reshape(-1,1))
         return plot_sol
 
     def _allen_cahn_eqn(self, u, x, t):
-        return (1/70)*diff(u, t, order=1) - self.epsilon*diff(u, x, order=2) - u + u**3
+        return diff(u, t, order=1) - self.epsilon*diff(u, x, order=2) - u + u**3
 
     def get_equation(self, u, x, t):
         """ return value of residuals of equation (i.e. LHS) """
@@ -556,7 +568,8 @@ class AllenCahn(Problem):
         """ perform boundary value adjustment """
         x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
         t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
-        Axt = 0.53*x + 0.47*torch.sin(-1.5*self.pi*x)
+        #Axt = 0.53*x + 0.47*torch.sin(-1.5*self.pi*x)
+        Axt = 0.25*torch.sin(x)
 
         u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
 
@@ -578,16 +591,16 @@ if __name__ == "__main__":
     import matplotlib.pyplot as plt
 
     ac = AllenCahn()
-    x, t = ac.get_grid()
-    grid = torch.cat((x, t), 1)
-    grid = grid.detach()
-    x, t = grid[:, 0], grid[:, 1]
-    xdim, tdim = ac.get_dims().values()
+    plot_x, plot_y = ac.get_plot_grid()
+    plot_grid = torch.cat((plot_x, plot_y), 1)
+    plot_soln = ac.get_plot_solution(plot_x, plot_y)
+    plot_grid = plot_grid.detach()
+    x, t = plot_grid[:, 0], plot_grid[:, 1]
+    xdim, tdim = ac.get_plot_dims().values()
     xx, tt = x.reshape((xdim, tdim)), t.reshape((xdim, tdim))
-    sol = ac.get_solution(x, t)
-    sol = sol.reshape((xdim, tdim))
+    plot_soln = plot_soln.reshape((xdim, tdim))
     fig, ax = plt.subplots(figsize=(6,5))
-    cf = ax.contourf(xx, tt, sol, cmap='Reds')
+    cf = ax.contourf(xx, tt, plot_soln, cmap='Reds')
     plt.show()
 
 # if __name__ == '__main__':
