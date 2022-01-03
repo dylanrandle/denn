@@ -1,15 +1,13 @@
 import numpy as np
 from scipy.integrate import odeint
 
-def fft_burgers(nu, nx, x, nt, t):
+def fft_burgers(x, t, nu):
 
     xmin, xmax = np.min(x), np.max(x)
-
+    nx, nt = len(x), len(t)
     dx = (xmax - xmin)/nx
 
     kappa = 2*np.pi*np.fft.fftfreq(nx, d=dx)
-
-    #u0 = -np.sin(np.pi*x)
     u0 = 1/np.cosh(x)
 
     def rhsBurgers(u, t, kappa, nu):
@@ -29,7 +27,7 @@ if __name__ == "__main__":
     
     import matplotlib.pyplot as plt
 
-    u = fft_burgers(0.001, 1000, np.linspace(-5,5,1000), 100, np.linspace(0,2.5,100))
+    u = fft_burgers(np.linspace(-5,5,1000), np.linspace(0,2.5,100), 0.001)
     print(u.shape)
 
     fig = plt.figure()
