@@ -93,4 +93,3 @@ if __name__ == "__main__":
     ax.plot_surface(x_grid, t_grid, uu.T, cmap=cm.coolwarm, rcount=500, ccount=500)
     ax.view_init(elev=50, azim=-135)
     plt.show()
-    plt.show()
