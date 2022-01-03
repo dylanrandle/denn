@@ -1,21 +1,21 @@
 problem:
-  nx: 100
-  nt: 70
-  epsilon: 0.01
+  nx: 64
+  nt: 64
+  epsilon: 0.001
   perturb: True
 
 training:
   method: 'unsupervised'
-  seed: 4
-  niters: 0
-  g_lr: 0.14148811247197426 #0.0014148811247197426
-  d_lr: 0.093618095162488891 #0.00093618095162488891
-  g_betas: [0.65372654, 0.55785936]
-  d_betas: [0.68166835, 0.54224536]
+  seed: 0
+  niters: 15000
+  g_lr: 0.01419182684992092
+  d_lr: 0.0037935152609284389
+  g_betas: [0.18431666, 0.5183879]
+  d_betas: [0.11145376, 0.17149793]
   lr_schedule: True
-  gamma: 0.99956297859137611
+  gamma: 0.98400021927489023
   noise: False
-  step_size: 20
+  step_size: 10
   obs_every: 1
   d1: 1
   d2: 1
@@ -36,18 +36,18 @@ training:
 generator:
   in_dim: 2
   out_dim: 1
-  n_hidden_units: 30
+  n_hidden_units: 20
   n_hidden_layers: 3
   activation: 'Tanh'
   residual: True
   regress: True
-  pretrained: 'weights_allen_cahn.t.45'
+  pretrained: False #'weights_allen_cahn.t.45'
 
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 50
-  n_hidden_layers: 3
+  n_hidden_units: 20
+  n_hidden_layers: 5
   activation: 'Tanh'
   residual: True
   regress: False
