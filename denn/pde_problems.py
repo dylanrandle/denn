@@ -479,14 +479,14 @@ class AllenCahn(Problem):
     u_t - \epsilon u_{xx} - u + u^3 = 0
 
     Boundary conditions:
-    u(x,t)     | x=-1 : -1
-    u(x,t)     | x=1  : 1
+    u(x,t)     | x=0    : 0
+    u(x,t)     | x=2*pi : 0
 
     Initial condition:
-    u(x,t)     | t=0  : 0.53*x + 0.47*sin(-1.5*pi*x)
+    u(x,t)     | t=0  : 0.25*sin(x)
     """
     def __init__(self, nx=64, nt=64, epsilon=0.001, xmin=0, xmax=2*np.pi, tmin=0, tmax=5, 
-        plot_xmin=0, plot_xmax=2*np.pi, plot_tmin=0, plot_tmax=5, **kwargs):
+        xmin_p=0, xmax_p=2*np.pi, tmin_p=0, tmax_p=5, nx_p=8000, nt_p=100, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -505,16 +505,16 @@ class AllenCahn(Problem):
         grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
 
-        self.plot_xmin = plot_xmin
-        self.plot_xmax = plot_xmax
-        self.plot_tmin = plot_tmin
-        self.plot_tmax = plot_tmax
-        self.plot_nx = 8000 #100
-        self.plot_nt = 100 #int(np.ceil(70*self.plot_tmax))
-        self.plot_xgrid = torch.linspace(plot_xmin, plot_xmax, self.plot_nx, requires_grad=True)
-        self.plot_tgrid = torch.linspace(plot_tmin, plot_tmax, self.plot_nt, requires_grad=True)
-        plot_grid_x, plot_grid_t = torch.meshgrid(self.plot_xgrid, self.plot_tgrid)
-        self.plot_grid_x, self.plot_grid_t = plot_grid_x.reshape(-1,1), plot_grid_t.reshape(-1,1)
+        self.xmin_p = xmin_p
+        self.xmax_p = xmax_p
+        self.tmin_p = tmin_p
+        self.tmax_p = tmax_p
+        self.nx_p = nx_p
+        self.nt_p = nt_p
+        self.xgrid_p = torch.linspace(xmin_p, xmax_p, self.nx_p, requires_grad=True)
+        self.tgrid_p = torch.linspace(tmin_p, tmax_p, self.nt_p, requires_grad=True)
+        grid_x_p, grid_t_p = torch.meshgrid(self.xgrid_p, self.tgrid_p)
+        self.grid_x_p, self.grid_t_p = grid_x_p.reshape(-1,1), grid_t_p.reshape(-1,1)
 
     def get_grid(self):
         return (self.grid_x.float(), self.grid_t.float())
@@ -525,10 +525,10 @@ class AllenCahn(Problem):
         return (x_noisy.float(), t_noisy.float())
 
     def get_plot_grid(self):
-        return (self.plot_grid_x.float(), self.plot_grid_t.float())
+        return (self.grid_x_p.float(), self.grid_t_p.float())
 
     def get_plot_dims(self):
-        return {'x': self.plot_nx, 't': self.plot_nt}
+        return {'x': self.nx_p, 't': self.nt_p}
 
     def get_solution(self, x, t):
         """ use ETDRK4 method """
@@ -545,8 +545,8 @@ class AllenCahn(Problem):
 
     def get_plot_solution(self, x, t):
         try:
-            x = self.plot_xgrid.detach().numpy()
-            t = self.plot_tgrid.detach().numpy()
+            x = self.xgrid_p.detach().numpy()
+            t = self.tgrid_p.detach().numpy()
         except:
             pass
 
@@ -568,7 +568,6 @@ class AllenCahn(Problem):
         """ perform boundary value adjustment """
         x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
         t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
-        #Axt = 0.53*x + 0.47*torch.sin(-1.5*self.pi*x)
         Axt = 0.25*torch.sin(x)
 
         u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
