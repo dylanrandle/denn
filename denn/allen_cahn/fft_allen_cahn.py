@@ -9,7 +9,7 @@ def fft_allen_cahn(x, t, epsilon):
     nx, nt = len(x), len(t)
     dt=0.001
     v=0.25*np.sin(x)
-    k = np.arange(0,nx/2)
+    k = np.arange(0,int(nx/2))
     k = np.append(k, 0)
     k = np.concatenate((k, np.arange(-nx/2+1,0)))
     k = k*1j
@@ -33,12 +33,12 @@ def fft_allen_cahn(x, t, epsilon):
     return data
 
 if __name__ == "__main__":
-    xgrid = np.linspace(0, 2*np.pi, 80)
-    tgrid = np.linspace(0, 5, 26)
+    xgrid = np.linspace(0, 2*np.pi, 1000)
+    tgrid = np.linspace(0, 5, 100)
     uu = fft_allen_cahn(xgrid, tgrid, 0.001)
     x_grid, t_grid = np.meshgrid(xgrid, tgrid)
     fig = plt.figure(figsize=(14,10))
     ax = fig.add_subplot(projection="3d")
-    ax.plot_surface(x_grid, t_grid, uu, cmap=cm.coolwarm, rcount=500, ccount=500)
+    ax.plot_surface(x_grid, t_grid, uu, cmap=cm.coolwarm, rcount=500, ccount=500, alpha=0.8)
     ax.view_init(elev=35, azim=-135)
     plt.show()
