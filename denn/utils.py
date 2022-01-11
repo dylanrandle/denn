@@ -5,7 +5,8 @@ from torch import autograd
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D  
+from matplotlib.lines import Line2D
+from matplotlib import cm
 from IPython.display import clear_output
 import pandas as pd 
 
@@ -121,7 +122,6 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     if grid.shape[1] == 2: # PDE
         x, y = grid[:, 0], grid[:, 1]
         xdim, ydim = dims.values()
-        #xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
         xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
         for i, (k, v) in enumerate(pred_dict.items()):
             v = v.reshape((xdim, ydim))
@@ -170,14 +170,13 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
             t = float(tvals[0, :][t_ids][i-4])
             ax[i].set_title(f'$t={t:.3f}$')
             if len(pred_dict.keys()) > 1:
-                ax[i].legend(loc='upper right')
+                ax[i].legend()
 
     # Derivatives
     if diff_dict:
         if grid.shape[1] == 2: # PDE
             x, y = grid[:, 0], grid[:, 1]
             xdim, ydim = dims.values()
-            #xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
             xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
             for i, (k, v) in enumerate(diff_dict.items()):
                 v = v.reshape((xdim, ydim))
@@ -205,8 +204,8 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
                 ax[3].set_xlabel('$t$')
                 ax[3].set_ylabel('$F$')
                 ax[3].set_yscale('log')
-
     plt.tight_layout()
+
     if save:
         print(f'Saving results to {dirname}')
         if not os.path.exists(dirname):
@@ -223,6 +222,33 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
         #if diff_dict:
         #    for k, v in diff_dict.items():
         #        np.save(os.path.join(dirname, f"{k}_diff"), v)
+    else:
+        plt.show()
+
+def plot_3D(grid, pred_dict, view=[35, -55], dims=None, save=False, dirname=None):
+    """ 3D plotting function for PDEs """
+
+    plt.rc('axes', titlesize=15, labelsize=15)
+    plt.rc('xtick', labelsize=13)
+    plt.rc('ytick', labelsize=13)
+
+    fig = plt.figure(figsize=(14,10))
+    ax = fig.add_subplot(projection='3d')
+    grid = grid.numpy()
+    x, y = grid[:, 0], grid[:, 1]
+    xdim, ydim = dims.values()
+    xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
+    for v in pred_dict.values():
+        v = v.numpy().reshape((xdim, ydim))
+        break
+    xlab, ylab = dims.keys()
+    ax.set_xlabel(f'${xlab}$')
+    ax.set_ylabel(f'${ylab}$')
+    ax.set_zlabel('$u$')
+    ax.plot_surface(xx, yy, v, cmap=cm.coolwarm, rcount=500, ccount=500, alpha=0.8)
+    ax.view_init(elev=view[0], azim=view[1])
+    if save:
+        plt.savefig(os.path.join(dirname, 'plot3D.png'))
     else:
         plt.show()
 

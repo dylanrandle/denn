@@ -304,7 +304,8 @@ class BurgersViscous(Problem):
     Initial condition:
     u(x,t)     | t=0   : 1/cosh(x)
     """
-    def __init__(self, nx=64, nt=64, nu=0.001, xmin=-5, xmax=5, tmin=0, tmax=2.5, **kwargs):
+    def __init__(self, nx=64, nt=64, nu=0.001, xmin=-5, xmax=5, tmin=0, tmax=2.5,
+                xmin_p=-5, xmax_p=5, tmin_p=0, tmax_p=2.5, nx_p=1000, nt_p=100, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -318,12 +319,21 @@ class BurgersViscous(Problem):
         self.ht = (tmax - tmin) / nt
         self.noise_xstd = self.hx / 4.0
         self.noise_tstd = self.ht / 4.0
-
-        self.xgrid = torch.linspace(xmin, xmax, nx, requires_grad=True)
-        self.tgrid = torch.linspace(tmin, tmax, nt, requires_grad=True)
-
+        self.xgrid = torch.linspace(xmin, xmax, nx+1, requires_grad=True)
+        self.tgrid = torch.linspace(tmin, tmax, nt+1, requires_grad=True)
         grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+
+        self.xmin_p = xmin_p
+        self.xmax_p = xmax_p
+        self.tmin_p = tmin_p
+        self.tmax_p = tmax_p
+        self.nx_p = nx_p
+        self.nt_p = nt_p
+        self.xgrid_p = torch.linspace(xmin_p, xmax_p, self.nx_p, requires_grad=True)
+        self.tgrid_p = torch.linspace(tmin_p, tmax_p, self.nt_p, requires_grad=True)
+        grid_x_p, grid_t_p = torch.meshgrid(self.xgrid_p, self.tgrid_p)
+        self.grid_x_p, self.grid_t_p = grid_x_p.reshape(-1,1), grid_t_p.reshape(-1,1)
 
     def get_grid(self):
         return (self.grid_x, self.grid_t)
@@ -334,27 +344,28 @@ class BurgersViscous(Problem):
         return (x_noisy, t_noisy)
 
     def get_plot_grid(self):
-        return self.get_grid()
+        return (self.grid_x_p.float(), self.grid_t_p.float())
 
     def get_plot_dims(self):
-        return {'x': self.nx, 't': self.nt}
+        return {'x': self.nx_p, 't': self.nt_p}
 
     def get_solution(self, x, t):
         """ use FFT method """
-        try:
-            x = self.xgrid.detach().numpy()
-            t = self.tgrid.detach().numpy()
-        except:
-            pass
-
+        x = np.linspace(self.xmin, self.xmax, (self.nx*8)+1)
+        t = np.linspace(self.tmin, self.tmax, self.nt+1)
         sol = fft_burgers(x, t, self.nu)
-        #sol = burgers_viscous_time_exact1(self.nu, self.nx, x, self.nt, t)
+        sol = sol[:,::8]
         sol = sol.T
         sol = torch.tensor(sol.reshape(-1,1))
         return sol
 
     def get_plot_solution(self, x, t):
-        return self.get_solution(x, t)
+        x = self.xgrid_p.detach().numpy()
+        t = self.tgrid_p.detach().numpy()
+        sol = fft_burgers(x, t, self.nu)
+        sol = sol.T
+        sol = torch.tensor(sol.reshape(-1,1))
+        return sol
 
     def _burgers_eqn(self, u, x, t):
         return diff(u, t, order=1) + u*diff(u, x, order=1) - self.nu*diff(u, x, order=2)
@@ -486,7 +497,7 @@ class AllenCahn(Problem):
     u(x,t)     | t=0  : 0.25*sin(x)
     """
     def __init__(self, nx=64, nt=64, epsilon=0.001, xmin=0, xmax=2*np.pi, tmin=0, tmax=5, 
-        xmin_p=0, xmax_p=2*np.pi, tmin_p=0, tmax_p=5, nx_p=8000, nt_p=100, **kwargs):
+        xmin_p=0, xmax_p=2*np.pi, tmin_p=0, tmax_p=5, nx_p=1000, nt_p=100, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -500,8 +511,8 @@ class AllenCahn(Problem):
         self.ht = (tmax - tmin) / nt
         self.noise_xstd = self.hx / 4.0
         self.noise_tstd = self.ht / 4.0
-        self.xgrid = torch.linspace(xmin, xmax, nx, requires_grad=True)
-        self.tgrid = torch.linspace(tmin, tmax, nt, requires_grad=True)
+        self.xgrid = torch.linspace(xmin, xmax, nx+1, requires_grad=True)
+        self.tgrid = torch.linspace(tmin, tmax, nt+1, requires_grad=True)
         grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
 
@@ -531,25 +542,18 @@ class AllenCahn(Problem):
         return {'x': self.nx_p, 't': self.nt_p}
 
     def get_solution(self, x, t):
-        """ use ETDRK4 method """
-        try:
-            x = self.xgrid.detach().numpy()
-            t = self.tgrid.detach().numpy()
-        except:
-            pass
-
+        """ use FFT method """
+        x = np.linspace(self.xmin, self.xmax, (self.nx*16)+1)
+        t = np.linspace(self.tmin, self.tmax, self.nt+1)
         sol = fft_allen_cahn(x, t, self.epsilon)
+        sol = sol[:,::16]
         sol = sol.T
         sol = torch.tensor(sol.reshape(-1,1))
         return sol
 
     def get_plot_solution(self, x, t):
-        try:
-            x = self.xgrid_p.detach().numpy()
-            t = self.tgrid_p.detach().numpy()
-        except:
-            pass
-
+        x = self.xgrid_p.detach().numpy()
+        t = self.tgrid_p.detach().numpy()
         plot_sol = fft_allen_cahn(x, t, self.epsilon)
         plot_sol = plot_sol.T
         plot_sol = torch.tensor(plot_sol.reshape(-1,1))

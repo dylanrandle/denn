@@ -4,7 +4,7 @@ import torch.nn as nn
 import os
 import matplotlib.pyplot as plt
 
-from denn.utils import plot_results, calc_gradient_penalty, handle_overwrite, plot_grads
+from denn.utils import plot_grads, plot_results, calc_gradient_penalty, handle_overwrite, plot_3D
 from denn.config.config import write_config
 
 try:
@@ -262,10 +262,6 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         pred_dict, diff_dict = problem.get_plot_dicts(G(plot_grid), plot_grid, plot_soln, G)
         plot_results(mses, losses, plot_grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, dirname=dirname, logloss=False, alpha=0.7, plot_sep_curves=plot_sep_curves)
-        min_mse = np.min(mses['val'])
-        min_mse_iter = np.argmin(mses['val'])
-        print('Minimum validation MSE: ', min_mse)
-        print('Iteration: ', min_mse_iter)
         # Plot the learning rates
         #ax.plot(lr_vals_G, label='G learning rate')
         #ax.plot(lr_vals_D, label='D learning rate')
@@ -455,7 +451,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     step_size=15, obs_every=1, d1=1., d2=1., G_iters=1, D_iters=1, 
     wgan=True, gp=0.1, conditional=True, train_mse=True, log=True, 
     plot=True, plot_1d_curves=False, save=False, dirname='train_GAN', 
-    config=None, save_for_animation=False, **kwargs):
+    config=None, save_for_animation=False, view=(35, -55), **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
@@ -469,6 +465,13 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     x, y = problem.get_grid()
     grid = torch.cat((x, y), 1)
     soln = problem.get_solution(x, y)
+
+    # grid for plotting and animation
+    if plot or save_for_animation:
+        dims = problem.get_plot_dims()
+        plot_x, plot_y = problem.get_plot_grid()
+        plot_grid = torch.cat((plot_x, plot_y), 1)
+        plot_soln = problem.get_plot_solution(plot_x, plot_y)
 
     # # observer mask and masked grid/solution (t_obs/y_obs)
     observers = torch.arange(0, len(grid), obs_every)
@@ -585,8 +588,11 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         mses['val'].append(val_mse)
 
         # save preds for animation
-        preds['pred'].append(val_pred_adj.detach())
-        preds['soln'].append(soln.detach())
+        if save_for_animation:
+            plot_pred = G(plot_grid)
+            plot_pred_adj = problem.adjust(plot_pred, plot_x, plot_y)['pred']
+            preds['pred'].append(plot_pred_adj.detach())
+            preds['soln'].append(plot_soln.detach())
 
         try:
             if (epoch+1) % 10 == 0:
@@ -605,17 +611,11 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
                 print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Val MSE {val_mse:.4e}')
     
     if plot:
-        plot_x, plot_y = problem.get_plot_grid()
-        plot_grid = torch.cat((plot_x, plot_y), 1)
-        plot_soln = problem.get_plot_solution(plot_x, plot_y)
         pred_dict, diff_dict = problem.get_plot_dicts(G(plot_grid), plot_x, plot_y, plot_soln)
         plot_results(mses, losses, plot_grid.detach(), pred_dict, diff_dict=diff_dict,
-            save=save, dirname=dirname, logloss=False, alpha=0.7, dims=problem.get_plot_dims(),
+            save=save, dirname=dirname, logloss=False, alpha=0.7, dims=dims,
             plot_1d_curves=plot_1d_curves)
-        #min_mse = np.min(mses['val'])
-        #min_mse_iter = np.argmin(mses['val'])
-        #print('Minimum validation MSE: ', min_mse)
-        #print('Iteration: ', min_mse_iter)
+        plot_3D(plot_grid.detach(), pred_dict, view=view, dims=dims, save=save, dirname=dirname)
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
@@ -627,7 +627,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         print(f'Saving animation traces to {anim_dir}')
         if not os.path.exists(anim_dir):
             os.mkdir(anim_dir)
-        np.save(os.path.join(anim_dir, "grid"), grid.detach())
+        np.save(os.path.join(anim_dir, "grid"), plot_grid.detach())
         for k, v in preds.items():
             v = np.hstack(v)
             # TODO: for systems (i.e. multi-dim preds),
