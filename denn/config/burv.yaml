@@ -1,6 +1,8 @@
 problem:
-  nx: 128
-  nt: 128
+  nx: 64
+  nt: 64
+  nx_p: 1000
+  nt_p: 100
   nu: 0.001
   perturb: True
 
@@ -30,7 +32,8 @@ training:
   plot: True
   plot_1d_curves: True
   save: True
-  save_for_animation: False
+  save_for_animation: True
+  view: [35, -55]
   dirname: 'BURV_run'
 
 generator:
