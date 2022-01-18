@@ -258,8 +258,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
     if plot:
         plot_grid = problem.get_plot_grid()
-        plot_soln = problem.get_plot_solution(plot_grid)
-        pred_dict, diff_dict = problem.get_plot_dicts(G(plot_grid), plot_grid, plot_soln, G)
+        plot_soln = problem.get_plot_solution(grid)
+        pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln, G)
         plot_results(mses, losses, plot_grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, dirname=dirname, logloss=False, alpha=0.7, plot_sep_curves=plot_sep_curves)
         # Plot the learning rates
