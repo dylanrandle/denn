@@ -1,5 +1,5 @@
 problem:
-  n: 100
+  n: 1000
   perturb: True
   z_0: 10
   Om_m_0: 0.15
@@ -8,17 +8,17 @@ problem:
 training:
   method: 'unsupervised'
   seed: 3
-  niters: 200000
-  g_lr: 0.016341959189231651
-  d_lr: 0.014747434998428817
-  g_betas: [0.13979895, 0.69997109]
-  d_betas: [0.04317054, 0.52559446]
+  niters: 0
+  g_lr: 0.010482665669203492
+  d_lr: 0.019867885615462728
+  g_betas: [0.7009625, 0.57467952]
+  d_betas: [0.42465927, 0.15340572]
   g_momentum: 0.94114125988931008
   d_momentum: 0.94114125988931008
   lr_schedule: True
-  gamma: 0.99130678856012755
+  gamma: 0.97209906170042759
   noise: False
-  step_size: 13
+  step_size: 9
   obs_every: 1
   d1: 1
   d2: 1
@@ -40,17 +40,17 @@ generator:
   in_dim: 1
   out_dim: 5
   n_hidden_units: 40
-  n_hidden_layers: 3
+  n_hidden_layers: 4
   activation: 'Tanh'
   residual: True
   regress: True
-  pretrained: False
+  pretrained: True
 
 discriminator:
   in_dim: 5
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 4
+  n_hidden_units: 50
+  n_hidden_layers: 5
   activation: 'Tanh'
   residual: True
   regress: False

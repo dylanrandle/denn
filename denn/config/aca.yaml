@@ -32,7 +32,7 @@ training:
   plot: True
   plot_1d_curves: True
   save: True
-  save_for_animation: True
+  save_for_animation: False
   view: [35, -135]
   dirname: 'ACA_run'
 
@@ -44,7 +44,7 @@ generator:
   activation: 'Tanh'
   residual: True
   regress: True
-  pretrained: False #'weights_allen_cahn.t.45'
+  pretrained: False
 
 discriminator:
   in_dim: 1
