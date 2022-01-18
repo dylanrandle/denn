@@ -4,7 +4,6 @@ import torch
 from denn.problem import Problem
 from denn.utils import diff
 from denn.burgers.fft_burgers import fft_burgers
-from denn.allen_cahn.etdrk_allen_cahn import etdrk_allen_cahn
 from denn.allen_cahn.fft_allen_cahn import fft_allen_cahn
 
 class PoissonEquation(Problem):
