@@ -18,5 +18,6 @@ dependencies:
   - pip:
     - torchvision
     - fenics
-    - ray
+    - ray==1.2.0
     - ray[tune]
+    - neurodiffeq
