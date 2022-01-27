@@ -114,10 +114,15 @@ if __name__ == "__main__":
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")
+    #df = analysis.dataframe(metric="lhs", mode="min")
     df.to_csv(f"ray_tune_{args.pkey}.csv")
     print("Sorted top results")
     print(df.sort_values(by="mean_squared_error").head(10))
+    #print(df.sort_values(by="lhs").head(10))
     print("Best config is:", analysis.get_best_config(metric="mean_squared_error", mode="min"))
+    #print("Best config is:", analysis.get_best_config(metric="lhs", mode="min"))
     best_logdir = analysis.get_best_logdir(metric="mean_squared_error", mode="min")
+    #best_logdir = analysis.get_best_logdir(metric="lhs", mode="min")
     best_mse = df.loc[df.logdir==best_logdir]
     print("Best MSE is: ", best_mse.mean_squared_error)
+    #print("Best LHS is: ", best_mse.lhs)
