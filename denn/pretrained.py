@@ -195,7 +195,7 @@ def get_pretrained_fcnn(pkey, save=False):
             net5 = torch.nn.Sequential(common_front, torch.nn.Tanh(), end5)
 
             solver_single = Solver1D(f_R_sys_r, conditions=init_vals_f_R_sys, t_min=z_prime_min, t_max=z_prime_max, criterion=custom_loss_func, nets=[net1, net2, net3, net4, net5])
-            solver_single.fit(max_epochs=5)
+            solver_single.fit(max_epochs=20000)
 
             combined_model = CombinedModel(solver_single.nets)
             torch.save(net1.state_dict(), 'config/pretrained_fcnn/eins_net1.pth')
@@ -203,23 +203,19 @@ def get_pretrained_fcnn(pkey, save=False):
             torch.save(net3.state_dict(), 'config/pretrained_fcnn/eins_net3.pth')
             torch.save(net4.state_dict(), 'config/pretrained_fcnn/eins_net4.pth')
             torch.save(net5.state_dict(), 'config/pretrained_fcnn/eins_net5.pth')
-            #torch.save(combined_model.state_dict(), 'config/pretrained_fcnn/eins.pth')
 
         else:
-            net1 = torch.nn.Sequential()
-            net2 = torch.nn.Sequential()
-            net3 = torch.nn.Sequential()
-            net4 = torch.nn.Sequential()
-            net5 = torch.nn.Sequential()
-            net1.load_state_dict(torch.load('config/pretrained_fcnn/eins_net1.pth'))
-            net2.load_state_dict(torch.load('config/pretrained_fcnn/eins_net1.pth'))
-            net3.load_state_dict(torch.load('config/pretrained_fcnn/eins_net1.pth'))
-            net4.load_state_dict(torch.load('config/pretrained_fcnn/eins_net1.pth'))
-            net5.load_state_dict(torch.load('config/pretrained_fcnn/eins_net1.pth'))
-            #nets = [torch.nn.Sequential().load_state_dict(torch.load(f'config/pretrained_fcnn/eins_net{i}.pth'), strict=False) for i in range(1,6)]
-            nets = [net1, net2, net3, net4, net5]
-            combined_model = CombinedModel(nets)
-            #combined_model.load_state_dict(torch.load('config/pretrained_fcnn/eins.pth'))
+            initialized_models = [
+                torch.nn.Sequential(
+                    FCNN(1, 128, hidden_units=(32, 32)),
+                    torch.nn.Tanh(),
+                    torch.nn.Linear(128, 1),
+                )
+                for i in range(5)
+            ]
+            for i, net in enumerate(initialized_models):
+                net.load_state_dict(torch.load(f'C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_fcnn/eins_net{i+1}.pth')) # /n/home01/bbullwinkel/denn/denn/config/pretrained_fcnn
+            combined_model = CombinedModel(initialized_models)
 
         return combined_model
 
@@ -227,7 +223,6 @@ def get_pretrained_fcnn(pkey, save=False):
         raise NotImplementedError(f"Pretrained FCNN not implemented for problem {pkey}.")
 
 if __name__ == "__main__":
-    torch.manual_seed(1993)
     eins_pretrained = get_pretrained_fcnn("eins")
     zs_prime = np.linspace(1, 0, 1000)
     zs = np.linspace(0, 10, 1000)
