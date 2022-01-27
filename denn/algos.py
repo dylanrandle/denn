@@ -598,6 +598,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
             if (epoch+1) % 10 == 0:
 
                 # mean of val mses for last 10 steps
+                #track.log(lhs=np.mean(losses['LHS'][-10:])) # mean LHS for last 10 steps
                 track.log(mean_squared_error=np.mean(mses['val'][-10:]))
 
         except Exception as e:
