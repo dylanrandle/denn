@@ -304,7 +304,7 @@ class BurgersViscous(Problem):
     u(x,t)     | t=0   : 1/cosh(x)
     """
     def __init__(self, nx=64, nt=64, nu=0.001, xmin=-5, xmax=5, tmin=0, tmax=2.5,
-                xmin_p=-5, xmax_p=5, tmin_p=0, tmax_p=2.5, nx_p=1000, nt_p=100, **kwargs):
+        xmin_p=-5, xmax_p=5, tmin_p=0, tmax_p=2.5, nx_p=1000, nt_p=100, **kwargs):
         super().__init__(**kwargs)
         self.xmin = xmin
         self.xmax = xmax
@@ -564,8 +564,8 @@ class AllenCahn(Problem):
     def get_equation(self, u, x, t):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(u, x, t)
-        u_adj = adj['pred']
-        return self._allen_cahn_eqn(u_adj, x, t)
+        u_adj = adj['pred'] 
+        return self._allen_cahn_eqn(u_adj, x, t) # try: 1. + (u_{t=0} - u_sin [init cond])^2 + (u_{t,x=0})^2 + (u_{t,x=L})^2, 2. *e^-lambda*t
 
     def adjust(self, u, x, t):
         """ perform boundary value adjustment """
@@ -573,7 +573,7 @@ class AllenCahn(Problem):
         t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
         Axt = 0.25*torch.sin(x)
 
-        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
+        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u # try multiplying t_title by a lambda
 
         return {'pred': u_adj}
 
@@ -587,6 +587,99 @@ class AllenCahn(Problem):
         diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
         return pred_dict, diff_dict
 
+class KuramotoSivashinsky(Problem):
+    """
+    Kuramoto-Sivashinsky equation:
+
+    $$ u_t + u*u_x + u_{xx} + u_{xxxx} = 0 $$
+
+    Boundary conditions:
+    u(x,t)     | x=-30 : 0
+    u(x,t)     | x=30  : 0
+
+    Initial condition:
+    u(x,t)     | t=0 : exp(-x^2)
+    """
+    def __init__(self, nx=32, nt=32, xmin=-30, xmax=30, tmin=0, tmax=30, 
+        xmin_p=-30, xmax_p=30, tmin_p=0, tmax_p=30, nx_p=1000, nt_p=100, **kwargs):
+        super().__init__(**kwargs)
+        self.xmin = xmin
+        self.xmax = xmax
+        self.tmin = tmin
+        self.tmax = tmax
+        self.nx = nx
+        self.nt = nt
+        self.hx = (xmax - xmin) / nx
+        self.ht = (tmax - tmin) / nt
+        self.noise_xstd = self.hx / 4.0
+        self.noise_tstd = self.ht / 4.0
+        xgrid = torch.linspace(xmin, xmax, nx, requires_grad=True)
+        tgrid = torch.linspace(tmin, tmax, nt, requires_grad=True)
+
+        self.xmin_p = xmin_p
+        self.xmax_p = xmax_p
+        self.tmin_p = tmin_p
+        self.tmax_p = tmax_p
+        self.nx_p = nx_p
+        self.nt_p = nt_p
+        self.xgrid_p = torch.linspace(xmin_p, xmax_p, self.nx_p, requires_grad=True)
+        self.tgrid_p = torch.linspace(tmin_p, tmax_p, self.nt_p, requires_grad=True)
+        grid_x_p, grid_t_p = torch.meshgrid(self.xgrid_p, self.tgrid_p)
+        self.grid_x_p, self.grid_t_p = grid_x_p.reshape(-1,1), grid_t_p.reshape(-1,1)
+
+        grid_x, grid_t = torch.meshgrid(xgrid, tgrid)
+        self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+
+    def get_grid(self):
+        return (self.grid_x, self.grid_t)
+
+    def get_grid_sample(self):
+        x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
+        t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
+        return (x_noisy, t_noisy)
+
+    def get_plot_grid(self):
+        return (self.grid_x_p.float(), self.grid_t_p.float())
+
+    def get_plot_dims(self):
+        return {'x': self.nx_p, 't': self.nt_p}
+
+    def get_solution(self, x, t):
+        """ still needs to be implemented """
+        sol = x
+        return sol
+
+    def get_plot_solution(self, x, t):
+        return self.get_solution(x, t)
+
+    def _kur_siv_eqn(self, u, x, t):
+        return diff(u, t, order=1) + u*diff(u, x, order=1) + diff(u, x, order=2) + diff(u, x, order=4)
+
+    def get_equation(self, u, x, t):
+        """ return value of residuals of equation (i.e. LHS) """
+        adj = self.adjust(u, x, t)
+        u_adj = adj['pred']
+        return self._kur_siv_eqn(u_adj, x, t)
+
+    def adjust(self, u, x, t):
+        """ perform boundary value adjustment """
+        x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
+        t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
+        Axt = torch.exp(-x**2)
+
+        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
+
+        return {'pred': u_adj}
+
+    def get_plot_dicts(self, pred, x, t, sol):
+        """ return appropriate pred_dict / diff_dict used for plotting """
+        adj = self.adjust(pred, x, t)
+        pred_adj = adj['pred']
+        pred_dict = {'$\hat{u}$': pred_adj.detach()}
+
+        resid = self.get_equation(pred, x, t)
+        diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
+        return pred_dict, diff_dict
 
 if __name__ == "__main__":
     import denn.utils as ut

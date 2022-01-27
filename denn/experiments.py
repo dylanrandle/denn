@@ -40,6 +40,8 @@ def get_problem(pkey, params):
         return pde.HeatEquation(**params['problem'])
     elif pkey == 'aca':
         return pde.AllenCahn(**params['problem'])
+    elif pkey == 'kur':
+        return pde.KuramotoSivashinsky(**params['problem'])
     else:
         raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
 
@@ -57,7 +59,7 @@ def L2_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    if pkey.lower().strip() in ["pos", "wav", "bur", "burv", "hea", "aca"]:
+    if pkey.lower().strip() in ["pos", "wav", "bur", "burv", "hea", "aca", "kur"]:
         res = train_L2_2D(model, problem, **params['training'], config=params)
     else:
         res = train_L2(model, problem, **params['training'], config=params)
@@ -82,7 +84,7 @@ def gan_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    if pkey.lower().strip() in ["pos", "wav", "bur", "burv", "hea", "aca"]:
+    if pkey.lower().strip() in ["pos", "wav", "bur", "burv", "hea", "aca", "kur"]:
         res = train_GAN_2D(gen, disc, problem, **params['training'], config=params)
     else:
         res = train_GAN(gen, disc, problem, **params['training'], config=params)
