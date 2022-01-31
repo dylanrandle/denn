@@ -17,8 +17,8 @@ if __name__ == "__main__":
         help='problem to run (exp=Exponential, sho=SimpleOscillator, nlo=NonlinearOscillator)')
     args.add_argument('--classical', action='store_true', default=False,
         help='whether to use classical training, default False (use GAN))')
-    args.add_argument('--big', action='store_true', default=False, 
-        help='whether to use bigger (wider and deeper) networks for training, default False')
+    args.add_argument('--tight', action='store_true', default=False, 
+        help='whether to use tight search bounds, default False')
     args.add_argument('--ncpu', type=int, default=1)
     args.add_argument('--nsample', type=int, default=100)
     args = args.parse_args()
@@ -40,31 +40,40 @@ if __name__ == "__main__":
     search_space = deepcopy(params)
 
     # Bounds of Search
-    lr_bound = (1e-5, 0.02) #(1e-5, 1e-1)
-    gamma_bound = (0.9, 0.9999) 
-    beta_bound = (0, 0.999)
-    beta_bound_low = (0, 0.333)
-    beta_bound_high = (0.666, 0.999)
-    step_size_bound = (2, 21)
-    if args.big:
-        n_layers = [6, 7, 8, 9]
-        n_nodes = [60, 70, 80, 90]
+    if args.tight:
+        # construct tight search bounds
+        g_lr, d_lr = params['training']['g_lr'], params['training']['d_lr']
+        g_beta0, g_beta1 = params['training']['g_betas']
+        d_beta0, d_beta1 = params['training']['d_betas']
+        g_lr_bound = (0.5*g_lr, 1.5*g_lr)
+        d_lr_bound = (0.5*d_lr, 1.5*d_lr)
+        g_beta0_bound = (0.8*g_beta0, np.min([1.2*g_beta0, 0.999]))
+        g_beta1_bound = (0.8*g_beta1, np.min([1.2*g_beta1, 0.999]))
+        d_beta0_bound = (0.8*d_beta0, np.min([1.2*d_beta0, 0.999]))
+        d_beta1_bound = (0.8*d_beta1, np.min([1.2*d_beta1, 0.999]))
     else:
-        n_layers = [2, 3, 4, 5]
-        n_nodes = [20, 30, 40, 50]
+        g_lr_bound, d_lr_bound = (1e-5, 0.02), (1e-5, 0.02)
+        g_beta0_bound, d_beta0_bound = (0, 0.333), (0, 0.333)
+        g_beta1_bound, d_beta1_bound = (0.666, 0.999), (0.666, 0.999)
+    gamma_bound = (0.9, 0.9999) 
+    step_size_bound = (2, 21)
+    lam_bound = (1, 100)
+    n_layers = [2, 3, 4, 5]
+    n_nodes = [20, 30, 40, 50]
 
     # LRs
-    search_space['training']['g_lr'] = tune.sample_from(lambda s: np.random.uniform(*lr_bound))
-    search_space['training']['d_lr'] = tune.sample_from(lambda s: np.random.uniform(*lr_bound))
+    search_space['training']['g_lr'] = tune.sample_from(lambda s: np.random.uniform(*g_lr_bound))
+    search_space['training']['d_lr'] = tune.sample_from(lambda s: np.random.uniform(*d_lr_bound))
 
     # Decay / Moment
     search_space['training']['gamma'] = tune.sample_from(lambda s: np.random.uniform(*gamma_bound))
     search_space['training']['step_size'] = tune.sample_from(lambda s: np.random.randint(*step_size_bound))
-    #g_betas_0 = tune.sample_from(lambda s: np.random.uniform(*beta_bound_low))
-    #g_betas_1 = tune.sample_from(lambda s: np.random.uniform(*beta_bound_high))
-    #search_space['training']['g_betas'] = [g_betas_0, g_betas_1]
-    search_space['training']['g_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
-    search_space['training']['d_betas'] = tune.sample_from(lambda s: np.random.uniform(*beta_bound, size=2))
+    g_beta0 = tune.sample_from(lambda s: np.random.uniform(*g_beta0_bound))
+    g_beta1 = tune.sample_from(lambda s: np.random.uniform(*g_beta1_bound))
+    d_beta0 = tune.sample_from(lambda s: np.random.uniform(*d_beta0_bound))
+    d_beta1 = tune.sample_from(lambda s: np.random.uniform(*d_beta1_bound))
+    search_space['training']['g_betas'] = [g_beta0, g_beta1]
+    search_space['training']['d_betas'] = [d_beta0, d_beta1]
 
     # Generator
     search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
@@ -74,10 +83,13 @@ if __name__ == "__main__":
     search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
     search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
 
+    # Loss
+    search_space['training']['lam'] = tune.sample_from(lambda s: np.random.uniform(*lam_bound))
+
     # for testing at different seeds
     # note: need to change experiments.py to init models below seed setting
-    nseeds = 10
-    search_space['training']['seed'] = tune.sample_from(lambda s: np.random.choice(nseeds))
+    #nseeds = 10
+    #search_space['training']['seed'] = tune.sample_from(lambda s: np.random.choice(nseeds))
 
     # Uncomment this to enable distributed execution
     # ray.init(address='auto', redis_password='5241590000000000')
@@ -114,15 +126,10 @@ if __name__ == "__main__":
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")
-    #df = analysis.dataframe(metric="lhs", mode="min")
     df.to_csv(f"ray_tune_{args.pkey}.csv")
     print("Sorted top results")
     print(df.sort_values(by="mean_squared_error").head(10))
-    #print(df.sort_values(by="lhs").head(10))
     print("Best config is:", analysis.get_best_config(metric="mean_squared_error", mode="min"))
-    #print("Best config is:", analysis.get_best_config(metric="lhs", mode="min"))
     best_logdir = analysis.get_best_logdir(metric="mean_squared_error", mode="min")
-    #best_logdir = analysis.get_best_logdir(metric="lhs", mode="min")
     best_mse = df.loc[df.logdir==best_logdir]
     print("Best MSE is: ", best_mse.mean_squared_error)
-    #print("Best LHS is: ", best_mse.lhs)
