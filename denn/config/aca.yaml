@@ -18,6 +18,7 @@ training:
   gamma: 0.98905978163111818
   noise: False
   step_size: 13
+  lam: 1
   obs_every: 1
   d1: 1
   d2: 1

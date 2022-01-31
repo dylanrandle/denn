@@ -496,8 +496,9 @@ class AllenCahn(Problem):
     u(x,t)     | t=0  : 0.25*sin(x)
     """
     def __init__(self, nx=64, nt=64, epsilon=0.001, xmin=0, xmax=2*np.pi, tmin=0, tmax=5, 
-        xmin_p=0, xmax_p=2*np.pi, tmin_p=0, tmax_p=5, nx_p=1000, nt_p=100, **kwargs):
+        xmin_p=0, xmax_p=2*np.pi, tmin_p=0, tmax_p=5, nx_p=1000, nt_p=100, lam=1, **kwargs):
         super().__init__(**kwargs)
+        self.lam = lam
         self.xmin = xmin
         self.xmax = xmax
         self.tmin = tmin
@@ -573,7 +574,7 @@ class AllenCahn(Problem):
         t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
         Axt = 0.25*torch.sin(x)
 
-        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u # try multiplying t_title by a lambda
+        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-self.lam*t_tilde))*u # try multiplying t_tilde by a lambda
 
         return {'pred': u_adj}
 
