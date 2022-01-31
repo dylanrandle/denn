@@ -17,8 +17,8 @@ if __name__ == "__main__":
         help='problem to run (exp=Exponential, sho=SimpleOscillator, nlo=NonlinearOscillator)')
     args.add_argument('--classical', action='store_true', default=False,
         help='whether to use classical training, default False (use GAN))')
-    args.add_argument('--tight', action='store_true', default=False, 
-        help='whether to use tight search bounds, default False')
+    args.add_argument('--pretuned', action='store_true', default=False, 
+        help='whether to construct search bounds based on pre-tuned hypers, default False')
     args.add_argument('--ncpu', type=int, default=1)
     args.add_argument('--nsample', type=int, default=100)
     args = args.parse_args()
@@ -40,8 +40,7 @@ if __name__ == "__main__":
     search_space = deepcopy(params)
 
     # Bounds of Search
-    if args.tight:
-        # construct tight search bounds
+    if args.pretuned:
         g_lr, d_lr = params['training']['g_lr'], params['training']['d_lr']
         g_beta0, g_beta1 = params['training']['g_betas']
         d_beta0, d_beta1 = params['training']['d_betas']
