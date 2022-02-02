@@ -8,7 +8,7 @@ from functools import partial
 from scipy import constants
 import matplotlib.pyplot as plt
 
-def get_pretrained_fcnn(pkey, save=False):
+def get_pretrained_fcnn(pkey, save=False, pretrained=False):
 
     if pkey.lower().strip() == "eins":
 
@@ -211,10 +211,11 @@ def get_pretrained_fcnn(pkey, save=False):
                     torch.nn.Tanh(),
                     torch.nn.Linear(128, 1),
                 )
-                for i in range(5)
+                for _ in range(5)
             ]
-            for i, net in enumerate(initialized_models):
-                net.load_state_dict(torch.load(f'C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_fcnn/eins_net{i+1}.pth')) # /n/home01/bbullwinkel/denn/denn/config/pretrained_fcnn
+            if pretrained:
+                for i, net in enumerate(initialized_models):
+                    net.load_state_dict(torch.load(f'C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_fcnn/eins_net{i+1}.pth')) # /n/home01/bbullwinkel/denn/denn/config/pretrained_fcnn
             combined_model = CombinedModel(initialized_models)
 
         return combined_model
