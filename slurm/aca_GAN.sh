@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J ray_tune_eins
+#SBATCH -J aca_gan
 #SBATCH -p test
 #SBATCH -n 48
 #SBATCH -N 1
@@ -13,4 +13,4 @@ module load gcc/10.2.0-fasrc01
 module load Anaconda3/2020.11
 source activate denn
 cd ../denn
-python ray_tune.py --pkey eins --pretuned --ncpu 48 --nsample 1300
+echo "y" | python experiments.py --gan --pkey aca
