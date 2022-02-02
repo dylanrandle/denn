@@ -10,15 +10,15 @@ training:
   method: 'unsupervised'
   seed: 8
   niters: 10000
-  g_lr: 0.013062663284027502
-  d_lr: 0.018659887517260301
-  g_betas: [0.59484321, 0.9425278]
-  d_betas: [0.8017268, 0.37476167]
+  g_lr: 0.018524113685891849 #0.010913858965919756
+  d_lr: 0.023359515380035216 #0.017568502243362961
+  g_betas: [0.6316992461585225, 0.880991724006101] #[0.5937369709780391, 0.8373959670911821]
+  d_betas: [0.6551221203827472, 0.4035855234135997] #[0.7986890579603605, 0.3404142958840599]
   lr_schedule: True
-  gamma: 0.98905978163111818
+  gamma: 0.97893235102096421 #0.98879150206383082
   noise: False
-  step_size: 13
-  lam: 1
+  step_size: 19 #17
+  lam: 0.295775 #1.0 #64.834273
   obs_every: 1
   d1: 1
   d2: 1
@@ -40,8 +40,8 @@ training:
 generator:
   in_dim: 2
   out_dim: 1
-  n_hidden_units: 40
-  n_hidden_layers: 3
+  n_hidden_units: 30 #50
+  n_hidden_layers: 5 #4
   activation: 'Tanh'
   residual: True
   regress: True
@@ -50,8 +50,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 50
-  n_hidden_layers: 5
+  n_hidden_units: 30
+  n_hidden_layers: 3 #2
   activation: 'Tanh'
   residual: True
   regress: False
