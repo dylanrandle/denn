@@ -56,7 +56,7 @@ if __name__ == "__main__":
         g_beta1_bound, d_beta1_bound = (0.666, 0.999), (0.666, 0.999)
     gamma_bound = (0.9, 0.9999) 
     step_size_bound = (2, 21)
-    lam_bound = (1, 100)
+    lam_bound = (0, 1.0)
     n_layers = [2, 3, 4, 5]
     n_nodes = [20, 30, 40, 50]
 
