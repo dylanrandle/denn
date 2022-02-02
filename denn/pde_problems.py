@@ -566,7 +566,10 @@ class AllenCahn(Problem):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(u, x, t)
         u_adj = adj['pred'] 
-        return self._allen_cahn_eqn(u_adj, x, t) # try: 1. + (u_{t=0} - u_sin [init cond])^2 + (u_{t,x=0})^2 + (u_{t,x=L})^2, 2. *e^-lambda*t
+        #Axt = 0.25*torch.sin(x)
+        #print(u.shape, Axt.shape)
+        # self._allen_cahn_eqn(u, x, t) + ()
+        return self._allen_cahn_eqn(u_adj, x, t)*torch.exp(-self.lam*t) # try: 1. + (u_{t=0} - u_sin [init cond])^2 + (u_{t,x=0})^2 + (u_{t,x=L})^2, 2. *e^-lambda*t (or *e^(-t/mu), look for mu (0, t_max))
 
     def adjust(self, u, x, t):
         """ perform boundary value adjustment """
@@ -574,7 +577,7 @@ class AllenCahn(Problem):
         t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
         Axt = 0.25*torch.sin(x)
 
-        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-self.lam*t_tilde))*u # try multiplying t_tilde by a lambda
+        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u # 3. multiply t_tilde by self.lam
 
         return {'pred': u_adj}
 
@@ -690,14 +693,15 @@ if __name__ == "__main__":
     plot_x, plot_y = ac.get_plot_grid()
     plot_grid = torch.cat((plot_x, plot_y), 1)
     plot_soln = ac.get_plot_solution(plot_x, plot_y)
-    plot_grid = plot_grid.detach()
-    x, t = plot_grid[:, 0], plot_grid[:, 1]
-    xdim, tdim = ac.get_plot_dims().values()
-    xx, tt = x.reshape((xdim, tdim)), t.reshape((xdim, tdim))
-    plot_soln = plot_soln.reshape((xdim, tdim))
-    fig, ax = plt.subplots(figsize=(6,5))
-    cf = ax.contourf(xx, tt, plot_soln, cmap='Reds')
-    plt.show()
+    resid = ac.get_equation(plot_soln, plot_x, plot_y)
+    #plot_grid = plot_grid.detach()
+    #x, t = plot_grid[:, 0], plot_grid[:, 1]
+    #xdim, tdim = ac.get_plot_dims().values()
+    #xx, tt = x.reshape((xdim, tdim)), t.reshape((xdim, tdim))
+    #plot_soln = plot_soln.reshape((xdim, tdim))
+    #fig, ax = plt.subplots(figsize=(6,5))
+    #cf = ax.contourf(xx, tt, plot_soln, cmap='Reds')
+    #plt.show()
 
 # if __name__ == '__main__':
 # print("Testing CoupledOscillator")
