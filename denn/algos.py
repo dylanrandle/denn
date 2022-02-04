@@ -98,7 +98,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             if method == 'unsupervised':
                 grid_samp = problem.get_grid_sample()
                 pred = G(grid_samp)
-                residuals = problem.get_equation(pred, grid_samp, G)
+                residuals = problem.get_equation(pred, grid_samp)
 
                 # idea: add noise to relax from dirac delta at 0 to distb'n
                 # + torch.normal(0, .1/(i+1), size=residuals.shape)
@@ -227,14 +227,14 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         # train MSE: grid sample vs true soln
         # grid_samp, sort_ids = torch.sort(grid_samp, axis=0)
         pred = G(grid_samp)
-        pred_adj = problem.adjust(pred, grid_samp, G)['pred']
+        pred_adj = problem.adjust(pred, grid_samp)['pred']
         sol_samp = problem.get_solution(grid_samp)
         train_mse = mse(pred_adj, sol_samp).item()
         mses['train'].append(train_mse)
 
         # val MSE: fixed grid vs true soln
         val_pred = G(grid)
-        val_pred_adj = problem.adjust(val_pred, grid, G)['pred']
+        val_pred_adj = problem.adjust(val_pred, grid)['pred']
         val_mse = mse(val_pred_adj, soln).item()
         mses['val'].append(val_mse)
 
@@ -259,7 +259,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     if plot:
         plot_grid = problem.get_plot_grid()
         plot_soln = problem.get_plot_solution(grid)
-        pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln, G)
+        pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
         plot_results(mses, losses, plot_grid.detach(), pred_dict, diff_dict=diff_dict,
             save=save, dirname=dirname, logloss=False, alpha=0.7, plot_sep_curves=plot_sep_curves)
         # Plot the learning rates
