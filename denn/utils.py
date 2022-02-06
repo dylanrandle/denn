@@ -15,6 +15,7 @@ plt.rc('axes', titlesize=15, labelsize=15)
 plt.rc('legend', fontsize=15)
 plt.rc('xtick', labelsize=13)
 plt.rc('ytick', labelsize=13)
+plt.rcParams['text.usetex'] = True
 
 def diff(x, t, order=1):
     """The derivative of a variable with respect to another.
@@ -210,7 +211,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
         print(f'Saving results to {dirname}')
         if not os.path.exists(dirname):
             os.mkdir(dirname)
-        plt.savefig(os.path.join(dirname, 'plot.png'))
+        plt.savefig(os.path.join(dirname, 'plot.png'), dpi=300)
         np.save(os.path.join(dirname, "grid"), grid)
         for k, v in mse_dict.items():
             np.save(os.path.join(dirname, f"{k}_mse"), v)
@@ -228,11 +229,11 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 def plot_3D(grid, pred_dict, view=[35, -55], dims=None, save=False, dirname=None):
     """ 3D plotting function for PDEs """
 
-    plt.rc('axes', titlesize=15, labelsize=15)
-    plt.rc('xtick', labelsize=13)
-    plt.rc('ytick', labelsize=13)
+    plt.rc('axes', titlesize=16, labelsize=16)
+    plt.rc('xtick', labelsize=14)
+    plt.rc('ytick', labelsize=14)
 
-    fig = plt.figure(figsize=(14,10))
+    fig = plt.figure(figsize=(14,9))
     ax = fig.add_subplot(projection='3d')
     grid = grid.numpy()
     x, y = grid[:, 0], grid[:, 1]
@@ -248,7 +249,7 @@ def plot_3D(grid, pred_dict, view=[35, -55], dims=None, save=False, dirname=None
     ax.plot_surface(xx, yy, v, cmap=cm.coolwarm, rcount=500, ccount=500, alpha=0.8)
     ax.view_init(elev=view[0], azim=view[1])
     if save:
-        plt.savefig(os.path.join(dirname, 'plot3D.png'))
+        plt.savefig(os.path.join(dirname, 'plot3D.png'), dpi=300)
     else:
         plt.show()
 
