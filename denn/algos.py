@@ -34,6 +34,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     grid = problem.get_grid()
     soln = problem.get_solution(grid)
 
+    # initialize residuals and grid for active sampling
+    grid_samp = grid
+    residuals = torch.zeros_like(grid_samp)
+
     # # observer mask and masked grid/solution (t_obs/y_obs)
     observers = torch.arange(0, len(grid), obs_every)
     # grid_obs = grid[observers, :]
@@ -96,7 +100,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
         for _ in range(G_iters):
             if method == 'unsupervised':
-                grid_samp = problem.get_grid_sample()
+                print('grid samp: ', grid_samp)
+                grid_samp = problem.get_grid_sample(grid_samp, residuals)
                 pred = G(grid_samp)
                 residuals = problem.get_equation(pred, grid_samp)
 

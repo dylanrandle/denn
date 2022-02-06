@@ -16,7 +16,7 @@ class Exponential(Problem):
     Analytic Solution:
     x = exp(-Lt)
     """
-    def __init__(self, t_min = 0, t_max = 10, x0 = 1., L = 1, **kwargs):
+    def __init__(self, t_min=0, t_max=10, x0=1., L=1, sampling='perturb', **kwargs):
         """
         inputs:
             - t_min: start time
@@ -27,7 +27,7 @@ class Exponential(Problem):
             - kwargs: keyword args passed to Problem.__init__()
         """
         super().__init__(**kwargs)
-
+        self.sampling = sampling
         self.t_min = t_min
         self.t_max = t_max
         self.x0 = x0
@@ -44,8 +44,25 @@ class Exponential(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self):
-        return self.sample_grid(self.grid, self.spacing)
+    def get_grid_sample(self, grid, resid):
+        if self.sampling == 'active':
+            #if resid is None:
+            #    return grid
+            #else:
+            grads = self.get_resid_grad(grid, resid)
+            eta = 1 / torch.mean(torch.abs(grads))
+            next_grid = grid + eta*grads
+            print(next_grid)
+            print(grid.shape, next_grid.shape)
+            assert False
+            return next_grid
+        else:
+            return self.sample_grid(self.grid, self.spacing)
+
+    def get_resid_grad(self, grid, resid):
+        """ get the gradient of the residuals at the grid points """
+        grads = diff(resid, grid)
+        return grads
 
     def get_plot_grid(self):
         return self.get_grid()

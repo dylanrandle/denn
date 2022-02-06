@@ -1,8 +1,7 @@
 problem:
   n: 100
-  perturb: True
+  sampling: 'active'
   t_max: 10
-  shuheng: False
 
 training:
   method: 'unsupervised'
@@ -29,7 +28,7 @@ training:
   log: True
   plot: True
   save: True
-  save_for_animation: True
+  save_for_animation: False
   dirname: 'EXP_run'
 
 generator:

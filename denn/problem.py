@@ -5,23 +5,25 @@ import os
 class Problem():
     """ parent class for all problems
     """
-    def __init__(self, n = 100, perturb = True):
+    def __init__(self, n=100, sampling='perturb'):
         """
         n: number of points on grid
-        perturb: boolean indicator for perturbed sampling of grid points
+        sampling: grid sampling method (fixed, perturb, active)
         """
         self.n = n
-        self.perturb = perturb
+        self.sampling = sampling
 
     def sample_grid(self, grid, spacing, tau=3):
         """ return perturbed samples from the grid
             grid is the torch tensor representing the grid
             d is the inter-point spacing
         """
-        if self.perturb:
+        if self.sampling == 'perturb':
             return grid + spacing * torch.randn_like(grid) / tau
-        else:
+        elif self.sampling == 'fixed':
             return grid
+        else:
+            raise ValueError(f'sampling method {self.sampling} not recognized')
 
     def get_grid(self):
         """ return base grid """
