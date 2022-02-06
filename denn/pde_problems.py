@@ -496,7 +496,7 @@ class AllenCahn(Problem):
     u(x,t)     | t=0  : 0.25*sin(x)
     """
     def __init__(self, nx=64, nt=64, epsilon=0.001, xmin=0, xmax=2*np.pi, tmin=0, tmax=5, 
-        xmin_p=0, xmax_p=2*np.pi, tmin_p=0, tmax_p=5, nx_p=1000, nt_p=100, lam=1, **kwargs):
+        xmin_p=0, xmax_p=2*np.pi, tmin_p=0, tmax_p=5, nx_p=1000, nt_p=100, lam=1.0, **kwargs):
         super().__init__(**kwargs)
         self.lam = lam
         self.xmin = xmin
@@ -569,7 +569,7 @@ class AllenCahn(Problem):
         #Axt = 0.25*torch.sin(x)
         #print(u.shape, Axt.shape)
         # self._allen_cahn_eqn(u, x, t) + ()
-        return self._allen_cahn_eqn(u_adj, x, t)*torch.exp(-self.lam*t) # try: 1. + (u_{t=0} - u_sin [init cond])^2 + (u_{t,x=0})^2 + (u_{t,x=L})^2, 2. *e^-lambda*t (or *e^(-t/mu), look for mu (0, t_max))
+        return self._allen_cahn_eqn(u_adj, x, t)*torch.exp(-t/self.lam) # try: 1. + (u_{t=0} - u_sin [init cond])^2 + (u_{t,x=0})^2 + (u_{t,x=L})^2, 2. *e^-lambda*t (or *e^(-t/mu), look for mu (0, t_max))
 
     def adjust(self, u, x, t):
         """ perform boundary value adjustment """
