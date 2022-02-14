@@ -11,10 +11,10 @@ from IPython.display import clear_output
 import pandas as pd 
 
 # global plot params
-plt.rc('axes', titlesize=15, labelsize=15)
+plt.rc('axes', titlesize=16, labelsize=16)
 plt.rc('legend', fontsize=15)
-plt.rc('xtick', labelsize=13)
-plt.rc('ytick', labelsize=13)
+plt.rc('xtick', labelsize=14)
+plt.rc('ytick', labelsize=14)
 plt.rcParams['text.usetex'] = True
 
 def diff(x, t, order=1):
@@ -40,10 +40,10 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     dims=None, plot_1d_curves=False):
     """ helpful plotting function """
 
-    plt.rc('axes', titlesize=15, labelsize=15)
+    plt.rc('axes', titlesize=16, labelsize=16)
     plt.rc('legend', fontsize=15)
-    plt.rc('xtick', labelsize=13)
-    plt.rc('ytick', labelsize=13)
+    plt.rc('xtick', labelsize=14)
+    plt.rc('ytick', labelsize=14)
 
     if clear:
       clear_output(True)
@@ -53,7 +53,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
     if plot_sep_curves:
         n_curves = int(len(pred_dict.keys())/2)
-        fig, ax = plt.subplots(n_curves+1, 2, figsize=(8, 4*(n_curves+1)))
+        fig, ax = plt.subplots(2, n_curves+1, figsize=(4*(n_curves+1), 8))
     elif plot_1d_curves:
         fig, ax = plt.subplots(2, 4, figsize=(16, 8))
         ax = ax.ravel()
@@ -96,7 +96,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     # Losses
     for i, (k, v) in enumerate(loss_dict.items()):
         if plot_sep_curves:
-            ax[0][1].plot(np.arange(len(v)), v, label=k,
+            ax[1][0].plot(np.arange(len(v)), v, label=k,
                 alpha=alphas[i], linewidth=linewidth, color=colors[i],
                 linestyle=linestyles[i])
         else:
@@ -106,11 +106,11 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
     if plot_sep_curves:
         if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
-            ax[0][1].legend(loc='upper right')
-        ax[0][1].set_xlabel('Step')
-        ax[0][1].set_ylabel('Loss')
+            ax[1][0].legend(loc='upper right')
+        ax[1][0].set_xlabel('Step')
+        ax[1][0].set_ylabel('Loss')
         if logloss:
-            ax[0][1].set_yscale('log')
+            ax[1][0].set_yscale('log')
     else:
         if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
             ax[1].legend(loc='upper right')
@@ -140,18 +140,19 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
                     style_id = 0
                 else:
                     style_id = 1
-                ax[plot_id][0].plot(grid, v, label=k, 
+                ax[0][plot_id].plot(grid, v, label=k, 
                 alpha=alphas[style_id], linestyle=linestyles[style_id], 
                 linewidth=linewidth, color=colors[style_id])
-                ax[plot_id][0].set_xlabel('$t$')
-                ax[plot_id][0].legend()
+                ax[0][plot_id].set_xlabel('$z$')
+                ax[0][plot_id].set_ylabel(k)
+                ax[0][plot_id].legend()
         else:
             for i, (k, v) in enumerate(pred_dict.items()):
                 ax[2].plot(grid, v, label=k,
                     alpha=alphas[i], linestyle=linestyles[i],
                     linewidth=linewidth, color=colors[i])
             ax[2].set_xlabel('$t$')
-            ax[2].set_ylabel('$x$')
+            ax[2].set_ylabel('$u$')
             if len(pred_dict.keys()) > 1:
                 ax[2].legend(loc='upper right')
 
@@ -189,13 +190,13 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
             if plot_sep_curves:
                 for i, (k, v) in enumerate(diff_dict.items()):
                     plot_id = i+1
-                    ax[plot_id][1].plot(grid, v, label=k, 
+                    ax[1][plot_id].plot(grid, v, label=k, 
                     alpha=alphas[i], linestyle=linestyles[0], 
                     linewidth=linewidth, color=colors[0])
-                    ax[plot_id][1].set_xlabel('$t$')
-                    ax[plot_id][1].set_ylabel('$F$')
-                    ax[plot_id][1].set_yscale('log')
-                    ax[plot_id][1].legend()
+                    ax[1][plot_id].legend(loc='upper right')
+                    ax[1][plot_id].set_xlabel('$z$')
+                    ax[1][plot_id].set_ylabel('$F$')
+                    ax[1][plot_id].set_yscale('log')
             else:
                 for i, (k, v) in enumerate(diff_dict.items()):
                     ax[3].plot(grid, v, label=k,
