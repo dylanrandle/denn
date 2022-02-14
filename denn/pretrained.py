@@ -4,6 +4,8 @@ from neurodiffeq.conditions import IVP, BaseCondition
 from neurodiffeq.solvers import Solver1D
 from neurodiffeq.networks import FCNN
 import torch
+import torch.nn as nn
+from denn.models import MLP
 from functools import partial
 from scipy import constants
 import matplotlib.pyplot as plt
@@ -13,13 +15,13 @@ def get_pretrained_fcnn(pkey, save=False, pretrained=False):
     if pkey.lower().strip() == "eins":
 
         class CombinedModel(torch.nn.Module):
-                def __init__(self, nets):
-                    super().__init__()
-                    self.nets = torch.nn.ModuleList(nets)
-                    
-                def forward(self, t):
-                    outputs = [net(t) for net in self.nets]
-                    return torch.cat(outputs, dim=1)
+            def __init__(self, nets):
+                super().__init__()
+                self.nets = torch.nn.ModuleList(nets)
+                
+            def forward(self, t):
+                outputs = [net(t) for net in self.nets]
+                return torch.cat(outputs, dim=1)
 
         if save:
             c = constants.c/1000
@@ -220,6 +222,24 @@ def get_pretrained_fcnn(pkey, save=False, pretrained=False):
 
         return combined_model
 
+    elif pkey.lower().strip() == "aca":
+
+        class pretrained_aca(MLP):
+            def __init__(self):
+                super().__init__(in_dim=2, out_dim=1, n_hidden_units=30, 
+                n_hidden_layers=5, residual=True, regress=True)
+
+            def forward(self, x):
+                for i in range(len(self.layers)):
+                    x = self.layers[i](x)
+                return x
+
+        model = pretrained_aca()
+        if pretrained:
+            model.load_state_dict(torch.load(f'C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_fcnn/aca_gen.pth'))
+
+        return model
+    
     else:
         raise NotImplementedError(f"Pretrained FCNN not implemented for problem {pkey}.")
 
