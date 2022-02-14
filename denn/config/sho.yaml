@@ -1,6 +1,6 @@
 problem:
   n: 400
-  perturb: True
+  sampling: 'perturb'
   t_max: 6.28
 
 training:
@@ -14,7 +14,7 @@ training:
   lr_schedule: True
   gamma: 0.97862221657386639
   momentum: 0.93941838732399341
-  noise: False
+  noise: True
   step_size: 19
   obs_every: 1
   d1: 1

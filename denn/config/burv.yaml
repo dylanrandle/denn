@@ -4,7 +4,7 @@ problem:
   nx_p: 1000
   nt_p: 100
   nu: 0.001
-  perturb: True
+  sampling: 'perturb'
 
 training:
   method: 'unsupervised'

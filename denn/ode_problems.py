@@ -1,3 +1,4 @@
+from importlib_metadata import requires
 import numpy as np
 import torch
 from denn.problem import Problem
@@ -44,24 +45,29 @@ class Exponential(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self, grid, resid):
+    def get_grid_sample(self, t, resid, resid_delta):
         if self.sampling == 'active':
-            #if resid is None:
-            #    return grid
-            #else:
-            grads = self.get_resid_grad(grid, resid)
-            eta = 1 / torch.mean(torch.abs(grads))
-            next_grid = grid + eta*grads
-            print(next_grid)
-            print(grid.shape, next_grid.shape)
-            assert False
-            return next_grid
+            grads = self.get_resid_grad(resid, resid_delta)
+            mean_grad = np.mean(np.abs(grads))
+            eta = 1 / mean_grad if mean_grad != 0 else 1
+            steps = eta*grads
+            steps[np.abs(steps) > 2] = 2
+            t_new = t.detach().numpy() + steps
+            t_new[t_new < 0] = 0
+            t_new[t_new > 10] = 10
+            return torch.tensor(t_new, requires_grad=True)
         else:
             return self.sample_grid(self.grid, self.spacing)
 
-    def get_resid_grad(self, grid, resid):
+    def get_resid_grad(self, resid, resid_delta):
         """ get the gradient of the residuals at the grid points """
-        grads = diff(resid, grid)
+        try:
+            resid = resid.detach().numpy()
+            resid_delta = resid_delta.detach().numpy()
+        except:
+            pass
+        delta = 1e-5
+        grads = (np.abs(resid_delta) - np.abs(resid)) / delta
         return grads
 
     def get_plot_grid(self):
@@ -128,7 +134,7 @@ class SimpleOscillator(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self):
+    def get_grid_sample(self, pred, t):
         return self.sample_grid(self.grid, self.spacing)
 
     def get_plot_grid(self):
@@ -585,7 +591,7 @@ class CoupledOscillator(Problem):
         return pred_dict, diff_dict
 
 class EinsteinEquations(Problem):
-    """ Hu-Sawicky f(R) motified Einstein equations
+    """ Hu-Sawicky f(R) modified Einstein equations
         five outputs: x, y, v, Om, r
         five equations: minimize residual sum
 
@@ -639,7 +645,7 @@ class EinsteinEquations(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self):
+    def get_grid_sample(self, pred, z):
         return self.sample_grid(self.grid, self.spacing)
 
     def get_plot_grid(self):
@@ -749,7 +755,6 @@ class EinsteinEquations(Problem):
         """ return appropriate pred_dict and diff_dict used for plotting """
         adj = self.adjust(u, z_prime)
         u_adj = adj['pred']
-        #u_adj = u
         x_adj, y_adj, v_adj, Om_adj, r_prime_adj = u_adj[:,0], u_adj[:,1], u_adj[:,2], u_adj[:,3], u_adj[:,4]
         x_adj, y_adj, v_adj, Om_adj, r_prime_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), v_adj.reshape(-1,1), Om_adj.reshape(-1,1), r_prime_adj.reshape(-1,1)
         r_adj = self._r_prime_to_r(r_prime_adj)

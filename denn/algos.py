@@ -37,6 +37,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     # initialize residuals and grid for active sampling
     grid_samp = grid
     residuals = torch.zeros_like(grid_samp)
+    residuals_delta = torch.zeros_like(grid_samp)
 
     # # observer mask and masked grid/solution (t_obs/y_obs)
     observers = torch.arange(0, len(grid), obs_every)
@@ -77,7 +78,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': [], 'LHS': []}
+    losses = {'G': [], 'D': []}#, 'LHS': []}
     mses = {'train': [], 'val': []}
     preds = {'pred': [], 'soln': []}
 
@@ -100,11 +101,12 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
         for _ in range(G_iters):
             if method == 'unsupervised':
-                print('grid samp: ', grid_samp)
-                grid_samp = problem.get_grid_sample(grid_samp, residuals)
+                grid_samp = problem.get_grid_sample(grid_samp, residuals, residuals_delta)
+                grid_samp_delta = grid_samp + 1e-5
                 pred = G(grid_samp)
+                pred_delta = G(grid_samp_delta)
                 residuals = problem.get_equation(pred, grid_samp)
-
+                residuals_delta = problem.get_equation(pred_delta, grid_samp_delta)
                 # idea: add noise to relax from dirac delta at 0 to distb'n
                 # + torch.normal(0, .1/(i+1), size=residuals.shape)
                 # mae_std = torch.mean(torch.abs(residuals)).item() # Mean absolute error of residuals
@@ -213,7 +215,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         #losses['D_real'].append(real_loss.item())
         #losses['D_fake'].append(fake_loss.item())
         losses['G'].append(g_loss.item())
-        losses['LHS'].append(torch.mean(torch.abs(fake)).item())
+        #losses['LHS'].append(torch.mean(torch.abs(fake)).item())
         
         if lr_schedule:
             #last_lr_G = lr_scheduler_G.get_last_lr()
@@ -514,7 +516,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': [], 'LHS': []}
+    losses = {'G': [], 'D': []}#, 'LHS': []}
     mses = {'train': [], 'val': []} if train_mse else {'val': []}
     preds = {'pred': [], 'soln': []}
 
@@ -571,7 +573,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
 
         losses['D'].append(d_loss.item())
         losses['G'].append(g_loss.item())
-        losses['LHS'].append(torch.mean(torch.abs(fake)).item())
+        #losses['LHS'].append(torch.mean(torch.abs(fake)).item())
 
         if lr_schedule:
           lr_scheduler_G.step()
@@ -624,6 +626,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         plot_3D(plot_grid.detach(), pred_dict, view=view, dims=dims, save=save, dirname=dirname)
 
     if save:
+        #torch.save(G.state_dict(), 'config/pretrained_fcnn/aca_gen.pth')
         write_config(config, os.path.join(dirname, 'config.yaml'))
 
     if save_for_animation:
