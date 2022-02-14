@@ -107,3 +107,33 @@ if __name__ == '__main__':
     else:
         print(f'Running classical training for {args.pkey} problem...')
         L2_experiment(args.pkey, params)
+
+    # from denn.utils import diff
+
+    # params = get_config('exp')
+    # G = MLP(**params['generator'])
+    # D = MLP(**params['discriminator'])
+
+    # def _exp_eqn(x, t):
+    #     return diff(x, t) + x
+
+    # def adjust(x, t):
+    #     x_adj = 1 + (1 - torch.exp(-t)) * x
+    #     return x_adj
+
+    # def get_equation(x, t):
+    #     adj_x = adjust(x, t)
+    #     return _exp_eqn(adj_x, t)
+
+    # grid_samp = torch.linspace(0, 10, 100, requires_grad=True).reshape(-1, 1) # get grid
+    # pred = G(grid_samp) # make prediction
+    # residuals = get_equation(pred, grid_samp) # get residuals
+    # fake = residuals
+
+    # g_loss = D(fake).sum() # calculate some generator loss based on residuals
+    # g_loss.backward(retain_graph=True)
+
+    # d_loss = D(fake.detach()).sum() # calculate some descriminator loss
+    # d_loss.backward()
+
+    # grads = diff(residuals, grid_samp)
