@@ -30,6 +30,8 @@ def get_problem(pkey, params):
         return ode.CoupledOscillator(**params['problem'])
     elif pkey == 'eins':
         return ode.EinsteinEquations(**params['problem'])
+    elif pkey == 'rays':
+        return ode.RaysEquations(**params['problem'])
     elif pkey == 'wav':
         return pde.WaveEquation(**params['problem'])
     elif pkey == 'bur':

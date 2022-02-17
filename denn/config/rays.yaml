@@ -1,0 +1,60 @@
+problem:
+  n: 400
+  sampling: 'fixed' #'perturb'
+  t_max: 1
+  x0: 0
+  y0: 0.3
+  px0: 1
+  py0: 0
+  sigma: 0.1
+  A: 0.1
+
+training:
+  method: 'unsupervised'
+  seed: 2
+  niters: 5000
+  g_lr: 0.0093581768678081979
+  d_lr: 0.0041272976272267361
+  g_betas: [0.21932425228717567, 0.7154610394492373]
+  d_betas: [0.15260135969704555, 0.7677411091156993]
+  g_momentum: 0.94114125988931008
+  d_momentum: 0.94114125988931008
+  lr_schedule: True
+  gamma: 0.97893579812771658
+  noise: False
+  step_size: 13
+  obs_every: 1
+  d1: 1
+  d2: 1
+  G_iters: 1
+  D_iters: 1
+  loss_fn: MSELoss
+  wgan: False
+  gp: 0.1
+  conditional: False
+  log: True
+  plot: True
+  plot_sep_curves: True
+  save: True
+  save_for_animation: False
+  dirname: 'RAYS_run'
+
+generator:
+  in_dim: 1
+  out_dim: 4
+  n_hidden_units: 50
+  n_hidden_layers: 2
+  activation: 'Tanh'
+  residual: True
+  regress: True
+  pretrained: False
+
+discriminator:
+  in_dim: 4
+  out_dim: 1
+  n_hidden_units: 20
+  n_hidden_layers: 2
+  activation: 'Tanh'
+  residual: True
+  regress: False
+  spectral_norm: True

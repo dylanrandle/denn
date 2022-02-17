@@ -2,7 +2,7 @@ from importlib_metadata import requires
 import numpy as np
 import torch
 from denn.problem import Problem
-from scipy.integrate import solve_ivp
+from scipy.integrate import solve_ivp, odeint
 from denn.utils import diff
 from denn.rans.numerical import solve_rans_scipy_solve_bvp
 import os
@@ -174,6 +174,12 @@ class NonlinearOscillator(Problem):
     Nonlinear Oscillator Problem:
 
     $$ \ddot{x} + 2 \beta \dot{x} + \omega^{2} x + \phi x^{2} + \epsilon x^{3} = f(t) $$
+
+    try: diff(u,t, order=2) + (self.w**2)*u + self.lam*(u**3)
+    self.w = 1
+    self.lam = 1
+    self.u_0 = 1.3
+    self.v_0 = 1.0
     """
     def __init__(self, t_min = 0, t_max = 4 * np.pi, dx_dt0 = 1., **kwargs):
         """
@@ -430,12 +436,10 @@ class SIRModel(Problem):
     def get_solution(self, t):
         """ uses scipy to solve """
         try:
-            t = t.detach().numpy() # if torch tensor, convert to numpy
+            t = t.detach().numpy()
         except:
             pass
-
         t = t.reshape(-1)
-
         sol = self.sol.sol(t)
         return torch.tensor(sol.T, dtype=torch.float)
 
@@ -774,22 +778,157 @@ class EinsteinEquations(Problem):
                      '$|\hat{F_5}|$': np.abs(r5.detach())}
         return pred_dict, diff_dict
 
+class RaysEquations(Problem):
+    def __init__(self, t_min=0, t_max=10, x0=0, y0=0.3, px0=1, py0=0, 
+    sigma=0.1, A=0.1, **kwargs):
+
+        super().__init__(**kwargs)
+        self.means =[[0.74507886, 0.3602802 ],
+            [0.40147605, 0.06139579],
+            [0.94162198, 0.46722697],
+            [0.79110703, 0.8973808 ],
+            [0.64732527, 0.07095655],
+            [0.10083943, 0.31935057],
+            [0.24929806, 0.60499613],
+            [0.11377013, 0.42598647],
+            [0.85163671, 0.26495608],
+            [0.18439795, 0.31438099]]
+        self.sigma = sigma
+        self.A = A
+        self.t_min = t_min
+        self.t_max = t_max
+        self.x0 = x0
+        self.y0 = y0
+        self.px0 = px0
+        self.py0 = py0
+        self.grid = torch.linspace(
+            t_min,
+            t_max,
+            self.n,
+            dtype=torch.float,
+            requires_grad=True
+        ).reshape(-1, 1)
+        self.spacing = self.grid[1, 0] - self.grid[0, 0]
+
+    def get_grid(self):
+        return self.grid
+
+    def get_grid_sample(self, t, resid, resid_delta):
+        return self.sample_grid(self.grid, self.spacing)
+
+    def get_plot_grid(self):
+        return self.get_grid()
+
+    def get_solution(self, t):
+        try:
+            t = t.detach().numpy()
+        except:
+            pass
+        t = t.reshape(-1)
+        x, y, px, py = self.ray_tracing_general(t)
+        return torch.tensor(np.array([x, y, px, py]), dtype=torch.float).T
+
+    def get_plot_solution(self, t):
+        return self.get_solution(t)
+
+    def f_general(self, u, t, means, sigma, A):
+        x, y, px, py = u  
+        V, Vx, Vy = 0, 0, 0
+        for mean in means:
+            muX1 = mean[0]
+            muY1 = mean[1]
+            V += -A*np.exp(-(((x-muX1)**2 + (y-muY1)**2) / sigma**2)/2)
+            Vx += A*np.exp(-(((x-muX1)**2 + (y-muY1)**2) / sigma**2)/2) * (x-muX1)/sigma**2 
+            Vy += A*np.exp(-(((x-muX1)**2 + (y-muY1)**2) / sigma**2)/2) * (y-muY1)/sigma**2 
+        derivs = [px, py, -Vx, -Vy] 
+        return derivs
+
+    def ray_tracing_general(self, t):
+        u0 = [self.x0, self.y0, self.px0, self.py0]
+        solPend = odeint(self.f_general, u0, t, args=(self.means, self.sigma, self.A))
+        xP = solPend[:,0]
+        yP  = solPend[:,1]
+        pxP = solPend[:,2]
+        pyP = solPend[:,3]
+        return xP, yP, pxP, pyP
+
+    def _rays_system(self, t, x):
+        x, y, px, py = x[0], x[1], x[2], x[3]
+        rhs1 = px
+        rhs2 = py
+        rhs3 = 0
+        rhs4 = 0
+        return np.array([rhs1, rhs2, rhs3, rhs4])
+
+    def _rays_eqn(self, t, x):
+        x_adj, y_adj, px_adj, py_adj = x[:,0], x[:,1], x[:,2], x[:,3] 
+        x_adj, y_adj, px_adj, py_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), px_adj.reshape(-1,1), py_adj.reshape(-1,1)
+        Vx, Vy = 0, 0
+        for i in self.means:
+            muX1=i[0]
+            muY1=i[1]
+            Vx += self.A*torch.exp(- (( (x_adj-muX1)**2 + (y_adj-muY1)**2) / self.sigma**2)/2) * (x_adj-muX1)/self.sigma**2
+            Vy += self.A*torch.exp(- (( (x_adj-muX1)**2 + (y_adj-muY1)**2) / self.sigma**2)/2) * (y_adj-muY1)/self.sigma**2
+        eqn1 = diff(x_adj, t) - px_adj
+        eqn2 = diff(y_adj, t) - py_adj
+        eqn3 = diff(px_adj, t) + Vx
+        eqn4 = diff(py_adj, t) + Vy
+        return eqn1, eqn2, eqn3, eqn4
+
+    def get_equation(self, x, t):
+        """ return value of residuals of equation (i.e. LHS) """
+        adj = self.adjust(x, t)
+        x_adj = adj['pred']
+        eqn1, eqn2, eqn3, eqn4 = self._rays_eqn(t, x_adj)
+        #eqn1, eqn2, eqn3, eqn4, eqn5, eqn6, eqn7, eqn8 = self._rays_eqn(t, x_adj)
+        return torch.cat((eqn1, eqn2, eqn3, eqn4), axis=1)
+
+    def adjust(self, x, t):
+        """ perform initial value adjustment """
+        x_, y, px, py = x[:, 0], x[:, 1], x[:, 2], x[:, 3]
+        x_adj = self.x0 + (1 - torch.exp(-t)) * x_.reshape(-1,1)
+        y_adj = self.y0 + (1 - torch.exp(-t)) * y.reshape(-1,1)
+        px_adj = self.px0 + (1 - torch.exp(-t)) * px.reshape(-1,1)
+        py_adj = self.py0 + (1 - torch.exp(-t)) * py.reshape(-1,1)
+
+        return {'pred': torch.cat((x_adj, y_adj, px_adj, py_adj), axis=1)}
+
+    def get_plot_dicts(self, x, t, y):
+        """ return appropriate pred_dict and diff_dict used for plotting """
+        adj = self.adjust(x, t)
+        pred_adj = adj['pred']
+        x_adj, y_adj, px_adj, py_adj = pred_adj[:,0], pred_adj[:,1], pred_adj[:,2], pred_adj[:,3]
+        x_adj, y_adj, px_adj, py_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), px_adj.reshape(-1,1), py_adj.reshape(-1,1)
+        x_true, y_true, px_true, py_true = y[:, 0], y[:, 1], y[:, 2], y[:, 3]
+        pred_dict = {'$\hat{x}$': x_adj.detach(), '$x$': x_true.detach(),
+                     '$\hat{y}$': y_adj.detach(), '$y$': y_true.detach(),
+                     '$\hat{p_x}$': px_adj.detach(), '$p_x$': px_true.detach(),
+                     '$\hat{p_y}$': py_adj.detach(), '$p_y$': py_true.detach()}
+        residuals = self.get_equation(x, t)
+        r1, r2, r3, r4 = residuals[:,0], residuals[:,1], residuals[:,2], residuals[:,3]
+        diff_dict = {'$|\hat{F_1}|$': np.abs(r1.detach()),
+                     '$|\hat{F_2}|$': np.abs(r2.detach()),
+                     '$|\hat{F_3}|$': np.abs(r3.detach()),
+                     '$|\hat{F_4}|$': np.abs(r4.detach())}
+        return pred_dict, diff_dict
+
 if __name__ == "__main__":
     import denn.utils as ut
     import matplotlib.pyplot as plt
 
-    print('Testing Hu-Sawicky Model')
-    model = EinsteinEquations(n=100, z_0 = 10, Om_m_0 = 0.15, b = 5)
-    z_prime = model.get_grid()
-    sol = model.get_solution(z_prime)
-    adj = model.adjust(sol, z_prime)['pred']
-    res = model.get_equation(adj, z_prime)
-    pred_dict, diff_dict = model.get_plot_dicts(adj, z_prime, sol)
-    z_prime = z_prime.detach()
+    print('Testing Rays Model')
+    model = RaysEquations(n=100)
+    t = model.get_grid()
+    sol = model.get_solution(t)
+    print(sol.shape)
+    adj = model.adjust(sol, t)['pred']
+    res = model.get_equation(adj, t)
+    pred_dict, diff_dict = model.get_plot_dicts(adj, t, sol)
+    t = t.detach()
     sol = sol.detach()
-    fig, axs = plt.subplots(1, 5, figsize=(14,5))
-    for i in range(5):
-        axs[i].plot(z_prime, sol[:,i])
+    fig, axs = plt.subplots(1, 4, figsize=(14,5))
+    for i in range(4):
+        axs[i].plot(t, sol[:,i])
     plt.show()
 
     #x, t = np.linspace(0,1,32), np.linspace(0,1,32)
