@@ -15,7 +15,7 @@ plt.rc('axes', titlesize=16, labelsize=16)
 plt.rc('legend', fontsize=15)
 plt.rc('xtick', labelsize=14)
 plt.rc('ytick', labelsize=14)
-plt.rcParams['text.usetex'] = True
+#plt.rcParams['text.usetex'] = True
 
 def diff(x, t, order=1):
     """The derivative of a variable with respect to another.
@@ -44,6 +44,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     plt.rc('legend', fontsize=15)
     plt.rc('xtick', labelsize=14)
     plt.rc('ytick', labelsize=14)
+    plt.rcParams['text.usetex'] = True
 
     if clear:
       clear_output(True)
@@ -143,7 +144,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
                 ax[0][plot_id].plot(grid, v, label=k, 
                 alpha=alphas[style_id], linestyle=linestyles[style_id], 
                 linewidth=linewidth, color=colors[style_id])
-                ax[0][plot_id].set_xlabel('$z$')
+                ax[0][plot_id].set_xlabel('$t$')
                 ax[0][plot_id].set_ylabel(k)
                 ax[0][plot_id].legend()
         else:
@@ -194,7 +195,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
                     alpha=alphas[i], linestyle=linestyles[0], 
                     linewidth=linewidth, color=colors[0])
                     ax[1][plot_id].legend(loc='upper right')
-                    ax[1][plot_id].set_xlabel('$z$')
+                    ax[1][plot_id].set_xlabel('$t$')
                     ax[1][plot_id].set_ylabel('$F$')
                     ax[1][plot_id].set_yscale('log')
             else:
@@ -233,6 +234,7 @@ def plot_3D(grid, pred_dict, view=[35, -55], dims=None, save=False, dirname=None
     plt.rc('axes', titlesize=16, labelsize=16)
     plt.rc('xtick', labelsize=14)
     plt.rc('ytick', labelsize=14)
+    plt.rcParams['text.usetex'] = True
 
     fig = plt.figure(figsize=(14,9))
     ax = fig.add_subplot(projection='3d')
