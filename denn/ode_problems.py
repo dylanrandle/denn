@@ -50,11 +50,11 @@ class Exponential(Problem):
             grads = self.get_resid_grad(resid, resid_delta)
             mean_grad = np.mean(np.abs(grads))
             eta = 1 / mean_grad if mean_grad != 0 else 1
-            steps = eta*grads
-            steps[np.abs(steps) > 2] = 2
-            t_new = t.detach().numpy() + steps
-            t_new[t_new < 0] = 0
-            t_new[t_new > 10] = 10
+            grad_clip = self.spacing.item() / eta
+            grads[grads >= 2*grad_clip] = 2*grad_clip
+            t_new = t.detach().numpy() + eta*grads
+            t_new[t_new < self.t_min] = self.t_min
+            t_new[t_new > self.t_max] = self.t_max
             return torch.tensor(t_new, requires_grad=True)
         else:
             return self.sample_grid(self.grid, self.spacing)
@@ -783,7 +783,7 @@ class RaysEquations(Problem):
     sigma=0.1, A=0.1, **kwargs):
 
         super().__init__(**kwargs)
-        self.means =[[0.74507886, 0.3602802 ],
+        self.means = [[0.74507886, 0.3602802 ],
             [0.40147605, 0.06139579],
             [0.94162198, 0.46722697],
             [0.79110703, 0.8973808 ],
