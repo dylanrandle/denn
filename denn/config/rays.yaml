@@ -36,7 +36,7 @@ training:
   plot: True
   plot_sep_curves: True
   save: True
-  save_for_animation: False
+  save_for_animation: True
   dirname: 'RAYS_run'
 
 generator:

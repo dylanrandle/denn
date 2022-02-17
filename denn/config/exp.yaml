@@ -1,6 +1,6 @@
 problem:
   n: 100
-  sampling: 'active'
+  sampling: 'perturb'
   t_max: 10
 
 training:
@@ -28,7 +28,7 @@ training:
   log: True
   plot: True
   save: True
-  save_for_animation: False
+  save_for_animation: True
   dirname: 'EXP_run'
 
 generator:
