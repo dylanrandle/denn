@@ -515,6 +515,7 @@ class AllenCahn(Problem):
         self.tgrid = torch.linspace(tmin, tmax, nt+1, requires_grad=True)
         grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid)
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+        self.u_t0 = 0.25*torch.sin(self.xgrid.detach())
 
         self.xmin_p = xmin_p
         self.xmax_p = xmax_p
@@ -526,6 +527,7 @@ class AllenCahn(Problem):
         self.tgrid_p = torch.linspace(tmin_p, tmax_p, self.nt_p, requires_grad=True)
         grid_x_p, grid_t_p = torch.meshgrid(self.xgrid_p, self.tgrid_p)
         self.grid_x_p, self.grid_t_p = grid_x_p.reshape(-1,1), grid_t_p.reshape(-1,1)
+        self.u_t0_p = 0.25*torch.sin(self.xgrid_p.detach())
 
     def get_grid(self):
         return (self.grid_x.float(), self.grid_t.float())
@@ -562,24 +564,30 @@ class AllenCahn(Problem):
     def _allen_cahn_eqn(self, u, x, t):
         return diff(u, t, order=1) - self.epsilon*diff(u, x, order=2) - u + u**3
 
-    def get_equation(self, u, x, t):
+    def get_equation(self, u, x, t, plot=False):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(u, x, t)
-        u_adj = adj['pred'] 
-        #Axt = 0.25*torch.sin(x)
-        #print(u.shape, Axt.shape)
-        # self._allen_cahn_eqn(u, x, t) + ()
-        return self._allen_cahn_eqn(u_adj, x, t)*torch.exp(-t/self.lam) # try: 1. + (u_{t=0} - u_sin [init cond])^2 + (u_{t,x=0})^2 + (u_{t,x=L})^2, 2. *e^-lambda*t (or *e^(-t/mu), look for mu (0, t_max))
+        u_adj = adj['pred']
+        resid = self._allen_cahn_eqn(u_adj, x, t)
+        if plot is True:
+            u_adj = u_adj.reshape((self.nx_p, self.nt_p))
+            ic = u_adj[:, 0] - self.u_t0_p
+        else:
+            u_adj = u_adj.reshape((self.nx+1, self.nt+1))
+            ic = u_adj[:, 0] - self.u_t0
+        ic, bc1, bc2 = ic.reshape(-1, 1), u_adj[0, :].reshape(-1, 1), u_adj[-1, :].reshape(-1, 1)
+        ic, bc1, bc2 = ic*self.lam, bc1*self.lam, bc2*self.lam
+        #return self._allen_cahn_eqn(u_adj, x, t)#*torch.exp(-t/self.lam)
+        return torch.cat((resid, ic, bc1, bc2))
 
     def adjust(self, u, x, t):
         """ perform boundary value adjustment """
-        x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
-        t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
-        Axt = 0.25*torch.sin(x)
+        #x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
+        #t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
+        #Axt = 0.25*torch.sin(x)
 
-        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u # 3. multiply t_tilde by self.lam
-
-        return {'pred': u_adj}
+        #u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
+        return {'pred': u} #u_adj
 
     def get_plot_dicts(self, pred, x, t, sol):
         """ return appropriate pred_dict / diff_dict used for plotting """
@@ -587,8 +595,9 @@ class AllenCahn(Problem):
         pred_adj = adj['pred']
         pred_dict = {'$\hat{u}$': pred_adj.detach(), '$u$': sol.detach()}
 
-        resid = self.get_equation(pred, x, t)
-        diff_dict = {'$|\hat{F}|$': np.abs(resid.detach())}
+        resid = self.get_equation(pred, x, t, plot=True)
+        resid_len = self.nx_p*self.nt_p
+        diff_dict = {'$|\hat{F}|$': np.abs(resid.detach()[:resid_len])}
         return pred_dict, diff_dict
 
 class KuramotoSivashinsky(Problem):
