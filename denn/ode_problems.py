@@ -55,7 +55,7 @@ class Exponential(Problem):
             t_new = t.detach().numpy() + eta*grads
             t_new[t_new < self.t_min] = self.t_min
             t_new[t_new > self.t_max] = self.t_max
-            return torch.tensor(t_new, requires_grad=True)
+            return torch.tensor(np.sort(t_new, axis=0), requires_grad=True)
         else:
             return self.sample_grid(self.grid, self.spacing)
 
@@ -864,11 +864,11 @@ class RaysEquations(Problem):
         x_adj, y_adj, px_adj, py_adj = x[:,0], x[:,1], x[:,2], x[:,3] 
         x_adj, y_adj, px_adj, py_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), px_adj.reshape(-1,1), py_adj.reshape(-1,1)
         Vx, Vy = 0, 0
-        for i in self.means:
-            muX1=i[0]
-            muY1=i[1]
-            Vx += self.A*torch.exp(- (( (x_adj-muX1)**2 + (y_adj-muY1)**2) / self.sigma**2)/2) * (x_adj-muX1)/self.sigma**2
-            Vy += self.A*torch.exp(- (( (x_adj-muX1)**2 + (y_adj-muY1)**2) / self.sigma**2)/2) * (y_adj-muY1)/self.sigma**2
+        for mean in self.means:
+            muX1 = mean[0]
+            muY1 = mean[1]
+            Vx += self.A*torch.exp(-(((x_adj-muX1)**2 + (y_adj-muY1)**2) / self.sigma**2)/2) * (x_adj-muX1)/self.sigma**2
+            Vy += self.A*torch.exp(-(((x_adj-muX1)**2 + (y_adj-muY1)**2) / self.sigma**2)/2) * (y_adj-muY1)/self.sigma**2
         eqn1 = diff(x_adj, t) - px_adj
         eqn2 = diff(y_adj, t) - py_adj
         eqn3 = diff(px_adj, t) + Vx
