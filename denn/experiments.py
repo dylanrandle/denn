@@ -4,7 +4,7 @@ import argparse
 import numpy as np
 
 from denn.algos import train_L2, train_L2_2D, train_GAN, train_GAN_2D
-from denn.models import MLP
+from denn.models import MLP, MultiHeadGen
 from denn.pretrained import get_pretrained_fcnn
 from denn.config.config import get_config
 import denn.ode_problems as ode
@@ -76,6 +76,8 @@ def gan_experiment(pkey, params):
     # models
     if params['generator']['pretrained']:
         gen = get_pretrained_fcnn(pkey)
+    elif params['generator']['n_heads'] > 1:
+        gen = MultiHeadGen(**params['generator'])
     else:
         gen = MLP(**params['generator'])
     disc = MLP(**params['discriminator'])

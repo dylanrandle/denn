@@ -29,7 +29,7 @@ class MLP(nn.Module):
     """
     def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2,
         activation=nn.Tanh(), residual=False, regress=False, spectral_norm=False, 
-        pretrained=False):
+        n_heads=1, pretrained=False):
 
         super().__init__()
 
@@ -40,7 +40,7 @@ class MLP(nn.Module):
 
         # input
         self.layers = nn.ModuleList()
-        self.layers.append(norm(nn.Linear(in_dim, n_hidden_units)))
+        self.layers.append(norm(nn.Linear(in_dim*n_heads, n_hidden_units)))
         self.layers.append(activation)
 
         # hidden
@@ -61,6 +61,55 @@ class MLP(nn.Module):
         for i in range(len(self.layers)):
             x = self.layers[i](x)
         return x
+
+class MultiHeadGen(nn.Module):
+    """
+    Multi-layer perceptron
+
+    Optionally use residual connections
+    Default is sigmoid output
+    """
+    def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2,
+        activation=nn.Tanh(), residual=False, regress=False, spectral_norm=False,
+        n_heads=1, pretrained=False):
+
+        super().__init__()
+        self.n_heads = n_heads
+        
+        if isinstance(activation, str):
+            activation = eval('nn.'+activation+'()')
+
+        norm = lambda x: nn.utils.spectral_norm(x) if spectral_norm else x
+
+        # input
+        self.layers = nn.ModuleList()
+        self.layers.append(norm(nn.Linear(in_dim, n_hidden_units)))
+        self.layers.append(activation)
+
+        # hidden
+        for l in range(n_hidden_layers):
+            if residual:
+                self.layers.append(ResidualBlock(n_hidden_units, activation, spectral_norm=spectral_norm))
+            else:
+                self.layers.append(norm(nn.Linear(n_hidden_units, n_hidden_units)))
+                self.layers.append(activation)
+
+        # heads
+        self.heads = nn.ModuleList([nn.Linear(n_hidden_units, n_hidden_units)]) 
+        self.heads.extend([nn.Linear(n_hidden_units, n_hidden_units) for l in range(self.n_heads-1)])
+
+        # output
+        self.output = norm(nn.Linear(n_hidden_units, out_dim))
+
+    def forward(self, x):
+        d = {}
+        for i in range(len(self.layers)):
+            x = self.layers[i](x)
+        for j in range(self.n_heads):
+            x1 = self.heads[j](x)
+            x1 = self.output(x1)
+            d[j] = x1
+        return d
 
 class Swish(nn.Module):
     """

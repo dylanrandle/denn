@@ -779,7 +779,7 @@ class EinsteinEquations(Problem):
         return pred_dict, diff_dict
 
 class RaysEquations(Problem):
-    def __init__(self, t_min=0, t_max=10, x0=0, y0=0.3, px0=1, py0=0, 
+    def __init__(self, t_min=0, t_max=10, x0=0, y0=[0.3], px0=1, py0=0, 
     sigma=0.1, A=0.1, **kwargs):
 
         super().__init__(**kwargs)
@@ -819,97 +819,139 @@ class RaysEquations(Problem):
     def get_plot_grid(self):
         return self.get_grid()
 
+    def scipy_helper(self, t, u0):
+        atol = 1e-16
+        rtol = 1e-11
+        solver = solve_ivp(
+            self._rays_system,
+            t_span = (self.t_min, self.t_max),
+            y0 = u0,
+            dense_output=True,
+            atol=atol,
+            rtol=rtol,
+        )
+        sol = solver.sol(t)
+        return torch.tensor(sol.T, dtype=torch.float)
+
     def get_solution(self, t):
         try:
             t = t.detach().numpy()
         except:
             pass
         t = t.reshape(-1)
-        x, y, px, py = self.ray_tracing_general(t)
-        return torch.tensor(np.array([x, y, px, py]), dtype=torch.float).T
+
+        sol = []
+        for y0 in self.y0:
+            s = self.scipy_helper(t, u0=[self.x0, y0, self.px0, self.py0])
+            sol.append(s)
+
+        return torch.cat(sol, axis=1)
 
     def get_plot_solution(self, t):
         return self.get_solution(t)
 
-    def f_general(self, u, t, means, sigma, A):
-        x, y, px, py = u  
-        V, Vx, Vy = 0, 0, 0
-        for mean in means:
-            muX1 = mean[0]
-            muY1 = mean[1]
-            V += -A*np.exp(-(((x-muX1)**2 + (y-muY1)**2) / sigma**2)/2)
-            Vx += A*np.exp(-(((x-muX1)**2 + (y-muY1)**2) / sigma**2)/2) * (x-muX1)/sigma**2 
-            Vy += A*np.exp(-(((x-muX1)**2 + (y-muY1)**2) / sigma**2)/2) * (y-muY1)/sigma**2 
-        derivs = [px, py, -Vx, -Vy] 
-        return derivs
-
-    def ray_tracing_general(self, t):
-        u0 = [self.x0, self.y0, self.px0, self.py0]
-        solPend = odeint(self.f_general, u0, t, args=(self.means, self.sigma, self.A))
-        xP = solPend[:,0]
-        yP  = solPend[:,1]
-        pxP = solPend[:,2]
-        pyP = solPend[:,3]
-        return xP, yP, pxP, pyP
-
-    def _rays_system(self, t, x):
-        x, y, px, py = x[0], x[1], x[2], x[3]
+    def _rays_system(self, t, vars):
+        x, y, px, py = vars
+        Vx, Vy = 0, 0
+        for mean in self.means:
+            Vx += self.A*np.exp(-(((x-mean[0])**2 + (y-mean[1])**2) / self.sigma**2)/2) * (x-mean[0])/self.sigma**2 
+            Vy += self.A*np.exp(-(((x-mean[0])**2 + (y-mean[1])**2) / self.sigma**2)/2) * (y-mean[1])/self.sigma**2 
         rhs1 = px
         rhs2 = py
-        rhs3 = 0
-        rhs4 = 0
+        rhs3 = -Vx
+        rhs4 = -Vy
         return np.array([rhs1, rhs2, rhs3, rhs4])
 
-    def _rays_eqn(self, t, x):
-        x_adj, y_adj, px_adj, py_adj = x[:,0], x[:,1], x[:,2], x[:,3] 
+    def _rays_eqn(self, t, u_adj):
+        x_adj, y_adj, px_adj, py_adj = u_adj[:,0], u_adj[:,1], u_adj[:,2], u_adj[:,3] 
         x_adj, y_adj, px_adj, py_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), px_adj.reshape(-1,1), py_adj.reshape(-1,1)
         Vx, Vy = 0, 0
         for mean in self.means:
-            muX1 = mean[0]
-            muY1 = mean[1]
-            Vx += self.A*torch.exp(-(((x_adj-muX1)**2 + (y_adj-muY1)**2) / self.sigma**2)/2) * (x_adj-muX1)/self.sigma**2
-            Vy += self.A*torch.exp(-(((x_adj-muX1)**2 + (y_adj-muY1)**2) / self.sigma**2)/2) * (y_adj-muY1)/self.sigma**2
+            Vx += self.A*torch.exp(-(((x_adj-mean[0])**2 + (y_adj-mean[1])**2) / self.sigma**2)/2) * (x_adj-mean[0])/self.sigma**2
+            Vy += self.A*torch.exp(-(((x_adj-mean[0])**2 + (y_adj-mean[1])**2) / self.sigma**2)/2) * (y_adj-mean[1])/self.sigma**2
         eqn1 = diff(x_adj, t) - px_adj
         eqn2 = diff(y_adj, t) - py_adj
         eqn3 = diff(px_adj, t) + Vx
         eqn4 = diff(py_adj, t) + Vy
         return eqn1, eqn2, eqn3, eqn4
 
-    def get_equation(self, x, t):
+    def get_equation(self, d, t):
         """ return value of residuals of equation (i.e. LHS) """
-        adj = self.adjust(x, t)
-        x_adj = adj['pred']
-        eqn1, eqn2, eqn3, eqn4 = self._rays_eqn(t, x_adj)
-        #eqn1, eqn2, eqn3, eqn4, eqn5, eqn6, eqn7, eqn8 = self._rays_eqn(t, x_adj)
-        return torch.cat((eqn1, eqn2, eqn3, eqn4), axis=1)
+        if isinstance(d, dict):
+            lhs = []
+            for x in d.values():
+                adj = self.adjust(x, t)
+                x_adj = adj['pred']
+                eqn1, eqn2, eqn3, eqn4 = self._rays_eqn(t, x_adj)
+                lhs.extend([eqn1, eqn2, eqn3, eqn4])
+        else:
+            adj = self.adjust(d, t)
+            x_adj = adj['pred']
+            eqn1, eqn2, eqn3, eqn4 = self._rays_eqn(t, x_adj)
+            lhs = [eqn1, eqn2, eqn3, eqn4]
+        return torch.cat(lhs, axis=1)
+        # return torch.cat((eqn1, eqn2, eqn3, eqn4), axis=1)
 
-    def adjust(self, x, t):
+    def adjust(self, d, t, y0_i=0):
         """ perform initial value adjustment """
-        x_, y, px, py = x[:, 0], x[:, 1], x[:, 2], x[:, 3]
-        x_adj = self.x0 + (1 - torch.exp(-t)) * x_.reshape(-1,1)
-        y_adj = self.y0 + (1 - torch.exp(-t)) * y.reshape(-1,1)
-        px_adj = self.px0 + (1 - torch.exp(-t)) * px.reshape(-1,1)
-        py_adj = self.py0 + (1 - torch.exp(-t)) * py.reshape(-1,1)
+        if isinstance(d, dict):
+            adj = []
+            for i, u in d.items():
+                x, y, px, py = u[:, 0], u[:, 1], u[:, 2], u[:, 3]
+                x_adj = self.x0 + (1 - torch.exp(-t)) * x.reshape(-1,1)
+                y_adj = self.y0[i] + (1 - torch.exp(-t)) * y.reshape(-1,1)
+                px_adj = self.px0 + (1 - torch.exp(-t)) * px.reshape(-1,1)
+                py_adj = self.py0 + (1 - torch.exp(-t)) * py.reshape(-1,1)
+                adj.extend([x_adj, y_adj, px_adj, py_adj])
+        else:
+            x, y, px, py = d[:, 0], d[:, 1], d[:, 2], d[:, 3]
+            x_adj = self.x0 + (1 - torch.exp(-t)) * x.reshape(-1,1)
+            y_adj = self.y0[y0_i] + (1 - torch.exp(-t)) * y.reshape(-1,1)
+            px_adj = self.px0 + (1 - torch.exp(-t)) * px.reshape(-1,1)
+            py_adj = self.py0 + (1 - torch.exp(-t)) * py.reshape(-1,1)
+            adj = [x_adj, y_adj, px_adj, py_adj]
+        return {'pred': torch.cat(adj, axis=1)}
+        #return {'pred': torch.cat((x_adj, y_adj, px_adj, py_adj), axis=1)}
 
-        return {'pred': torch.cat((x_adj, y_adj, px_adj, py_adj), axis=1)}
-
-    def get_plot_dicts(self, x, t, y):
+    def get_plot_dicts(self, d, t, y):
         """ return appropriate pred_dict and diff_dict used for plotting """
-        adj = self.adjust(x, t)
-        pred_adj = adj['pred']
-        x_adj, y_adj, px_adj, py_adj = pred_adj[:,0], pred_adj[:,1], pred_adj[:,2], pred_adj[:,3]
-        x_adj, y_adj, px_adj, py_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), px_adj.reshape(-1,1), py_adj.reshape(-1,1)
-        x_true, y_true, px_true, py_true = y[:, 0], y[:, 1], y[:, 2], y[:, 3]
-        pred_dict = {'$\hat{x}$': x_adj.detach(), '$x$': x_true.detach(),
-                     '$\hat{y}$': y_adj.detach(), '$y$': y_true.detach(),
-                     '$\hat{p_x}$': px_adj.detach(), '$p_x$': px_true.detach(),
-                     '$\hat{p_y}$': py_adj.detach(), '$p_y$': py_true.detach()}
-        residuals = self.get_equation(x, t)
-        r1, r2, r3, r4 = residuals[:,0], residuals[:,1], residuals[:,2], residuals[:,3]
-        diff_dict = {'$|\hat{F_1}|$': np.abs(r1.detach()),
-                     '$|\hat{F_2}|$': np.abs(r2.detach()),
-                     '$|\hat{F_3}|$': np.abs(r3.detach()),
-                     '$|\hat{F_4}|$': np.abs(r4.detach())}
+        if isinstance(d, dict):
+            pred_dict, diff_dict = {}, {}
+            for i, x in d.items():
+                y_head = y[:, i*4:(i*4+4)]
+                adj = self.adjust(x, t, y0_i=i)
+                pred_adj = adj['pred']
+                x_adj, y_adj, px_adj, py_adj = pred_adj[:,0], pred_adj[:,1], pred_adj[:,2], pred_adj[:,3]
+                x_adj, y_adj, px_adj, py_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), px_adj.reshape(-1,1), py_adj.reshape(-1,1)
+                x_true, y_true, px_true, py_true = y_head[:, 0], y_head[:, 1], y_head[:, 2], y_head[:, 3]
+                pred_d = {'$\hat{x}$': x_adj.detach(), '$x$': x_true.detach(),
+                            '$\hat{y}$': y_adj.detach(), '$y$': y_true.detach(),
+                            '$\hat{p_x}$': px_adj.detach(), '$p_x$': px_true.detach(),
+                            '$\hat{p_y}$': py_adj.detach(), '$p_y$': py_true.detach()}
+                residuals = self.get_equation(x, t)
+                r1, r2, r3, r4 = residuals[:,0], residuals[:,1], residuals[:,2], residuals[:,3]
+                diff_d = {'$|\hat{F_1}|$': np.abs(r1.detach()),
+                            '$|\hat{F_2}|$': np.abs(r2.detach()),
+                            '$|\hat{F_3}|$': np.abs(r3.detach()),
+                            '$|\hat{F_4}|$': np.abs(r4.detach())}
+                pred_dict[self.y0[i]] = pred_d
+                diff_dict[self.y0[i]] = diff_d
+        else:
+            adj = self.adjust(d, t)
+            pred_adj = adj['pred']
+            x_adj, y_adj, px_adj, py_adj = pred_adj[:,0], pred_adj[:,1], pred_adj[:,2], pred_adj[:,3]
+            x_adj, y_adj, px_adj, py_adj = x_adj.reshape(-1,1), y_adj.reshape(-1,1), px_adj.reshape(-1,1), py_adj.reshape(-1,1)
+            x_true, y_true, px_true, py_true = y[:, 0], y[:, 1], y[:, 2], y[:, 3]
+            pred_dict = {'$\hat{x}$': x_adj.detach(), '$x$': x_true.detach(),
+                        '$\hat{y}$': y_adj.detach(), '$y$': y_true.detach(),
+                        '$\hat{p_x}$': px_adj.detach(), '$p_x$': px_true.detach(),
+                        '$\hat{p_y}$': py_adj.detach(), '$p_y$': py_true.detach()}
+            residuals = self.get_equation(d, t)
+            r1, r2, r3, r4 = residuals[:,0], residuals[:,1], residuals[:,2], residuals[:,3]
+            diff_dict = {'$|\hat{F_1}|$': np.abs(r1.detach()),
+                        '$|\hat{F_2}|$': np.abs(r2.detach()),
+                        '$|\hat{F_3}|$': np.abs(r3.detach()),
+                        '$|\hat{F_4}|$': np.abs(r4.detach())}
         return pred_dict, diff_dict
 
 if __name__ == "__main__":
