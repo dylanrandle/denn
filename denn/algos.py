@@ -87,11 +87,11 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         for _ in range(G_iters):
             if method == 'unsupervised':
                 grid_samp = problem.get_grid_sample(grid_samp, residuals, residuals_delta)
-                #grid_samp_delta = grid_samp + 1e-5
+                grid_samp_delta = grid_samp + 1e-5
                 pred = G(grid_samp)
-                #pred_delta = G(grid_samp_delta)
+                pred_delta = G(grid_samp_delta)
                 residuals = problem.get_equation(pred, grid_samp)
-                #residuals_delta = problem.get_equation(pred_delta, grid_samp_delta)
+                residuals_delta = problem.get_equation(pred_delta, grid_samp_delta)
                 
                 # idea: add noise to relax from dirac delta at 0 to distb'n
                 # + torch.normal(0, .1/(i+1), size=residuals.shape)

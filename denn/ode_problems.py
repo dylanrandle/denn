@@ -46,16 +46,22 @@ class Exponential(Problem):
         return self.grid
 
     def get_grid_sample(self, t, resid, resid_delta):
-        if self.sampling == 'active':
+        if self.sampling == 'gradient':
             grads = self.get_resid_grad(resid, resid_delta)
             mean_grad = np.mean(np.abs(grads))
             eta = 1 / mean_grad if mean_grad != 0 else 1
             grad_clip = self.spacing.item() / eta
             grads[grads >= 2*grad_clip] = 2*grad_clip
             t_new = t.detach().numpy() + eta*grads
-            t_new[t_new < self.t_min] = self.t_min
-            t_new[t_new > self.t_max] = self.t_max
-            return torch.tensor(np.sort(t_new, axis=0), requires_grad=True)
+            #t_new[t_new < self.t_min] = self.t_min
+            #t_new[t_new > self.t_max] = self.t_max
+            t_new[t_new < self.t_min] = self.t_min - t_new[t_new < self.t_min]
+            t_new[t_new > self.t_max] = 2*self.t_max - t_new[t_new > self.t_max]
+            sorted_t_new = np.sort(t_new, axis=0)
+            sorted_t_new[0] = self.t_min
+            return torch.tensor(sorted_t_new, requires_grad=True)
+        elif self.sampling == 'weighted':
+            pass
         else:
             return self.sample_grid(self.grid, self.spacing)
 
