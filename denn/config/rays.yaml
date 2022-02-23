@@ -1,9 +1,9 @@
 problem:
   n: 400
-  sampling: 'fixed' #'perturb'
+  sampling: 'perturb'
   t_max: 1
   x0: 0
-  y0: 0.3
+  y0: [0.2, 0.3, 0.4]
   px0: 1
   py0: 0
   sigma: 0.1
@@ -32,11 +32,12 @@ training:
   wgan: False
   gp: 0.1
   conditional: False
+  train_mse: False
   log: True
-  plot: True
+  plot: False
   plot_sep_curves: True
   save: True
-  save_for_animation: True
+  save_for_animation: False
   dirname: 'RAYS_run'
 
 generator:
@@ -44,6 +45,7 @@ generator:
   out_dim: 4
   n_hidden_units: 50
   n_hidden_layers: 2
+  n_heads: 3
   activation: 'Tanh'
   residual: True
   regress: True
@@ -54,6 +56,7 @@ discriminator:
   out_dim: 1
   n_hidden_units: 20
   n_hidden_layers: 2
+  n_heads: 3
   activation: 'Tanh'
   residual: True
   regress: False

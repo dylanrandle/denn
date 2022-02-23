@@ -1,6 +1,6 @@
 problem:
   n: 100
-  sampling: 'perturb'
+  sampling: 'active' #'perturb'
   t_max: 10
 
 training:
