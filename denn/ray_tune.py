@@ -30,6 +30,7 @@ if __name__ == "__main__":
     params['training']['log'] = False
     params['training']['plot'] = False
     params['training']['save'] = False
+    params['training']['save_for_animation'] = False
 
     def gan_tuning(config, checkpoint_dir=None):
         res = gan_experiment(args.pkey, config)

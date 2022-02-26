@@ -1,5 +1,6 @@
 import argparse
 import numpy as np
+import pandas as pd
 
 from denn.config.config import get_config
 from denn.experiments import gan_experiment, L2_experiment
@@ -35,26 +36,36 @@ if __name__ == '__main__':
     # seeds = np.random.randint(int(1e6), size=args.nreps)
     seeds = list(range(args.nreps))
     print("Using seeds: ", seeds)
+    lrs = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
 
     # initialize lists to hold validation mse and lhs values
-    val_mse = []
-    lhs_vals = []
+    # val_mse = []
+    # lhs_vals = []
+    results = []
 
     for s in seeds:
-        print(f'Seed = {s}')
-        params['training']['seed'] = s
+        for g_lr in lrs:
+            for d_lr in lrs:
+                print(f'Seed = {s}')
+                params['training']['seed'] = s
+                params['training']['g_lr'] = g_lr
+                params['training']['d_lr'] = d_lr
 
-        if args.gan:
-            print(f'Running GAN training for {args.pkey} problem...')
-            res = gan_experiment(args.pkey, params)
-        else:
-            print(f'Running classical training for {args.pkey} problem...')
-            res = L2_experiment(args.pkey, params)
+                if args.gan:
+                    print(f'Running GAN training for {args.pkey} problem...')
+                    res = gan_experiment(args.pkey, params)
+                else:
+                    print(f'Running classical training for {args.pkey} problem...')
+                    res = L2_experiment(args.pkey, params)
 
-        val_mse.append(res['mses']['val'])
-        lhs_vals.append(res['losses']['LHS'])
+                # val_mse.append(res['mses']['val'])
+                # lhs_vals.append(res['losses']['LHS'])
+                run = [s, g_lr, d_lr, res['mses']['val'][-1]]
+                results.append(run)
 
-    val_mse = np.vstack(val_mse)
-    lhs_vals = np.vstack(lhs_vals)
-    np.save(args.fname, val_mse)
-    np.save(args.fname+'_lhs', lhs_vals)
+    # val_mse = np.vstack(val_mse)
+    # lhs_vals = np.vstack(lhs_vals)
+    # np.save(args.fname, val_mse)
+    # np.save(args.fname+'_lhs', lhs_vals)
+    results_df = pd.DataFrame(results, columns=['seed', 'g_lr', 'd_lr', 'mean_squared_error'])
+    results_df.to_csv(f"{args.fname}.csv")
