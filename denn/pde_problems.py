@@ -532,10 +532,79 @@ class AllenCahn(Problem):
     def get_grid(self):
         return (self.grid_x.float(), self.grid_t.float())
 
-    def get_grid_sample(self):
-        x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
-        t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
-        return (x_noisy.float(), t_noisy.float())
+    def get_grid_sample(self, grid, resid, resid_delta):
+        if self.sampling == 'fixed':
+            return (self.grid_x.float(), self.grid_t.float())
+        elif self.sampling == 'perturb':
+            x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
+            t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
+            return (x_noisy.float(), t_noisy.float())
+        elif self.sampling == 'gradient':
+            # x, t = grid[:, 0].reshape(-1,1), grid[:, 1].reshape(-1,1)
+            # xresid_delta, tresid_delta = resid_delta[:, 0].reshape(-1,1), resid_delta[:, 1].reshape(-1,1)
+            # #tresid_delta = self._grid_reorder(tresid_delta.detach().numpy())
+            # xgrads = self._resid_grad(resid, xresid_delta)
+            # tgrads = self._resid_grad(resid, tresid_delta)
+            # xgrad_mean = np.mean(np.abs(xgrads))
+            # tgrad_mean = np.mean(np.abs(tgrads))
+            # eta_x = 1 / xgrad_mean if xgrad_mean != 0 else 1
+            # eta_t = 1 / tgrad_mean if tgrad_mean != 0 else 1
+            # grad_clip_x = self.hx / eta_x
+            # grad_clip_t = self.ht / eta_t
+            # xgrads[xgrads >= 2*grad_clip_x] = 2*grad_clip_x
+            # tgrads[tgrads >= 2*grad_clip_t] = 2*grad_clip_t
+            # x_new = x.detach().numpy() + eta_x*xgrads
+            # t_new = t.detach().numpy() + eta_t*tgrads
+            # x_new[x_new < self.xmin] = self.xmin + x_new[x_new < self.xmin] % self.xmax
+            # x_new[x_new > self.xmax] = self.xmin + x_new[x_new > self.xmax] % self.xmax
+            # t_new[t_new < self.tmin] = self.tmin + t_new[t_new < self.tmin] % self.tmax
+            # t_new[t_new > self.tmax] = self.tmin + t_new[t_new > self.tmax] % self.tmax
+            # x_new = np.sort(x_new, axis=0)
+            # #print("UNSORTED:", t_new[:65])
+            # t_new = self._sort_t(t_new)
+            # #t_new = np.sort(t_new, axis=0)
+            # x_new[:self.nx+1] = self.xmin
+            # x_new[-(self.nx+1):] = self.xmax
+            # t_new[::self.nt+1] = self.tmin
+            # t_new[self.nt::self.nt+1] = self.tmax
+            # #print("SORTED:", t_new[:65])
+            # x_new = torch.tensor(x_new, requires_grad=True).reshape(-1,1)
+            # t_new = torch.tensor(t_new, requires_grad=True).reshape(-1,1)
+            # return (x_new.float(), t.float())
+            xgrid = torch.cat((torch.linspace(0, 0.8, 33, requires_grad=True), torch.linspace(5.48, 6.28, 32)))
+            tgrid = torch.linspace(0, 5, 65, requires_grad=True)
+            grid_x, grid_t = torch.meshgrid(xgrid, tgrid, indexing='ij')
+            grid_x, grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
+            x_noisy = torch.normal(mean=grid_x, std=self.noise_xstd)
+            t_noisy = torch.normal(mean=grid_t, std=self.noise_tstd)
+            return (x_noisy.float(), t_noisy.float())
+
+    def _grid_reorder(self, l):
+        reordered_l = []
+        dim = self.nt+1
+        for i in range(dim):
+            for j in range(dim):
+                reordered_l.append(l[i+dim*j])
+        return np.array(reordered_l).reshape(-1,1)
+
+    def _sort_t(self, t):
+        t_new = np.array([])
+        dim = self.nt+1
+        for i in range(dim):
+            col = t[i*dim:i*dim+dim]
+            t_new = np.append(t_new, np.sort(col, axis=0))
+        return t_new.reshape(-1,1)
+
+    def _resid_grad(self, resid, resid_delta):
+        """ get the gradient of the residuals at the grid points """
+        try:
+            resid = resid.detach().numpy()
+            resid_delta = resid_delta.detach().numpy()
+        except:
+            pass
+        delta = 1e-5
+        grads = (np.abs(resid_delta) - np.abs(resid)) / delta
+        return grads
 
     def get_plot_grid(self):
         return (self.grid_x_p.float(), self.grid_t_p.float())
@@ -568,28 +637,28 @@ class AllenCahn(Problem):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(u, x, t)
         u_adj = adj['pred']
-        resid = self._allen_cahn_eqn(u_adj, x, t)
-        if plot is True:
-            u_adj = u_adj.reshape((self.nx_p, self.nt_p))
-            x = x.reshape((self.nx_p, self.nt_p))
-            ic = u_adj[:, 0] - 0.25*torch.sin(x[:, 0]) #self.u_t0_p
-        else:
-            u_adj = u_adj.reshape((self.nx+1, self.nt+1))
-            x = x.reshape((self.nx+1, self.nt+1))
-            ic = u_adj[:, 0] - 0.25*torch.sin(x[:, 0]) #self.u_t0
-        ic, bc1, bc2 = ic.reshape(-1, 1), u_adj[0, :].reshape(-1, 1), u_adj[-1, :].reshape(-1, 1)
-        ic, bc1, bc2 = ic*self.lam, bc1*self.lam, bc2*self.lam
-        #return self._allen_cahn_eqn(u_adj, x, t)#*torch.exp(-t/self.lam)
-        return torch.cat((resid, ic, bc1, bc2))
+        #resid = self._allen_cahn_eqn(u_adj, x, t)
+        # if plot is True:
+        #     u_adj = u_adj.reshape((self.nx_p, self.nt_p))
+        #     x = x.reshape((self.nx_p, self.nt_p))
+        #     ic = u_adj[:, 0] - 0.25*torch.sin(x[:, 0]) #self.u_t0_p
+        # else:
+        #     u_adj = u_adj.reshape((self.nx+1, self.nt+1))
+        #     x = x.reshape((self.nx+1, self.nt+1))
+        #     ic = u_adj[:, 0] - 0.25*torch.sin(x[:, 0]) #self.u_t0
+        # ic, bc1, bc2 = ic.reshape(-1, 1), u_adj[0, :].reshape(-1, 1), u_adj[-1, :].reshape(-1, 1)
+        # ic, bc1, bc2 = ic*self.lam, bc1*self.lam, bc2*self.lam
+        #return torch.cat((resid, ic, bc1, bc2))
+        return self._allen_cahn_eqn(u_adj, x, t)#*torch.exp(-t/self.lam)
 
     def adjust(self, u, x, t):
         """ perform boundary value adjustment """
-        #x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
-        #t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
-        #Axt = 0.25*torch.sin(x)
+        x_tilde = (x-self.xmin) / (self.xmax-self.xmin)
+        t_tilde = (t-self.tmin) / (self.tmax-self.tmin)
+        Axt = 0.25*torch.sin(x)
 
-        #u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
-        return {'pred': u} #u_adj
+        u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
+        return {'pred': u_adj} #u
 
     def get_plot_dicts(self, pred, x, t, sol):
         """ return appropriate pred_dict / diff_dict used for plotting """
