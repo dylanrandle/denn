@@ -71,7 +71,7 @@ class MultiHeadGen(nn.Module):
     """
     def __init__(self, in_dim=1, out_dim=1, n_hidden_units=20, n_hidden_layers=2,
         activation=nn.Tanh(), residual=False, regress=False, spectral_norm=False,
-        n_heads=1, pretrained=False):
+        n_heads=1, n_head_units=20, pretrained=False):
 
         super().__init__()
         self.n_heads = n_heads
@@ -95,11 +95,17 @@ class MultiHeadGen(nn.Module):
                 self.layers.append(activation)
 
         # heads
-        self.heads = nn.ModuleList([nn.Linear(n_hidden_units, n_hidden_units)]) 
-        self.heads.extend([nn.Linear(n_hidden_units, n_hidden_units) for l in range(self.n_heads-1)])
+        # self.heads = nn.ModuleList([nn.ModuleList([norm(nn.Linear(n_hidden_units, n_hidden_units))])]) 
+        # self.heads.extend([nn.ModuleList([norm(nn.Linear(n_hidden_units, n_hidden_units))]) for l in range(self.n_heads-1)])
+        # for head in self.heads:
+        #     head.append(activation)
+        #     head.append(norm(nn.Linear(n_hidden_units, n_hidden_units)))
+        self.heads = nn.ModuleList([norm(nn.Linear(n_hidden_units, n_head_units))]) 
+        self.heads.extend([norm(nn.Linear(n_hidden_units, n_head_units)) for l in range(self.n_heads-1)])
 
         # output
-        self.output = norm(nn.Linear(n_hidden_units, out_dim))
+        self.outputs = nn.ModuleList([norm(nn.Linear(n_head_units, out_dim))]) 
+        self.outputs.extend([norm(nn.Linear(n_head_units, out_dim)) for l in range(self.n_heads-1)])
 
     def forward(self, x):
         d = {}
@@ -107,7 +113,9 @@ class MultiHeadGen(nn.Module):
             x = self.layers[i](x)
         for j in range(self.n_heads):
             x1 = self.heads[j](x)
-            x1 = self.output(x1)
+            # for k in range(len(self.heads[j])):
+            #     x1 = self.heads[j][k](x)
+            x1 = self.outputs[j](x1)
             d[j] = x1
         return d
 
