@@ -55,9 +55,9 @@ class Exponential(Problem):
             t_new = t.detach().numpy() + eta*grads
             t_new[t_new < self.t_min] = self.t_min + t_new[t_new < self.t_min] % self.t_max
             t_new[t_new > self.t_max] = self.t_min + t_new[t_new > self.t_max] % self.t_max
-            sorted_t_new = np.sort(t_new, axis=0)
-            sorted_t_new[0] = self.t_min
-            return torch.tensor(sorted_t_new, requires_grad=True)
+            t_new = np.sort(t_new, axis=0)
+            t_new[0] = self.t_min
+            return torch.tensor(t_new, requires_grad=True)
         elif self.sampling == 'weighted':
             pass
         else:
@@ -879,8 +879,8 @@ class RaysEquations(Problem):
         eqn4 = diff(py_adj, t) + Vy
         return eqn1, eqn2, eqn3, eqn4
 
-    def _get_equation_helper(self, u, t):
-        adj = self.adjust(u, t)
+    def _get_equation_helper(self, u, t, i=0):
+        adj = self.adjust(u, t, i)
         x_adj = adj['pred']
         eqn1, eqn2, eqn3, eqn4 = self._rays_eqn(t, x_adj)
         return eqn1, eqn2, eqn3, eqn4
@@ -889,8 +889,8 @@ class RaysEquations(Problem):
         """ return value of residuals of equation (i.e. LHS) """
         if isinstance(d, dict):
             lhs = []
-            for u in d.values():
-                eqn1, eqn2, eqn3, eqn4 = self._get_equation_helper(u, t)
+            for i, u in d.items():
+                eqn1, eqn2, eqn3, eqn4 = self._get_equation_helper(u, t, i)
                 lhs.extend([eqn1, eqn2, eqn3, eqn4])
         else:
             eqn1, eqn2, eqn3, eqn4 = self._get_equation_helper(d, t)
@@ -913,7 +913,7 @@ class RaysEquations(Problem):
                 x_adj, y_adj, px_adj, py_adj = self._adjust_helper(u, t, i)
                 adj.extend([x_adj, y_adj, px_adj, py_adj])
         else:
-            x_adj, y_adj, px_adj, py_adj = self._adjust_helper(d, t)
+            x_adj, y_adj, px_adj, py_adj = self._adjust_helper(d, t, i)
             adj = [x_adj, y_adj, px_adj, py_adj]
         return {'pred': torch.cat(adj, axis=1)}
 

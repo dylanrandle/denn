@@ -1,3 +1,4 @@
+from re import A
 import numpy as np
 import torch
 import torch.nn as nn
@@ -87,11 +88,11 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         for _ in range(G_iters):
             if method == 'unsupervised':
                 grid_samp = problem.get_grid_sample(grid_samp, residuals, residuals_delta)
-                grid_samp_delta = grid_samp + 1e-5
+                #grid_samp_delta = grid_samp + 1e-5
                 pred = G(grid_samp)
-                pred_delta = G(grid_samp_delta)
+                #pred_delta = G(grid_samp_delta)
                 residuals = problem.get_equation(pred, grid_samp)
-                residuals_delta = problem.get_equation(pred_delta, grid_samp_delta)
+                #residuals_delta = problem.get_equation(pred_delta, grid_samp_delta)
                 
                 # idea: add noise to relax from dirac delta at 0 to distb'n
                 # + torch.normal(0, .1/(i+1), size=residuals.shape)
@@ -435,6 +436,11 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     grid = torch.cat((x, y), 1)
     soln = problem.get_solution(x, y)
 
+    # initialize residuals and grid for active sampling
+    grid_samp = grid
+    residuals = torch.zeros_like(x)
+    residuals_delta = torch.zeros_like(grid_samp)
+
     # grid for plotting and animation
     if plot or save_for_animation:
         dims = problem.get_plot_dims()
@@ -450,8 +456,8 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     # labels
     real_label = 1
     fake_label = -1 if wgan else 0
-    real_labels = torch.full((len(grid)+195,), real_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
-    fake_labels = torch.full((len(grid)+195,), fake_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
+    real_labels = torch.full((len(grid),), real_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
+    fake_labels = torch.full((len(grid),), fake_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
     # masked label vectors
     real_labels_obs = real_labels[observers, :]
     fake_labels_obs = fake_labels[observers, :]
@@ -481,6 +487,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     losses = {'G': [], 'D': []}#, 'LHS': []}
     mses = {'train': [], 'val': []} if train_mse else {'val': []}
     preds = {'pred': [], 'soln': []}
+    resids = {'grid': [], 'resid': []}
 
     for epoch in range(niters):
         # Train Generator
@@ -488,11 +495,25 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
             p.requires_grad = False # turn off computation for D
 
         for i in range(G_iters):
-            xs, ys = problem.get_grid_sample()
+            xs, ys = problem.get_grid_sample(grid_samp, residuals, residuals_delta)
             grid_samp = torch.cat((xs, ys), 1)
+            # grid_samp_deltax = torch.cat((xs+1e-5, ys), 1)
+            # grid_samp_deltay = torch.cat((xs, ys+1e-5), 1)
             pred = G(grid_samp)
+            # pred_deltax = G(grid_samp_deltax)
+            # pred_deltay = G(grid_samp_deltay)
             residuals = problem.get_equation(pred, xs, ys)
-
+            # residuals_deltax = problem.get_equation(pred_deltax, xs+1e-5, ys)
+            # residuals_deltay = problem.get_equation(pred_deltay, xs, ys+1e-5)
+            # residuals_delta = torch.cat((residuals_deltax, residuals_deltay), 1)
+            if epoch == 2500:
+                problem.sampling = 'gradient'
+            #     fig, ax = plt.subplots(figsize=(12,12))
+            #     xx, yy = xs.detach().numpy().reshape((65,65)), ys.detach().numpy().reshape((65,65))
+            #     resid = residuals.detach().numpy().reshape((65,65))
+            #     ax.contourf(xx, yy, resid, cmap='Reds')
+            #     plt.show()
+            #     assert False
             # idea: add noise to relax from dirac delta at 0 to distb'n
             # + torch.normal(0, .1/(i+1), size=residuals.shape)
             if noise:
@@ -556,16 +577,17 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         val_mse = mse(val_pred_adj, soln).item()
         mses['val'].append(val_mse)
 
-        # save preds for animation
+        # save preds and residuals for animation
         if save_for_animation:
             plot_pred = G(plot_grid)
             plot_pred_adj = problem.adjust(plot_pred, plot_x, plot_y)['pred']
             preds['pred'].append(plot_pred_adj.detach())
             preds['soln'].append(plot_soln.detach())
+            resids['grid'].append(grid_samp.detach())
+            resids['resid'].append(np.abs(residuals.detach()))
 
         try:
             if (epoch+1) % 10 == 0:
-
                 # mean of val mses for last 10 steps
                 #track.log(lhs=np.mean(losses['LHS'][-10:])) # mean LHS for last 10 steps
                 track.log(mean_squared_error=np.mean(mses['val'][-10:]))
@@ -605,6 +627,9 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
             # hstack flattens preds, need to use dstack
             # v = np.dstack(v)
             np.save(os.path.join(anim_dir, f"{k}_pred"), v)
+        for k, v in resids.items():
+            v = np.hstack(v)
+            np.save(os.path.join(anim_dir, f"{k}_resid"), v)
 
     return {'mses': mses, 'model': G, 'losses': losses}
 
