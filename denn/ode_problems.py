@@ -45,7 +45,7 @@ class Exponential(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self, t, resid, resid_delta):
+    def get_grid_sample(self, t=None, resid=None, resid_delta=None):
         if self.sampling == 'gradient':
             grads = self._resid_grad(resid, resid_delta)
             mean_grad = np.mean(np.abs(grads))
