@@ -5,7 +5,7 @@ import numpy as np
 
 from denn.algos import train_L2, train_L2_2D, train_GAN, train_GAN_2D
 from denn.models import MLP, MultiHeadGen
-from denn.pretrained import get_pretrained_fcnn
+from denn.pretrained import get_pretrained
 from denn.config.config import get_config
 import denn.ode_problems as ode
 import denn.pde_problems as pde
@@ -42,8 +42,6 @@ def get_problem(pkey, params):
         return pde.HeatEquation(**params['problem'])
     elif pkey == 'aca':
         return pde.AllenCahn(**params['problem'])
-    elif pkey == 'kur':
-        return pde.KuramotoSivashinsky(**params['problem'])
     else:
         raise RuntimeError(f'Did not understand problem key (pkey): {pkey}')
 
@@ -61,7 +59,7 @@ def L2_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    if pkey.lower().strip() in ["pos", "wav", "bur", "burv", "hea", "aca", "kur"]:
+    if pkey.lower().strip() in ["pos", "wav", "bur", "burv", "hea", "aca"]:
         res = train_L2_2D(model, problem, **params['training'], config=params)
     else:
         res = train_L2(model, problem, **params['training'], config=params)
@@ -75,7 +73,7 @@ def gan_experiment(pkey, params):
 
     # models
     if params['generator']['pretrained']:
-        gen = get_pretrained_fcnn(pkey)
+        gen = get_pretrained(pkey)
     elif params['generator']['n_heads'] > 1:
         gen = MultiHeadGen(**params['generator'])
     else:
@@ -88,7 +86,7 @@ def gan_experiment(pkey, params):
 
     # run
     problem = get_problem(pkey, params)
-    if pkey.lower().strip() in ["pos", "wav", "bur", "burv", "hea", "aca", "kur"]:
+    if pkey.lower().strip() in ["pos", "wav", "bur", "burv", "hea", "aca"]:
         res = train_GAN_2D(gen, disc, problem, **params['training'], config=params)
     else:
         res = train_GAN(gen, disc, problem, **params['training'], config=params)
