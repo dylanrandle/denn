@@ -3,7 +3,8 @@ problem:
   sampling: 'fixed'
   t_max: 1
   x0: 0
-  y0: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  y0: [0., 0.07142857, 0.14285714, 0.21428571, 0.28571429, 0.35714286, 0.42857143, 0.5, 0.57142857, 0.64285714,
+  0.71428571, 0.78571429, 0.85714286, 0.92857143, 1.]
   px0: 1
   py0: 0
   sigma: 0.1
@@ -13,14 +14,14 @@ training:
   method: 'unsupervised'
   seed: 2
   niters: 10000
-  g_lr: 0.015060491594356819 #0.0093581768678081979
-  d_lr: 0.0048023711791343685 #0.0041272976272267361
-  g_betas: [0.2821835930149624, 0.7315612824266313] #[0.21932425228717567, 0.7154610394492373]
-  d_betas: [0.0331345656344045, 0.9823183248176964] #[0.15260135969704555, 0.7677411091156993]
+  g_lr: 0.01152380515461927
+  d_lr: 0.015452633350580029
+  g_betas: [0.22881133152941593, 0.69984895289804]
+  d_betas: [0.2758524687122676, 0.8291734341043192]
   lr_schedule: True
-  gamma: 0.95689343425192619 #0.97893579812771658
+  gamma: 0.97782604967996123
   noise: True
-  step_size: 18 #13
+  step_size: 11
   obs_every: 1
   d1: 1
   d2: 1
@@ -32,7 +33,8 @@ training:
   conditional: False
   train_mse: False
   log: True
-  plot: False
+  plot: True
+  multihead: True
   plot_sep_curves: True
   save: True
   save_for_animation: False
@@ -41,9 +43,9 @@ training:
 generator:
   in_dim: 1
   out_dim: 4
-  n_hidden_units: 40 #50
-  n_hidden_layers: 5 #2
-  n_heads: 10
+  n_hidden_units: 50
+  n_hidden_layers: 4
+  n_heads: 15
   n_head_units: 20
   activation: 'Tanh'
   residual: True
@@ -53,9 +55,9 @@ generator:
 discriminator:
   in_dim: 4
   out_dim: 1
-  n_hidden_units: 30 #20
-  n_hidden_layers: 2 #2
-  n_heads: 10
+  n_hidden_units: 70
+  n_hidden_layers: 4
+  n_heads: 15
   activation: 'Tanh'
   residual: True
   regress: False

@@ -5,7 +5,7 @@ import torch.nn as nn
 import os
 import matplotlib.pyplot as plt
 
-from denn.utils import plot_grads, plot_results, calc_gradient_penalty, handle_overwrite, plot_3D
+from denn.utils import plot_results, plot_multihead, calc_gradient_penalty, handle_overwrite, plot_3D
 from denn.config.config import write_config
 
 try:
@@ -17,16 +17,17 @@ this_dir = os.path.dirname(os.path.abspath(__file__))
 
 def train_GAN(G, D, problem, method='unsupervised', niters=100,
     g_lr=1e-3, g_betas=(0.0, 0.9), d_lr=1e-3, d_betas=(0.0, 0.9),
-    lr_schedule=True, gamma=0.999, g_momentum=0.95, d_momentum=0.95, 
-    noise=False, step_size=15, obs_every=1, d1=1., d2=1., G_iters=1, 
-    D_iters=1, wgan=True, gp=0.1, conditional=True, train_mse=True, log=True, 
-    plot=True, plot_sep_curves=False, save=False, dirname='train_GAN', 
-    config=None, save_for_animation=False, **kwargs):
+    lr_schedule=True, gamma=0.999, noise=False, step_size=15, obs_every=1, 
+    d1=1., d2=1., G_iters=1, D_iters=1, wgan=True, gp=0.1, conditional=True, 
+    train_mse=True, log=True, plot=True, multihead=False, plot_sep_curves=False, 
+    save=False, dirname='train_GAN', config=None, save_for_animation=False, 
+    **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
     assert method in ['supervised', 'semisupervised', 'unsupervised'], f'Method {method} not understood!'
 
+    pkey = dirname.split('_')[0].lower()
     dirname = os.path.join(this_dir, '../experiments/runs', dirname)
     if plot and save:
         handle_overwrite(dirname)
@@ -242,18 +243,23 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Val MSE {val_mse:.4e}')
 
     if plot:
-        plot_grid = problem.get_plot_grid()
-        plot_soln = problem.get_plot_solution(grid)
-        pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
-        plot_results(mses, losses, plot_grid.detach(), pred_dict, diff_dict=diff_dict,
-            save=save, dirname=dirname, logloss=False, alpha=0.7, plot_sep_curves=plot_sep_curves)
+        if multihead:
+            plot_multihead(mses, resids, save=save, dirname=dirname, alpha=0.7)
+        else:
+            plot_grid = problem.get_plot_grid()
+            plot_soln = problem.get_plot_solution(grid)
+            pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
+            plot_results(mses, losses, plot_grid.detach(), pred_dict, diff_dict=diff_dict,
+                save=save, dirname=dirname, logloss=False, alpha=0.7, plot_sep_curves=plot_sep_curves)
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
-        plot_soln = problem.get_plot_solution(grid)
-        pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
-        np.save(os.path.join(dirname, "pred_dict"), pred_dict)
-        np.save(os.path.join(dirname, "diff_dict"), diff_dict)
+        torch.save(G.state_dict(), f"config/pretrained_nets/{pkey}_gen.pth")
+        if multihead:
+            plot_soln = problem.get_plot_solution(grid)
+            pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
+            np.save(os.path.join(dirname, "pred_dict"), pred_dict)
+            np.save(os.path.join(dirname, "diff_dict"), diff_dict)
 
     if save_for_animation:
         if not os.path.exists(dirname):
@@ -276,7 +282,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     return {'mses': mses, 'model': G, 'losses': losses}
 
 def train_L2(model, problem, method='unsupervised', niters=100,
-    lr=1e-3, betas=(0, 0.9), lr_schedule=True, gamma=0.999,
+    lr=1e-3, betas=(0, 0.9), lr_schedule=True, gamma=0.999, step_size=15,
     obs_every=1, d1=1, d2=1, log=True, plot=True, save=False,
     dirname='train_L2', config=None, loss_fn=None, save_for_animation=False,
     **kwargs):
@@ -305,7 +311,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         mse = torch.nn.MSELoss()
     # lr scheduler
     if lr_schedule:
-        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=gamma)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer=opt, step_size=step_size, gamma=gamma)
 
     loss_trace = []
     mses = {'train': [], 'val': []}
@@ -427,6 +433,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     """
     assert method in ['supervised', 'semisupervised', 'unsupervised'], f'Method {method} not understood!'
 
+    pkey = dirname.split('_')[0].lower()
     dirname = os.path.join(this_dir, '../experiments/runs', dirname)
     if plot and save:
         handle_overwrite(dirname)
@@ -448,7 +455,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         plot_grid = torch.cat((plot_x, plot_y), 1)
         plot_soln = problem.get_plot_solution(plot_x, plot_y)
 
-    # # observer mask and masked grid/solution (t_obs/y_obs)
+    # observer mask and masked grid/solution (t_obs/y_obs)
     observers = torch.arange(0, len(grid), obs_every)
     # grid_obs = grid[observers, :]
     # soln_obs = soln[observers, :]
@@ -456,8 +463,8 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     # labels
     real_label = 1
     fake_label = -1 if wgan else 0
-    real_labels = torch.full((len(grid),), real_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
-    fake_labels = torch.full((len(grid),), fake_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
+    real_labels = torch.full((len(grid)+195,), real_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
+    fake_labels = torch.full((len(grid)+195,), fake_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
     # masked label vectors
     real_labels_obs = real_labels[observers, :]
     fake_labels_obs = fake_labels[observers, :]
@@ -506,8 +513,8 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
             # residuals_deltax = problem.get_equation(pred_deltax, xs+1e-5, ys)
             # residuals_deltay = problem.get_equation(pred_deltay, xs, ys+1e-5)
             # residuals_delta = torch.cat((residuals_deltax, residuals_deltay), 1)
-            if epoch == 2500:
-                problem.sampling = 'gradient'
+            # if epoch == 1000:
+            #     problem.sampling = 'gradient'
             #     fig, ax = plt.subplots(figsize=(12,12))
             #     xx, yy = xs.detach().numpy().reshape((65,65)), ys.detach().numpy().reshape((65,65))
             #     resid = residuals.detach().numpy().reshape((65,65))
@@ -610,8 +617,8 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
         plot_3D(plot_grid.detach(), pred_dict, view=view, dims=dims, save=save, dirname=dirname)
 
     if save:
-        #torch.save(G.state_dict(), 'config/pretrained_fcnn/aca_gen.pth')
         write_config(config, os.path.join(dirname, 'config.yaml'))
+        torch.save(G.state_dict(), f"config/pretrained_nets/{pkey}_gen.pth")
 
     if save_for_animation:
         if not os.path.exists(dirname):
@@ -634,7 +641,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     return {'mses': mses, 'model': G, 'losses': losses}
 
 def train_L2_2D(model, problem, method='unsupervised', niters=100,
-    lr=1e-3, betas=(0, 0.9), lr_schedule=True, gamma=0.999,
+    lr=1e-3, betas=(0, 0.9), lr_schedule=True, gamma=0.999, step_size=15,
     obs_every=1, d1=1, d2=1, log=True, plot=True, save=False,
     dirname='train_L2', config=None, loss_fn=None, save_for_animation=False,
     **kwargs):
@@ -660,7 +667,7 @@ def train_L2_2D(model, problem, method='unsupervised', niters=100,
         mse = torch.nn.MSELoss()
     # lr scheduler
     if lr_schedule:
-        lr_scheduler = torch.optim.lr_scheduler.ExponentialLR(optimizer=opt, gamma=gamma)
+        lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer=opt, step_size=step_size, gamma=gamma)
 
     loss_trace = []
     mses = {'train': [], 'val': []}

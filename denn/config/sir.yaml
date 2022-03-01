@@ -16,8 +16,6 @@ training:
   d_lr: 0.048353644841351323
   g_betas: [0.04489709, 0.20844875]
   d_betas: [0.16923791, 0.31905255]
-  g_momentum: 0.94114125988931008
-  d_momentum: 0.94114125988931008
   lr_schedule: True
   gamma: 0.99402277349277524
   noise: False
