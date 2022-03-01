@@ -10,7 +10,7 @@ from functools import partial
 from scipy import constants
 import matplotlib.pyplot as plt
 
-def get_pretrained_fcnn(pkey, save=False, pretrained=False):
+def get_pretrained(pkey, save=False, pretrained=False):
 
     if pkey.lower().strip() == "eins":
 
@@ -200,11 +200,11 @@ def get_pretrained_fcnn(pkey, save=False, pretrained=False):
             solver_single.fit(max_epochs=20000)
 
             combined_model = CombinedModel(solver_single.nets)
-            torch.save(net1.state_dict(), 'config/pretrained_fcnn/eins_net1.pth')
-            torch.save(net2.state_dict(), 'config/pretrained_fcnn/eins_net2.pth')
-            torch.save(net3.state_dict(), 'config/pretrained_fcnn/eins_net3.pth')
-            torch.save(net4.state_dict(), 'config/pretrained_fcnn/eins_net4.pth')
-            torch.save(net5.state_dict(), 'config/pretrained_fcnn/eins_net5.pth')
+            torch.save(net1.state_dict(), 'config/pretrained_nets/eins_net1.pth')
+            torch.save(net2.state_dict(), 'config/pretrained_nets/eins_net2.pth')
+            torch.save(net3.state_dict(), 'config/pretrained_nets/eins_net3.pth')
+            torch.save(net4.state_dict(), 'config/pretrained_nets/eins_net4.pth')
+            torch.save(net5.state_dict(), 'config/pretrained_nets/eins_net5.pth')
 
         else:
             initialized_models = [
@@ -217,7 +217,7 @@ def get_pretrained_fcnn(pkey, save=False, pretrained=False):
             ]
             if pretrained:
                 for i, net in enumerate(initialized_models):
-                    net.load_state_dict(torch.load(f'C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_fcnn/eins_net{i+1}.pth')) # /n/home01/bbullwinkel/denn/denn/config/pretrained_fcnn
+                    net.load_state_dict(torch.load(f'C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_nets/eins_net{i+1}.pth')) # /n/home01/bbullwinkel/denn/denn/config/pretrained_nets
             combined_model = CombinedModel(initialized_models)
 
         return combined_model
@@ -236,7 +236,7 @@ def get_pretrained_fcnn(pkey, save=False, pretrained=False):
 
         model = pretrained_aca()
         if pretrained:
-            model.load_state_dict(torch.load(f'C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_fcnn/aca_gen.pth'))
+            model.load_state_dict(torch.load(f'C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_nets/aca_gen.pth'))
 
         return model
     
@@ -244,7 +244,7 @@ def get_pretrained_fcnn(pkey, save=False, pretrained=False):
         raise NotImplementedError(f"Pretrained FCNN not implemented for problem {pkey}.")
 
 if __name__ == "__main__":
-    eins_pretrained = get_pretrained_fcnn("eins")
+    eins_pretrained = get_pretrained("eins")
     zs_prime = np.linspace(1, 0, 1000)
     zs = np.linspace(0, 10, 1000)
     pred = eins_pretrained(torch.tensor(zs_prime).reshape(-1,1))
