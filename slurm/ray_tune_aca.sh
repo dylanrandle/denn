@@ -13,4 +13,4 @@ module load gcc/10.2.0-fasrc01
 module load Anaconda3/2020.11
 source activate denn
 cd ../denn
-python ray_tune.py --pkey aca --pretuned --ncpu 48 --nsample 2000
+python ray_tune.py --pkey aca --ncpu 48 --nsample 2000
