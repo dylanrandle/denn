@@ -228,6 +228,58 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     else:
         plt.show()
 
+def plot_multihead(mse_dict, resids_dict, save=False, dirname=None, alpha=0.8):
+
+    plt.rc('axes', titlesize=16, labelsize=16)
+    plt.rc('legend', fontsize=15)
+    plt.rc('xtick', labelsize=14)
+    plt.rc('ytick', labelsize=14)
+    plt.rcParams['text.usetex'] = True
+
+    if save and not dirname:
+        raise RuntimeError('Please provide a directory name `dirname` when `save=True`.')
+
+    fig, ax = plt.subplots(1, 2, figsize=(9, 4))
+
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*3
+    linewidth = 2
+    alphas = [alpha]*10
+    colors = ['crimson', 'blue', 'skyblue', 'limegreen',
+        'aquamarine', 'violet', 'black', 'brown', 'pink', 'gold']
+
+    # MSEs (Pred vs Actual)
+    for i, (k, v) in enumerate(mse_dict.items()):
+        ax[0].plot(np.arange(len(v)), v, label=k,
+            alpha=alphas[i], linewidth=linewidth, color=colors[i],
+            linestyle=linestyles[i])
+
+    if len(mse_dict.keys()) > 1:
+        ax[0].legend(loc='upper right')
+    ax[0].set_ylabel('Mean Squared Error')
+    ax[0].set_xlabel('Step')
+    ax[0].set_yscale('log')
+
+    # L2 Residuals
+    resid_vectors = resids_dict['resid']
+    resid_l2s = [np.square(r_vec).mean() for r_vec in resid_vectors]
+    ax[1].plot(np.arange(len(resid_l2s)), resid_l2s, alpha=alphas[0], 
+        linewidth=linewidth, color=colors[i], linestyle=linestyles[i])
+    ax[1].set_ylabel('$L_2$ Residuals')
+    ax[1].set_xlabel('Step')
+    ax[1].set_yscale('log')
+
+    plt.tight_layout()
+
+    if save:
+        print(f'Saving results to {dirname}')
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+        plt.savefig(os.path.join(dirname, 'plot_multihead.png'), dpi=300)
+        for k, v in mse_dict.items():
+            np.save(os.path.join(dirname, f"{k}_mse"), v)
+    else:
+        plt.show()
+
 def plot_3D(grid, pred_dict, view=[35, -55], dims=None, save=False, dirname=None):
     """ 3D plotting function for PDEs """
 
