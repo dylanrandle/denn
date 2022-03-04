@@ -9,7 +9,7 @@ from denn.utils import plot_results, plot_multihead, calc_gradient_penalty, hand
 from denn.config.config import write_config
 
 try:
-    from ray.tune import track
+    from ray import tune
 except:
     print("Ray not loaded.")
 
@@ -228,7 +228,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         try:
             if (epoch+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                tune.report(mean_squared_error=np.mean(mses['val'][-10:]))
                 # mean of G - D loss for last 10 steps
                 # loss_diff = np.mean(np.abs(losses['G'][-10] - losses['D'][-10]))
                 # report.log(mean_squared_error=loss_diff)
@@ -371,7 +371,7 @@ def train_L2(model, problem, method='unsupervised', niters=100,
         try:
             if (i+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                report.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                tune.report(mean_squared_error=np.mean(mses['val'][-10:]))
         except Exception as e:
             # print(f'Caught exception {e}')
             pass
@@ -597,7 +597,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
             if (epoch+1) % 10 == 0:
                 # mean of val mses for last 10 steps
                 #track.log(lhs=np.mean(losses['LHS'][-10:])) # mean LHS for last 10 steps
-                track.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                tune.report(mean_squared_error=np.mean(mses['val'][-10:]))
 
         except Exception as e:
             # print(f'Caught exception {e}')
@@ -705,7 +705,7 @@ def train_L2_2D(model, problem, method='unsupervised', niters=100,
         try:
             if (i+1) % 10 == 0:
                 # mean of val mses for last 10 steps
-                report.log(mean_squared_error=np.mean(mses['val'][-10:]))
+                tune.report(mean_squared_error=np.mean(mses['val'][-10:]))
         except Exception as e:
             # print(f'Caught exception {e}')
             pass

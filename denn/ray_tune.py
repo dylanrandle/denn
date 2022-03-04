@@ -5,7 +5,6 @@ import os
 
 import ray
 from ray import tune
-from ray.tune import track
 from ray.tune.schedulers import AsyncHyperBandScheduler, MedianStoppingRule
 
 from denn.experiments import gan_experiment, L2_experiment
@@ -19,6 +18,8 @@ if __name__ == "__main__":
         help='whether to use classical training, default False (use GAN))')
     args.add_argument('--pretuned', action='store_true', default=False, 
         help='whether to construct search bounds based on pre-tuned hypers, default False')
+    args.add_argument('--sensitivity', action='store_true', default=False, 
+        help='whether to run a sensitivity analysis with random repetitions, default False')
     args.add_argument('--ncpu', type=int, default=1)
     args.add_argument('--nsample', type=int, default=100)
     args = args.parse_args()
@@ -51,6 +52,8 @@ if __name__ == "__main__":
         g_beta1_bound = (0.8*g_beta1, np.min([1.2*g_beta1, 0.999]))
         d_beta0_bound = (0.8*d_beta0, np.min([1.2*d_beta0, 0.999]))
         d_beta1_bound = (0.8*d_beta1, np.min([1.2*d_beta1, 0.999]))
+    elif args.sensitivity:
+        g_lr_bound, d_lr_bound = (0.01, 0.1), (0.01, 0.1)
     else:
         g_lr_bound, d_lr_bound = (1e-5, 0.02), (1e-5, 0.02)
         g_beta0_bound, d_beta0_bound = (0, 0.333), (0, 0.333)
@@ -65,31 +68,34 @@ if __name__ == "__main__":
     search_space['training']['g_lr'] = tune.sample_from(lambda s: np.random.uniform(*g_lr_bound))
     search_space['training']['d_lr'] = tune.sample_from(lambda s: np.random.uniform(*d_lr_bound))
 
-    # Decay / Moment
-    search_space['training']['gamma'] = tune.sample_from(lambda s: np.random.uniform(*gamma_bound))
-    search_space['training']['step_size'] = tune.sample_from(lambda s: np.random.randint(*step_size_bound))
-    g_beta0 = tune.sample_from(lambda s: np.random.uniform(*g_beta0_bound))
-    g_beta1 = tune.sample_from(lambda s: np.random.uniform(*g_beta1_bound))
-    d_beta0 = tune.sample_from(lambda s: np.random.uniform(*d_beta0_bound))
-    d_beta1 = tune.sample_from(lambda s: np.random.uniform(*d_beta1_bound))
-    search_space['training']['g_betas'] = [g_beta0, g_beta1]
-    search_space['training']['d_betas'] = [d_beta0, d_beta1]
+    # Sensitivity analysis uses only LRs
+    if not args.sensitivity:
 
-    # Generator
-    search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
-    search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
+        # Decay / Moment
+        search_space['training']['gamma'] = tune.sample_from(lambda s: np.random.uniform(*gamma_bound))
+        search_space['training']['step_size'] = tune.sample_from(lambda s: np.random.randint(*step_size_bound))
+        g_beta0 = tune.sample_from(lambda s: np.random.uniform(*g_beta0_bound))
+        g_beta1 = tune.sample_from(lambda s: np.random.uniform(*g_beta1_bound))
+        d_beta0 = tune.sample_from(lambda s: np.random.uniform(*d_beta0_bound))
+        d_beta1 = tune.sample_from(lambda s: np.random.uniform(*d_beta1_bound))
+        search_space['training']['g_betas'] = [g_beta0, g_beta1]
+        search_space['training']['d_betas'] = [d_beta0, d_beta1]
 
-    # Discriminator
-    search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
-    search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
+        # Generator
+        search_space['generator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
+        search_space['generator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
 
-    # Loss
-    #search_space['problem']['lam'] = tune.sample_from(lambda s: np.random.uniform(*lam_bound))
+        # Discriminator
+        search_space['discriminator']['n_hidden_units'] = tune.sample_from(lambda s: int(np.random.choice(n_nodes)))
+        search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
+
+        # Loss
+        # search_space['problem']['lam'] = tune.sample_from(lambda s: np.random.uniform(*lam_bound))
 
     # for testing at different seeds
     # note: need to change experiments.py to init models below seed setting
-    #nseeds = 10
-    #search_space['training']['seed'] = tune.sample_from(lambda s: np.random.choice(nseeds))
+    nseeds = 10
+    search_space['training']['seed'] = tune.sample_from(lambda s: np.random.choice(nseeds))
 
     # Uncomment this to enable distributed execution
     # ray.init(address='auto', redis_password='5241590000000000')
@@ -103,8 +109,8 @@ if __name__ == "__main__":
         mode='min',
         reduction_factor=4,
         brackets=1,
-        max_t=int(_niters/10), # ==> e.g. 100 x 10 = 1000 real iters
-        grace_period=int(_niters/100), # tune is tracked every 10 iters
+        max_t=_niters, #int(_niters/10), # ==> e.g. 100 x 10 = 1000 real iters
+        grace_period=_niters #int(_niters/100), # tune is tracked every 10 iters
     )                    # ==> e.g. 25 x 10 = 250 real iters
 
     if args.classical:
@@ -120,9 +126,9 @@ if __name__ == "__main__":
         _fn,
         name=_jobname,
         config=search_space,
-        scheduler=scheduler,
+        scheduler=None, #scheduler,
         num_samples=args.nsample,
-        raise_on_failed_trial=False
+        #raise_on_failed_trial=False
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")
