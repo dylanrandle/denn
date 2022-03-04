@@ -79,11 +79,9 @@ class MultiHeadGen(nn.Module):
         if isinstance(activation, str):
             activation = eval('nn.'+activation+'()')
 
-        norm = lambda x: nn.utils.spectral_norm(x) if spectral_norm else x
-
         # input
         self.layers = nn.ModuleList()
-        self.layers.append(norm(nn.Linear(in_dim, n_hidden_units)))
+        self.layers.append(nn.Linear(in_dim, n_hidden_units))
         self.layers.append(activation)
 
         # hidden
@@ -91,7 +89,7 @@ class MultiHeadGen(nn.Module):
             if residual:
                 self.layers.append(ResidualBlock(n_hidden_units, activation, spectral_norm=spectral_norm))
             else:
-                self.layers.append(norm(nn.Linear(n_hidden_units, n_hidden_units)))
+                self.layers.append(nn.Linear(n_hidden_units, n_hidden_units))
                 self.layers.append(activation)
 
         # heads
@@ -100,12 +98,12 @@ class MultiHeadGen(nn.Module):
         # for head in self.heads:
         #     head.append(activation)
         #     head.append(norm(nn.Linear(n_hidden_units, n_hidden_units)))
-        self.heads = nn.ModuleList([norm(nn.Linear(n_hidden_units, n_head_units))]) 
-        self.heads.extend([norm(nn.Linear(n_hidden_units, n_head_units)) for l in range(self.n_heads-1)])
+        self.heads = nn.ModuleList([nn.Linear(n_hidden_units, n_head_units)]) 
+        self.heads.extend([nn.Linear(n_hidden_units, n_head_units) for l in range(self.n_heads-1)])
 
         # output
-        self.outputs = nn.ModuleList([norm(nn.Linear(n_head_units, out_dim))]) 
-        self.outputs.extend([norm(nn.Linear(n_head_units, out_dim)) for l in range(self.n_heads-1)])
+        self.outputs = nn.ModuleList([nn.Linear(n_head_units, out_dim)]) 
+        self.outputs.extend([nn.Linear(n_head_units, out_dim) for l in range(self.n_heads-1)])
 
     def forward(self, x):
         d = {}

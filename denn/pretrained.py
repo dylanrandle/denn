@@ -5,12 +5,15 @@ from neurodiffeq.solvers import Solver1D
 from neurodiffeq.networks import FCNN
 import torch
 import torch.nn as nn
-from denn.models import MLP
+from denn.models import MLP, MultiHeadGen
+from denn.config.config import get_config
 from functools import partial
 from scipy import constants
 import matplotlib.pyplot as plt
 
 def get_pretrained(pkey, save=False, pretrained=False):
+
+    params = get_config(pkey)
 
     if pkey.lower().strip() == "eins":
 
@@ -224,7 +227,7 @@ def get_pretrained(pkey, save=False, pretrained=False):
 
     elif pkey.lower().strip() == "aca":
 
-        class pretrained_aca(MLP):
+        class PretrainedGen(MLP):
             def __init__(self):
                 super().__init__(in_dim=2, out_dim=1, n_hidden_units=30, 
                 n_hidden_layers=5, residual=True, regress=True)
@@ -234,9 +237,48 @@ def get_pretrained(pkey, save=False, pretrained=False):
                     x = self.layers[i](x)
                 return x
 
-        model = pretrained_aca()
+        model = PretrainedGen()
         if pretrained:
-            model.load_state_dict(torch.load(f'C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_nets/aca_gen.pth'))
+            model.load_state_dict(torch.load('C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_nets/aca_gen.pth'))
+
+        return model
+
+    elif pkey.lower().strip() == "rays":
+
+        class BaseGenerator(MultiHeadGen):
+            def __init__(self):
+                super().__init__(**params['generator'])
+
+            def forward(self, x):
+                d = {}
+                for i in range(len(self.layers)):
+                    x = self.layers[i](x)
+                for j in range(self.n_heads):
+                    x1 = self.heads[j](x)
+                    x1 = self.outputs[j](x1)
+                    d[j] = x1
+                return d
+
+        # instantiate multi-head generator and load weights
+        model = BaseGenerator()
+        model.load_state_dict(torch.load('C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_nets/rays_gen.pth'))
+
+        # freeze base generator weights
+        for l in model.layers:
+            for param in l.parameters():
+                param.requires_grad = False 
+
+        # add new heads
+        n_hidden_units = params['generator']['n_hidden_units']
+        n_head_units = params['generator']['n_head_units']
+        n_heads = params['generator']['n_heads']
+        model.heads = nn.ModuleList([nn.Linear(n_hidden_units, n_head_units)]) 
+        model.heads.extend([nn.Linear(n_hidden_units, n_head_units) for l in range(n_heads-1)])
+
+        # output
+        out_dim = params['generator']['out_dim']
+        model.outputs = nn.ModuleList([nn.Linear(n_head_units, out_dim)]) 
+        model.outputs.extend([nn.Linear(n_head_units, out_dim) for l in range(n_heads-1)])
 
         return model
     

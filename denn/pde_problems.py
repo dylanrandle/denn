@@ -658,7 +658,7 @@ class AllenCahn(Problem):
         Axt = 0.25*torch.sin(x)
 
         u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
-        return {'pred': u} # u_adj
+        return {'pred': u_adj} # u 
 
     def get_plot_dicts(self, pred, x, t, sol):
         """ return appropriate pred_dict / diff_dict used for plotting """

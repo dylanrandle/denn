@@ -264,7 +264,7 @@ def plot_multihead(mse_dict, resids_dict, save=False, dirname=None, alpha=0.8):
     resid_l2s = [np.square(r_vec).mean() for r_vec in resid_vectors]
     ax[1].plot(np.arange(len(resid_l2s)), resid_l2s, alpha=alphas[0], 
         linewidth=linewidth, color=colors[i], linestyle=linestyles[i])
-    ax[1].set_ylabel('$L_2$ Residuals')
+    ax[1].set_ylabel('Residuals ($L_2$ norm)')
     ax[1].set_xlabel('Step')
     ax[1].set_yscale('log')
 
