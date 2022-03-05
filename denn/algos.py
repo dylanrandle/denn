@@ -3,7 +3,6 @@ import numpy as np
 import torch
 import torch.nn as nn
 import os
-import matplotlib.pyplot as plt
 
 from denn.utils import plot_results, plot_multihead, calc_gradient_penalty, handle_overwrite, plot_3D
 from denn.config.config import write_config
@@ -20,8 +19,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     lr_schedule=True, gamma=0.999, noise=False, step_size=15, obs_every=1, 
     d1=1., d2=1., G_iters=1, D_iters=1, wgan=True, gp=0.1, conditional=True, 
     train_mse=True, log=True, plot=True, multihead=False, plot_sep_curves=False, 
-    save=False, dirname='train_GAN', config=None, save_for_animation=False, 
-    **kwargs):
+    save=False, save_G=False, dirname='train_GAN', config=None, 
+    save_for_animation=False, **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
@@ -75,7 +74,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': []}#, 'LHS': []}
+    losses = {'G': [], 'D': [], 'LHS': []}
     mses = {'train': [], 'val': []} if train_mse else {'val': []}
     preds = {'pred': [], 'soln': []}
     resids = {'grid': [], 'resid': []}
@@ -193,10 +192,10 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             diff = g_loss.item() - d_loss.item()
 
         losses['D'].append(d_loss.item())
-        #losses['D_real'].append(real_loss.item())
-        #losses['D_fake'].append(fake_loss.item())
+        # losses['D_real'].append(real_loss.item())
+        # losses['D_fake'].append(fake_loss.item())
         losses['G'].append(g_loss.item())
-        #losses['LHS'].append(torch.mean(torch.abs(fake)).item())
+        losses['LHS'].append(torch.mean(torch.abs(fake)).item())
         
         if lr_schedule:
             lr_scheduler_G.step()
@@ -244,7 +243,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
     if plot:
         if multihead:
-            plot_multihead(mses, resids, save=save, dirname=dirname, alpha=0.7)
+            plot_multihead(mses, losses, resids, save=save, dirname=dirname, alpha=0.7)
         else:
             plot_grid = problem.get_plot_grid()
             plot_soln = problem.get_plot_solution(grid)
@@ -254,12 +253,14 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
-        torch.save(G.state_dict(), f"config/pretrained_nets/{pkey}_gen.pth")
         if multihead:
             plot_soln = problem.get_plot_solution(grid)
             pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
             np.save(os.path.join(dirname, "pred_dict"), pred_dict)
             np.save(os.path.join(dirname, "diff_dict"), diff_dict)
+
+    if save_G:
+        torch.save(G.state_dict(), f"config/pretrained_nets/{pkey}_gen.pth")
 
     if save_for_animation:
         if not os.path.exists(dirname):

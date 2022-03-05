@@ -228,7 +228,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     else:
         plt.show()
 
-def plot_multihead(mse_dict, resids_dict, save=False, dirname=None, alpha=0.8):
+def plot_multihead(mse_dict, loss_dict, resids_dict, save=False, dirname=None, alpha=0.8):
 
     plt.rc('axes', titlesize=16, labelsize=16)
     plt.rc('legend', fontsize=15)
@@ -239,7 +239,7 @@ def plot_multihead(mse_dict, resids_dict, save=False, dirname=None, alpha=0.8):
     if save and not dirname:
         raise RuntimeError('Please provide a directory name `dirname` when `save=True`.')
 
-    fig, ax = plt.subplots(1, 2, figsize=(9, 4))
+    fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 
     linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*3
     linewidth = 2
@@ -259,14 +259,25 @@ def plot_multihead(mse_dict, resids_dict, save=False, dirname=None, alpha=0.8):
     ax[0].set_xlabel('Step')
     ax[0].set_yscale('log')
 
+    # GAN Losses
+    for i, (k, v) in enumerate(loss_dict.items()):
+        if k != 'LHS':
+            ax[1].plot(np.arange(len(v)), v, label=k,
+            alpha=alphas[i], linewidth=linewidth, color=colors[i],
+            linestyle=linestyles[i])
+    if len(loss_dict.keys()) > 1: 
+        ax[1].legend(loc='upper right')
+    ax[1].set_xlabel('Step')
+    ax[1].set_ylabel('Loss')
+
     # L2 Residuals
     resid_vectors = resids_dict['resid']
     resid_l2s = [np.square(r_vec).mean() for r_vec in resid_vectors]
-    ax[1].plot(np.arange(len(resid_l2s)), resid_l2s, alpha=alphas[0], 
+    ax[2].plot(np.arange(len(resid_l2s)), resid_l2s, alpha=alphas[0], 
         linewidth=linewidth, color=colors[i], linestyle=linestyles[i])
-    ax[1].set_ylabel('Residuals ($L_2$ norm)')
-    ax[1].set_xlabel('Step')
-    ax[1].set_yscale('log')
+    ax[2].set_ylabel('Residuals ($L_2$ norm)')
+    ax[2].set_xlabel('Step')
+    ax[2].set_yscale('log')
 
     plt.tight_layout()
 
