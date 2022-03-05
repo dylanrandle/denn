@@ -261,14 +261,14 @@ def get_pretrained(pkey, save=False, pretrained=False):
 
         # instantiate multi-head generator and load weights
         model = BaseGenerator()
-        model.load_state_dict(torch.load('C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_nets/rays_gen.pth'))
+        model.load_state_dict(torch.load('/n/home01/bbullwinkel/denn/denn/config/pretrained_nets/rays_gen.pth'))
 
         # freeze base generator weights
         for l in model.layers:
             for param in l.parameters():
                 param.requires_grad = False 
 
-        # add new heads
+        # add new heads #TODO: don't use randomly initialized heads, add based on closest IC
         n_hidden_units = params['generator']['n_hidden_units']
         n_head_units = params['generator']['n_head_units']
         n_heads = params['generator']['n_heads']

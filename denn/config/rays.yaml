@@ -3,8 +3,9 @@ problem:
   sampling: 'fixed'
   t_max: 1
   x0: 0
-  y0: [0., 0.07142857, 0.14285714, 0.21428571, 0.28571429, 0.35714286, 0.42857143, 0.5, 0.57142857, 0.64285714,
-  0.71428571, 0.78571429, 0.85714286, 0.92857143, 1.]
+  y0: [0.00629415, 0.10790965, 0.16338743, 0.26396311, 0.31055611,
+       0.42259726, 0.52199343, 0.57089518, 0.61662052, 0.67387798,
+       0.99927758] #[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
   px0: 1
   py0: 0
   sigma: 0.1
@@ -14,13 +15,13 @@ training:
   method: 'unsupervised'
   seed: 2
   niters: 10000
-  g_lr: 0.01152380515461927
-  d_lr: 0.015452633350580029
-  g_betas: [0.22881133152941593, 0.69984895289804]
-  d_betas: [0.2758524687122676, 0.8291734341043192]
+  g_lr: 0.012316433526697611
+  d_lr: 0.0037547474147429367
+  g_betas: [0.3321397465281695, 0.7814519177699136]
+  d_betas: [0.08849280706193198, 0.9920535299846108]
   lr_schedule: True
-  gamma: 0.97782604967996123
-  noise: True
+  gamma: 0.98944605908056127
+  noise: False
   step_size: 11
   obs_every: 1
   d1: 1
@@ -37,27 +38,28 @@ training:
   multihead: True
   plot_sep_curves: True
   save: True
+  save_G: False
   save_for_animation: False
   dirname: 'RAYS_run'
 
 generator:
   in_dim: 1
   out_dim: 4
-  n_hidden_units: 50
-  n_hidden_layers: 4
-  n_heads: 15
+  n_hidden_units: 20
+  n_hidden_layers: 5
+  n_heads: 11
   n_head_units: 20
   activation: 'Tanh'
   residual: True
   regress: True
-  pretrained: False
+  pretrained: True
 
 discriminator:
   in_dim: 4
   out_dim: 1
-  n_hidden_units: 70
-  n_hidden_layers: 4
-  n_heads: 15
+  n_hidden_units: 50
+  n_hidden_layers: 2
+  n_heads: 11
   activation: 'Tanh'
   residual: True
   regress: False

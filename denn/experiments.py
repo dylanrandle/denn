@@ -74,7 +74,8 @@ def gan_experiment(pkey, params):
     # models
     if params['generator']['pretrained']:
         gen = get_pretrained(pkey)
-    elif params['generator']['n_heads'] > 1:
+    #elif params['generator']['n_heads'] > 1:
+    elif pkey.lower().strip() in ["rays"]:
         gen = MultiHeadGen(**params['generator'])
     else:
         gen = MLP(**params['generator'])

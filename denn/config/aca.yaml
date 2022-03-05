@@ -42,7 +42,6 @@ generator:
   out_dim: 1
   n_hidden_units: 40 #30
   n_hidden_layers: 2 #5
-  n_heads: 1
   activation: 'Tanh'
   residual: True
   regress: True
@@ -53,7 +52,6 @@ discriminator:
   out_dim: 1
   n_hidden_units: 50 #30
   n_hidden_layers: 2 #3
-  n_heads: 1
   activation: 'Tanh'
   residual: True
   regress: False
