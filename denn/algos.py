@@ -95,15 +95,14 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 #residuals_delta = problem.get_equation(pred_delta, grid_samp_delta)
                 
                 # idea: add noise to relax from dirac delta at 0 to distb'n
-                # + torch.normal(0, .1/(i+1), size=residuals.shape)
-                # mae_std = torch.mean(torch.abs(residuals)).item() # Mean absolute error of residuals
-                # diff_std = (mae_std + diff) if (mae_std + diff) >= 0 else 0
                 if noise:
                     diff = diff if diff >= 0 else 0
                     real = torch.zeros_like(residuals) + torch.normal(0, diff, size=residuals.shape)
+                    fake = residuals + torch.normal(0, diff, size=residuals.shape)
                 else:
                     real = torch.zeros_like(residuals)
-                fake = residuals
+                    fake = residuals
+                # fake = residuals
 
                 if conditional:
                     real = torch.cat((real, grid_samp), 1)
@@ -464,8 +463,8 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     # labels
     real_label = 1
     fake_label = -1 if wgan else 0
-    real_labels = torch.full((len(grid)+195,), real_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
-    fake_labels = torch.full((len(grid)+195,), fake_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
+    real_labels = torch.full((len(grid),), real_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
+    fake_labels = torch.full((len(grid),), fake_label, dtype=torch.float).reshape(-1,1) #len(grid)+195 for no reparam
     # masked label vectors
     real_labels_obs = real_labels[observers, :]
     fake_labels_obs = fake_labels[observers, :]
@@ -492,7 +491,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': []}#, 'LHS': []}
+    losses = {'G': [], 'D': [], 'LHS': []}
     mses = {'train': [], 'val': []} if train_mse else {'val': []}
     preds = {'pred': [], 'soln': []}
     resids = {'grid': [], 'resid': []}
@@ -527,9 +526,11 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
             if noise:
                 diff = diff if diff >= 0 else 0
                 real = torch.zeros_like(residuals) + torch.normal(0, diff, size=residuals.shape)
+                fake = residuals + torch.normal(0, diff, size=residuals.shape)
             else:
                 real = torch.zeros_like(residuals)
-            fake = residuals
+                fake = residuals
+            # fake = residuals
 
             optiG.zero_grad()
             g_loss = criterion(D(fake), real_labels)
@@ -564,7 +565,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
 
         losses['D'].append(d_loss.item())
         losses['G'].append(g_loss.item())
-        #losses['LHS'].append(torch.mean(torch.abs(fake)).item())
+        losses['LHS'].append(torch.mean(torch.abs(fake)).item())
 
         if lr_schedule:
           lr_scheduler_G.step()
