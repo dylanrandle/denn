@@ -59,7 +59,7 @@ class PoissonEquation(Problem):
     def get_grid(self):
         return (self.grid_x, self.grid_y)
 
-    def get_grid_sample(self):
+    def get_grid_sample(self, grid, resid, resid_delta):
         x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
         y_noisy = torch.normal(mean=self.grid_y, std=self.noise_ystd)
         return (x_noisy, y_noisy)
@@ -337,7 +337,7 @@ class BurgersViscous(Problem):
     def get_grid(self):
         return (self.grid_x, self.grid_t)
 
-    def get_grid_sample(self):
+    def get_grid_sample(self, t=None, resid=None, resid_delta=None):
         x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
         t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
         return (x_noisy, t_noisy)
@@ -515,7 +515,6 @@ class AllenCahn(Problem):
         self.tgrid = torch.linspace(tmin, tmax, nt+1, requires_grad=True)
         grid_x, grid_t = torch.meshgrid(self.xgrid, self.tgrid, indexing='ij')
         self.grid_x, self.grid_t = grid_x.reshape(-1,1), grid_t.reshape(-1,1)
-        self.u_t0 = 0.25*torch.sin(self.xgrid.detach())
 
         self.xmin_p = xmin_p
         self.xmax_p = xmax_p
@@ -527,7 +526,6 @@ class AllenCahn(Problem):
         self.tgrid_p = torch.linspace(tmin_p, tmax_p, self.nt_p, requires_grad=True)
         grid_x_p, grid_t_p = torch.meshgrid(self.xgrid_p, self.tgrid_p, indexing='ij')
         self.grid_x_p, self.grid_t_p = grid_x_p.reshape(-1,1), grid_t_p.reshape(-1,1)
-        self.u_t0_p = 0.25*torch.sin(self.xgrid_p.detach())
 
     def get_grid(self):
         return (self.grid_x.float(), self.grid_t.float())
@@ -637,19 +635,19 @@ class AllenCahn(Problem):
         """ return value of residuals of equation (i.e. LHS) """
         adj = self.adjust(u, x, t)
         u_adj = adj['pred']
-        resid = self._allen_cahn_eqn(u_adj, x, t)
-        if plot is True:
-            u_adj = u_adj.reshape((self.nx_p, self.nt_p))
-            x = x.reshape((self.nx_p, self.nt_p))
-            ic = u_adj[:, 0] - 0.25*torch.sin(x[:, 0]) #self.u_t0_p
-        else:
-            u_adj = u_adj.reshape((self.nx+1, self.nt+1))
-            x = x.reshape((self.nx+1, self.nt+1))
-            ic = u_adj[:, 0] - 0.25*torch.sin(x[:, 0]) #self.u_t0
-        ic, bc1, bc2 = ic.reshape(-1, 1), u_adj[0, :].reshape(-1, 1), u_adj[-1, :].reshape(-1, 1)
-        ic, bc1, bc2 = ic*self.lam, bc1*self.lam, bc2*self.lam
-        return torch.cat((resid, ic, bc1, bc2))
-        #return self._allen_cahn_eqn(u_adj, x, t)#*torch.exp(-t/self.lam)
+        # resid = self._allen_cahn_eqn(u_adj, x, t)
+        # if plot is True:
+        #     u_adj = u_adj.reshape((self.nx_p, self.nt_p))
+        #     x = x.reshape((self.nx_p, self.nt_p))
+        #     ic = u_adj[:, 0] - 0.25*torch.sin(x[:, 0])
+        # else:
+        #     u_adj = u_adj.reshape((self.nx+1, self.nt+1))
+        #     x = x.reshape((self.nx+1, self.nt+1))
+        #     ic = u_adj[:, 0] - 0.25*torch.sin(x[:, 0])
+        # ic, bc1, bc2 = ic.reshape(-1, 1), u_adj[0, :].reshape(-1, 1), u_adj[-1, :].reshape(-1, 1)
+        # ic, bc1, bc2 = ic*self.lam, bc1*self.lam, bc2*self.lam
+        # return torch.cat((resid, ic, bc1, bc2))
+        return self._allen_cahn_eqn(u_adj, x, t)*torch.exp(-t/self.lam)
 
     def adjust(self, u, x, t):
         """ perform boundary value adjustment """
@@ -658,7 +656,7 @@ class AllenCahn(Problem):
         Axt = 0.25*torch.sin(x)
 
         u_adj = Axt + x_tilde*(1-x_tilde)*(1 - torch.exp(-t_tilde))*u
-        return {'pred': u_adj} # u 
+        return {'pred': u_adj}
 
     def get_plot_dicts(self, pred, x, t, sol):
         """ return appropriate pred_dict / diff_dict used for plotting """

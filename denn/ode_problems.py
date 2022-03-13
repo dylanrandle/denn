@@ -138,7 +138,7 @@ class SimpleOscillator(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self, pred, t):
+    def get_grid_sample(self, t=None, resid=None, resid_delta=None):
         return self.sample_grid(self.grid, self.spacing)
 
     def get_plot_grid(self):
@@ -233,7 +233,7 @@ class NonlinearOscillator(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self):
+    def get_grid_sample(self, t=None, resid=None, resid_delta=None):
         return self.sample_grid(self.grid, self.spacing)
 
     def get_plot_grid(self):
@@ -431,7 +431,7 @@ class SIRModel(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self):
+    def get_grid_sample(self, t=None, resid=None, resid_delta=None):
         return self.sample_grid(self.grid, self.spacing)
 
     def get_plot_grid(self):
@@ -541,7 +541,7 @@ class CoupledOscillator(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self):
+    def get_grid_sample(self, t=None, resid=None, resid_delta=None):
         return self.sample_grid(self.grid, self.spacing)
 
     def get_plot_grid(self):
