@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pandas as pd
+import os
 
 from denn.config.config import get_config
 from denn.experiments import gan_experiment, L2_experiment
@@ -16,6 +17,8 @@ if __name__ == '__main__':
         help='problem to run (exp=Exponential, sho=SimpleOscillator, nlo=NonlinearOscillator)')
     args.add_argument('--nreps', type=int, default=10,
         help='number of random seeds to try')
+    args.add_argument('--sensitivity', action='store_true', default=False, 
+        help='whether to run a sensitivity analysis with 500 random repetitions, default False')
     args.add_argument('--fname', type=str, default='rand_reps',
         help='file to save numpy results of MSEs')
     args = args.parse_args()
@@ -25,6 +28,9 @@ if __name__ == '__main__':
 
     params = get_config(args.pkey)
 
+    this_dir = os.path.dirname(os.path.abspath(__file__)) 
+    dirname = os.path.join(this_dir, '../experiments/reps', args.pkey)
+
     # turn off plotting / logging
     params['training']['log'] = False
     params['training']['plot'] = False
@@ -32,40 +38,76 @@ if __name__ == '__main__':
     params['training']['save'] = False
     params['training']['save_for_animation'] = False
 
-    # np.random.seed(42)
-    # seeds = np.random.randint(int(1e6), size=args.nreps)
-    seeds = list(range(args.nreps))
-    print("Using seeds: ", seeds)
-    lrs = [0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
+    # initialize lists
+    val_mse = []
+    lhs_vals = []
 
-    # initialize lists to hold validation mse and lhs values
-    # val_mse = []
-    # lhs_vals = []
-    results = []
+    if args.sensitivity:
 
-    for s in seeds:
-        for g_lr in lrs:
-            for d_lr in lrs:
-                print(f'Seed = {s}')
-                params['training']['seed'] = s
-                params['training']['g_lr'] = g_lr
-                params['training']['d_lr'] = d_lr
+        # seed the seeds and learning rates sampled
+        np.random.seed(42)
+        lr_bound = (0.01, 0.1)
 
-                if args.gan:
-                    print(f'Running GAN training for {args.pkey} problem...')
-                    res = gan_experiment(args.pkey, params)
-                else:
-                    print(f'Running classical training for {args.pkey} problem...')
-                    res = L2_experiment(args.pkey, params)
+        # initialize lists
+        col_names = []
+        results = []
 
-                # val_mse.append(res['mses']['val'])
-                # lhs_vals.append(res['losses']['LHS'])
-                run = [s, g_lr, d_lr, res['mses']['val'][-1]]
-                results.append(run)
+        # randomly sample seeds and learning rates
+        seeds = np.random.choice(args.nreps, size=500)
+        gen_lrs = np.random.uniform(*lr_bound, size=500)
+        disc_lrs = np.random.uniform(*lr_bound, size=500)
 
-    # val_mse = np.vstack(val_mse)
-    # lhs_vals = np.vstack(lhs_vals)
-    # np.save(args.fname, val_mse)
-    # np.save(args.fname+'_lhs', lhs_vals)
-    results_df = pd.DataFrame(results, columns=['seed', 'g_lr', 'd_lr', 'mean_squared_error'])
-    results_df.to_csv(f"{args.fname}.csv")
+        for i in range(500):
+
+            s = seeds[i]
+            g_lr = gen_lrs[i]
+            d_lr = disc_lrs[i]
+
+            params['training']['seed'] = s
+            params['training']['g_lr'] = g_lr
+            params['training']['d_lr'] = d_lr
+
+            print(f'Running GAN training for {args.pkey} problem...')
+            res = gan_experiment(args.pkey, params)
+
+            col_names.append(f"{s}_{g_lr:.5f}_{d_lr:.5f}")
+            val_mse.append(res['mses']['val'])
+            lhs_vals.append(res['losses']['LHS'])
+            final_val_mse = res['mses']['val'][-1]
+            run = [s, g_lr, d_lr, final_val_mse]
+            results.append(run)
+            
+            print(f"Run {i}: seed={s}, g_lr={g_lr:.4f}, d_lr={d_lr:.4f}. Final Val MSE={final_val_mse:.4e}")
+
+        val_mse = np.vstack(val_mse)
+        lhs_vals = np.vstack(lhs_vals)
+        val_mse_df = pd.DataFrame(val_mse.T, columns=col_names)
+        lhs_vals_df = pd.DataFrame(lhs_vals.T, columns=col_names)
+        results_df = pd.DataFrame(results, columns=['seed', 'g_lr', 'd_lr', 'mean_squared_error'])
+        val_mse_df = val_mse_df.to_csv(f"{args.fname}_mse.csv", index=False)
+        lhs_vals_df = lhs_vals_df.to_csv(f"{args.fname}_lhs.csv", index=False)
+        results_df.to_csv(f"{args.fname}.csv", index=False)
+
+    
+    else:
+        seeds = list(range(args.nreps))
+        print("Using seeds: ", seeds)
+
+        for s in seeds:
+            print(f'Seed = {s}')
+            params['training']['seed'] = s
+
+            if args.gan:
+                print(f'Running GAN training for {args.pkey} problem...')
+                res = gan_experiment(args.pkey, params)
+            else:
+                print(f'Running classical training for {args.pkey} problem...')
+                res = L2_experiment(args.pkey, params)
+
+            val_mse.append(res['mses']['val'])
+            # lhs_vals.append(res['losses']['LHS'])
+
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+        np.save(os.path.join(dirname, args.fname), val_mse)
+        # np.save(args.fname+'_lhs', lhs_vals)
