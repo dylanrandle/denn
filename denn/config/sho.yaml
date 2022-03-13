@@ -6,7 +6,7 @@ problem:
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 10000
+  niters: 12000
   g_lr: 0.0059646176842056914
   d_lr: 0.00048861147485534354
   g_betas: [0.36317042, 0.75224866]
@@ -20,7 +20,7 @@ training:
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: MSELoss
+  loss_fn: MSELoss # MSELoss, L1Loss, SmoothL1Loss
   wgan: False
   gp: 0.1
   conditional: False

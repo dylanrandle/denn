@@ -1,6 +1,6 @@
 problem:
   n: 800
-  perturb: True
+  sampling: 'perturb'
   t_max: 10
   S0: 0.99
   I0: 0.01
@@ -18,7 +18,7 @@ training:
   d_betas: [0.16923791, 0.31905255]
   lr_schedule: True
   gamma: 0.99402277349277524
-  noise: False
+  noise: True
   step_size: 15
   obs_every: 1
   d1: 1

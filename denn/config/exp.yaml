@@ -6,21 +6,21 @@ problem:
 training:
   method: 'unsupervised'
   seed: 0
-  niters: 1000
+  niters: 1200
   g_lr: 0.094654927836376718
   d_lr: 0.012215513377902448
   g_betas: [0.4913795, 0.31989269]
   d_betas: [0.54223041, 0.26406118]
   lr_schedule: True
   gamma: 0.9500302442628914
-  noise: False
+  noise: True
   step_size: 3
   obs_every: 1
   d1: 1
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: MSELoss
+  loss_fn: SmoothL1Loss # MSELoss, L1Loss, SmoothL1Loss
   wgan: False
   gp: 0.1
   conditional: False
