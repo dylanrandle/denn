@@ -351,7 +351,6 @@ def plot_reps_results(arrs_dict,
     # plt.xticks([0, 5000, 10000, 15000, 20000])
     plt.xlabel('Iteration')
     plt.ylabel('Mean squared error')
-    plt.grid()
 
     if fname:
         plt.savefig(fname)
