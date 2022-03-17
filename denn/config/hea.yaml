@@ -2,7 +2,7 @@ problem:
   nx: 32
   nt: 32
   c: 1
-  perturb: True
+  sampling: 'perturb'
 
 training:
   method: 'unsupervised'
@@ -14,7 +14,7 @@ training:
   d_betas: [0.12032453, 0.25102168]
   lr_schedule: True
   gamma: 0.95003910549481241
-  noise: False
+  noise: True
   step_size: 10
   obs_every: 1
   d1: 1

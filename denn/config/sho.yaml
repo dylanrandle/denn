@@ -20,7 +20,7 @@ training:
   d2: 1
   G_iters: 1
   D_iters: 1
-  loss_fn: MSELoss # MSELoss, L1Loss, SmoothL1Loss
+  loss_fn: MSELoss
   wgan: False
   gp: 0.1
   conditional: False

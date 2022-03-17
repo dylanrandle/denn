@@ -15,7 +15,7 @@ training:
   d_betas: [0.15440781182744195, 0.7970585213385728] #[0.70425699, 0.85826436]
   lr_schedule: True
   gamma: 0.99636960565324184 #0.97676331521658999
-  noise: False
+  noise: True
   step_size: 17 #19
   obs_every: 1
   d1: 1
