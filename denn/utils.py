@@ -323,12 +323,13 @@ def plot_reps_results(arrs_dict,
     linewidth=2, alpha_line=0.8, alpha_shade=0.4, figsize=(12,8),
     pctiles = (2.5, 97.5), window=10, fname=None):
 
-    plt.rc('axes', titlesize=20, labelsize=20)
-    plt.rc('legend', fontsize=20)
-    plt.rc('xtick', labelsize=20)
-    plt.rc('ytick', labelsize=20)
+    plt.rc('axes', titlesize=24, labelsize=24)
+    plt.rc('legend', fontsize=22)
+    plt.rc('xtick', labelsize=24)
+    plt.rc('ytick', labelsize=24)
+    plt.rcParams['text.usetex'] = True
 
-    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*3
+    linestyles = ['solid', 'dashed', 'dashed', 'dashed']
     colors = ['crimson', 'blue', 'skyblue', 'limegreen',
         'aquamarine', 'violet', 'black', 'brown', 'pink', 'gold']
 
@@ -353,7 +354,7 @@ def plot_reps_results(arrs_dict,
     plt.ylabel('Mean squared error')
 
     if fname:
-        plt.savefig(fname)
+        plt.savefig(fname, dpi=300)
     else:
         plt.show()
 
