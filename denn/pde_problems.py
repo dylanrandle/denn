@@ -161,7 +161,7 @@ class WaveEquation(Problem):
     def get_grid(self):
         return (self.grid_x, self.grid_t)
 
-    def get_grid_sample(self):
+    def get_grid_sample(self, grid, resid, resid_delta):
         x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
         t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
         return (x_noisy, t_noisy)
@@ -435,7 +435,7 @@ class HeatEquation(Problem):
     def get_grid(self):
         return (self.grid_x, self.grid_t)
 
-    def get_grid_sample(self):
+    def get_grid_sample(self, grid, resid, resid_delta):
         x_noisy = torch.normal(mean=self.grid_x, std=self.noise_xstd)
         t_noisy = torch.normal(mean=self.grid_t, std=self.noise_tstd)
         return (x_noisy, t_noisy)

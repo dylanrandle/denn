@@ -653,7 +653,7 @@ class EinsteinEquations(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self, pred, z):
+    def get_grid_sample(self, t=None, resid=None, resid_delta=None):
         return self.sample_grid(self.grid, self.spacing)
 
     def get_plot_grid(self):
