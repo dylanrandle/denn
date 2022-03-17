@@ -13,4 +13,7 @@ module load gcc/10.2.0-fasrc01
 module load Anaconda3/2020.11
 source activate denn
 cd ../denn
-python rand_reps.py --pkey burv --gan --nreps 20 --fname rand_reps_burv
+# python rand_reps.py --pkey burv --nreps 10 --fname burv_rand_reps_gan
+python rand_reps.py --pkey burv --loss MSELoss --nreps 10 --fname burv_rand_reps_L2
+python rand_reps.py --pkey burv --loss L1Loss --nreps 10 --fname burv_rand_reps_L1
+python rand_reps.py --pkey burv --loss SmoothL1Loss --nreps 10 --fname burv_rand_reps_huber
