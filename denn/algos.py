@@ -676,7 +676,7 @@ def train_L2_2D(model, problem, method='unsupervised', niters=100,
     preds = {'pred': [], 'soln': []}
 
     for i in range(niters):
-        xs, ys = problem.get_grid_sample()
+        xs, ys = problem.get_grid_sample(None, None, None) #TODO: remove these unnecessary args
         grid_samp = torch.cat((xs, ys), 1)
         pred = model(grid_samp)
         residuals = problem.get_equation(pred, xs, ys)

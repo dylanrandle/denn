@@ -51,7 +51,12 @@ def L2_experiment(pkey, params):
     np.random.seed(0)
 
     # model
-    model = MLP(**params['generator'])
+    if params['generator']['pretrained']:
+        model = get_pretrained(pkey)
+    elif pkey.lower().strip() in ["rays"]:
+        model = MultiHeadGen(**params['generator'])
+    else:
+        model = MLP(**params['generator'])
 
     # experiment seed
     np.random.seed(params['training']['seed'])
