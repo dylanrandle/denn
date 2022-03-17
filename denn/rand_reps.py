@@ -11,10 +11,10 @@ import multiprocessing as mp
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
-    args.add_argument('--gan', action='store_true', default=False,
-        help='whether to use GAN-based training, default False (use L2-based)')
     args.add_argument('--pkey', type=str, default='EXP',
         help='problem to run (exp=Exponential, sho=SimpleOscillator, nlo=NonlinearOscillator)')
+    args.add_argument('--loss', type=str, default='GAN',
+        help='loss function to use, default GAN (otherwise classical will be used))')
     args.add_argument('--nreps', type=int, default=10,
         help='number of random seeds to try')
     args.add_argument('--sensitivity', action='store_true', default=False, 
@@ -37,6 +37,9 @@ if __name__ == '__main__':
     # turn off saving
     params['training']['save'] = False
     params['training']['save_for_animation'] = False
+
+    # add the loss function to params
+    params['training']['loss_fn'] = args.loss
 
     # initialize lists
     val_mse = []
@@ -67,8 +70,12 @@ if __name__ == '__main__':
             params['training']['g_lr'] = g_lr
             params['training']['d_lr'] = d_lr
 
-            print(f'Running GAN training for {args.pkey} problem...')
-            res = gan_experiment(args.pkey, params)
+            if args.loss == 'GAN':
+                print(f'Running GAN training for {args.pkey} problem...')
+                res = gan_experiment(args.pkey, params)
+            else:
+                print(f'Running classical training for {args.pkey} problem...')
+                res = L2_experiment(args.pkey, params)
 
             col_names.append(f"{s}_{g_lr:.5f}_{d_lr:.5f}")
             val_mse.append(res['mses']['val'])
@@ -87,7 +94,6 @@ if __name__ == '__main__':
         val_mse_df = val_mse_df.to_csv(f"{args.fname}_mse.csv", index=False)
         lhs_vals_df = lhs_vals_df.to_csv(f"{args.fname}_lhs.csv", index=False)
         results_df.to_csv(f"{args.fname}.csv", index=False)
-
     
     else:
         seeds = list(range(args.nreps))
@@ -97,7 +103,7 @@ if __name__ == '__main__':
             print(f'Seed = {s}')
             params['training']['seed'] = s
 
-            if args.gan:
+            if args.loss == 'GAN':
                 print(f'Running GAN training for {args.pkey} problem...')
                 res = gan_experiment(args.pkey, params)
             else:
@@ -110,4 +116,4 @@ if __name__ == '__main__':
         if not os.path.exists(dirname):
             os.mkdir(dirname)
         np.save(os.path.join(dirname, args.fname), val_mse)
-        # np.save(args.fname+'_lhs', lhs_vals)
+        # np.save(os.path.join(dirname, args.fname+'_lhs'), lhs_vals)

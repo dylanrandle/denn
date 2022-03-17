@@ -5,7 +5,7 @@ import os
 
 import ray
 from ray import tune
-from ray.tune.schedulers import AsyncHyperBandScheduler, MedianStoppingRule
+from ray.tune.schedulers import AsyncHyperBandScheduler
 
 from denn.experiments import gan_experiment, L2_experiment
 from denn.config.config import get_config
@@ -14,8 +14,8 @@ if __name__ == "__main__":
     args = argparse.ArgumentParser()
     args.add_argument('--pkey', type=str, default='EXP',
         help='problem to run (exp=Exponential, sho=SimpleOscillator, nlo=NonlinearOscillator)')
-    args.add_argument('--classical', action='store_true', default=False,
-        help='whether to use classical training, default False (use GAN))')
+    args.add_argument('--loss', type=str, default='GAN',
+        help='loss function to use, default GAN (otherwise classical will be used))')
     args.add_argument('--pretuned', action='store_true', default=False, 
         help='whether to construct search bounds based on pre-tuned hypers, default False')
     args.add_argument('--sensitivity', action='store_true', default=False, 
@@ -27,11 +27,20 @@ if __name__ == "__main__":
     params = get_config(args.pkey)
     _niters = params['training']['niters']
 
+    this_dir = os.path.dirname(os.path.abspath(__file__)) 
+    dirname = os.path.join(this_dir, '../notebooks/ray_tune')
+
     # turn off plotting / saving / logging
     params['training']['log'] = False
     params['training']['plot'] = False
     params['training']['save'] = False
     params['training']['save_for_animation'] = False
+
+    # turn off noise
+    params['training']['noise'] = False
+
+    # add the loss function to params
+    params['training']['loss_fn'] = args.loss
 
     def gan_tuning(config, checkpoint_dir=None):
         res = gan_experiment(args.pkey, config)
@@ -109,30 +118,36 @@ if __name__ == "__main__":
         mode='min',
         reduction_factor=4,
         brackets=1,
-        max_t=_niters, #int(_niters/10), # ==> e.g. 100 x 10 = 1000 real iters
-        grace_period=_niters #int(_niters/100), # tune is tracked every 10 iters
+        max_t=int(_niters/10), # ==> e.g. 100 x 10 = 1000 real iters
+        grace_period=int(_niters/100), # tune is tracked every 10 iters
     )                    # ==> e.g. 25 x 10 = 250 real iters
 
-    if args.classical:
-        print('Using classical method')
-        _fn = classical_tuning
-        _jobname = f"classical_tuning_{args.pkey}"
-    else:
+    if args.loss == 'GAN':
         print('Using GAN method')
         _fn = gan_tuning
         _jobname = f"gan_tuning_{args.pkey}"
+        ext = {args.pkey}
+        dirname = os.path.join(dirname, 'gan_results')
+    else:
+        print('Using classical method')
+        _fn = classical_tuning
+        _jobname = f"classical_tuning_{args.pkey}"
+        ext = f"{args.pkey}_{args.loss}"
+        dirname = os.path.join(dirname, 'classical_results')
 
     analysis = tune.run(
         _fn,
         name=_jobname,
         config=search_space,
-        scheduler=None, #scheduler,
+        scheduler=scheduler,
         num_samples=args.nsample,
         #raise_on_failed_trial=False
     )
 
     df = analysis.dataframe(metric="mean_squared_error", mode="min")
-    df.to_csv(f"ray_tune_{args.pkey}.csv")
+    if not os.path.exists(dirname):
+        os.mkdir(dirname)
+    df.to_csv(f"{dirname}/ray_tune_{ext}.csv")
     print("Sorted top results")
     print(df.sort_values(by="mean_squared_error").head(10))
     print("Best config is:", analysis.get_best_config(metric="mean_squared_error", mode="min"))
