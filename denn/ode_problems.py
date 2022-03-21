@@ -715,8 +715,8 @@ class EinsteinEquations(Problem):
         r_prime_0 = self._r_to_r_prime(r_0)
         return r_prime_0
 
-    def _hu_sawicky_system(self, z, vars):
-        x, y, v, Om, r = vars
+    def _hu_sawicky_system(self, z, params):
+        x, y, v, Om, r = params
         Gamma = (r + self.b)*(((r + self.b)**2) - 2*self.b) / (4*r*self.b)
         s0 = (-Om + x**2 + (1+v)*x - 2*v + 4*y) / (z+1)
         s1 = (- (v*x*Gamma - x*y + 4*y - 2*y*v)) / (z+1)
@@ -783,7 +783,7 @@ class EinsteinEquations(Problem):
         return pred_dict, diff_dict
 
 class RaysEquations(Problem):
-    def __init__(self, t_min=0, t_max=10, x0=0, y0=[0.3], px0=1, py0=0, 
+    def __init__(self, t_min=0, t_max=1, x0=0, y0=[0.3], px0=1, py0=0, 
     sigma=0.1, A=0.1, **kwargs):
 
         super().__init__(**kwargs)
@@ -817,7 +817,7 @@ class RaysEquations(Problem):
     def get_grid(self):
         return self.grid
 
-    def get_grid_sample(self, t, resid, resid_delta):
+    def get_grid_sample(self, t=None, resid=None, resid_delta=None):
         return self.sample_grid(self.grid, self.spacing)
 
     def get_plot_grid(self):
@@ -854,8 +854,8 @@ class RaysEquations(Problem):
     def get_plot_solution(self, t):
         return self.get_solution(t)
 
-    def _rays_system(self, t, vars):
-        x, y, px, py = vars
+    def _rays_system(self, t, params):
+        x, y, px, py = params
         Vx, Vy = 0, 0
         for mean in self.means:
             Vx += self.A*np.exp(-(((x-mean[0])**2 + (y-mean[1])**2) / self.sigma**2)/2) * (x-mean[0])/self.sigma**2 

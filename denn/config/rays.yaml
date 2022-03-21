@@ -36,7 +36,7 @@ training:
   multihead: True
   plot_sep_curves: True
   save: True
-  save_G: True
+  save_G: False
   save_for_animation: False
   dirname: 'RAYS_run'
 
