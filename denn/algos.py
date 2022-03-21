@@ -74,7 +74,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': [], 'LHS': []}
+    losses = {'G': [], 'D': []} #, 'LHS': []}
     mses = {'train': [], 'val': []} if train_mse else {'val': []}
     preds = {'pred': [], 'soln': []}
     resids = {'grid': [], 'resid': []}
@@ -194,7 +194,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         # losses['D_real'].append(real_loss.item())
         # losses['D_fake'].append(fake_loss.item())
         losses['G'].append(g_loss.item())
-        losses['LHS'].append(torch.mean(torch.abs(fake)).item())
+        # losses['LHS'].append(torch.mean(torch.abs(fake)).item())
         
         if lr_schedule:
             lr_scheduler_G.step()
@@ -252,6 +252,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
+        np.save(os.path.join(dirname, "mses"), mses)
         if multihead:
             plot_soln = problem.get_plot_solution(grid)
             pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
@@ -491,7 +492,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     criterion = wass if wgan else bce
 
     # history
-    losses = {'G': [], 'D': [], 'LHS': []}
+    losses = {'G': [], 'D': []} #, 'LHS': []}
     mses = {'train': [], 'val': []} if train_mse else {'val': []}
     preds = {'pred': [], 'soln': []}
     resids = {'grid': [], 'resid': []}
@@ -565,7 +566,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
 
         losses['D'].append(d_loss.item())
         losses['G'].append(g_loss.item())
-        losses['LHS'].append(torch.mean(torch.abs(fake)).item())
+        # losses['LHS'].append(torch.mean(torch.abs(fake)).item())
 
         if lr_schedule:
           lr_scheduler_G.step()
@@ -620,7 +621,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
-        torch.save(G.state_dict(), f"config/pretrained_nets/{pkey}_gen.pth")
+        # torch.save(G.state_dict(), f"config/pretrained_nets/{pkey}_gen.pth") TODO: add option for this
 
     if save_for_animation:
         if not os.path.exists(dirname):
