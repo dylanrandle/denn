@@ -11,10 +11,10 @@ from IPython.display import clear_output
 import pandas as pd 
 
 # global plot params
-plt.rc('axes', titlesize=16, labelsize=16)
-plt.rc('legend', fontsize=15)
-plt.rc('xtick', labelsize=14)
-plt.rc('ytick', labelsize=14)
+plt.rc('axes', titlesize=18, labelsize=18)
+plt.rc('legend', fontsize=16)
+plt.rc('xtick', labelsize=18)
+plt.rc('ytick', labelsize=18)
 #plt.rcParams['text.usetex'] = True
 
 def diff(x, t, order=1):
@@ -40,10 +40,10 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     dims=None, plot_1d_curves=False):
     """ helpful plotting function """
 
-    plt.rc('axes', titlesize=16, labelsize=16)
-    plt.rc('legend', fontsize=15)
-    plt.rc('xtick', labelsize=14)
-    plt.rc('ytick', labelsize=14)
+    plt.rc('axes', titlesize=18, labelsize=18)
+    plt.rc('legend', fontsize=16)
+    plt.rc('xtick', labelsize=18)
+    plt.rc('ytick', labelsize=18)
     plt.rcParams['text.usetex'] = True
 
     if clear:
@@ -85,13 +85,13 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
         if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
             ax[0][0].legend(loc='upper right')
         ax[0][0].set_ylabel('Mean Squared Error')
-        ax[0][0].set_xlabel('Step')
+        ax[0][0].set_xlabel('Iteration')
         ax[0][0].set_yscale('log')
     else:
         if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
             ax[0].legend(loc='upper right')
         ax[0].set_ylabel('Mean Squared Error')
-        ax[0].set_xlabel('Step')
+        ax[0].set_xlabel('Iteration')
         ax[0].set_yscale('log')
 
     # Losses
@@ -108,14 +108,14 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     if plot_sep_curves:
         if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
             ax[1][0].legend(loc='upper right')
-        ax[1][0].set_xlabel('Step')
+        ax[1][0].set_xlabel('Iteration')
         ax[1][0].set_ylabel('Loss')
         if logloss:
             ax[1][0].set_yscale('log')
     else:
         if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
             ax[1].legend(loc='upper right')
-        ax[1].set_xlabel('Step')
+        ax[1].set_xlabel('Iteration')
         ax[1].set_ylabel('Loss')
         if logloss:
             ax[1].set_yscale('log')
@@ -153,7 +153,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
                     alpha=alphas[i], linestyle=linestyles[i],
                     linewidth=linewidth, color=colors[i])
             ax[2].set_xlabel('$t$')
-            ax[2].set_ylabel('$u$')
+            ax[2].set_ylabel('$x$')
             if len(pred_dict.keys()) > 1:
                 ax[2].legend(loc='upper right')
 
@@ -230,10 +230,10 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
 def plot_multihead(mse_dict, loss_dict, resids_dict, save=False, dirname=None, alpha=0.8):
 
-    plt.rc('axes', titlesize=16, labelsize=16)
-    plt.rc('legend', fontsize=15)
-    plt.rc('xtick', labelsize=14)
-    plt.rc('ytick', labelsize=14)
+    plt.rc('axes', titlesize=18, labelsize=18)
+    plt.rc('legend', fontsize=16)
+    plt.rc('xtick', labelsize=18)
+    plt.rc('ytick', labelsize=18)
     plt.rcParams['text.usetex'] = True
 
     if save and not dirname:
@@ -256,7 +256,7 @@ def plot_multihead(mse_dict, loss_dict, resids_dict, save=False, dirname=None, a
     if len(mse_dict.keys()) > 1:
         ax[0].legend(loc='upper right')
     ax[0].set_ylabel('Mean Squared Error')
-    ax[0].set_xlabel('Step')
+    ax[0].set_xlabel('Iteration')
     ax[0].set_yscale('log')
 
     # GAN Losses
@@ -267,16 +267,16 @@ def plot_multihead(mse_dict, loss_dict, resids_dict, save=False, dirname=None, a
             linestyle=linestyles[i])
     if len(loss_dict.keys()) > 1: 
         ax[1].legend(loc='upper right')
-    ax[1].set_xlabel('Step')
+    ax[1].set_xlabel('Iteration')
     ax[1].set_ylabel('Loss')
 
     # L2 Residuals
     resid_vectors = resids_dict['resid']
     resid_l2s = [np.square(r_vec).mean() for r_vec in resid_vectors]
     ax[2].plot(np.arange(len(resid_l2s)), resid_l2s, alpha=alphas[0], 
-        linewidth=linewidth, color=colors[i], linestyle=linestyles[i])
+        linewidth=linewidth, color=colors[0], linestyle=linestyles[0])
     ax[2].set_ylabel('Residuals ($L_2$ norm)')
-    ax[2].set_xlabel('Step')
+    ax[2].set_xlabel('Iteration')
     ax[2].set_yscale('log')
 
     plt.tight_layout()
@@ -294,9 +294,9 @@ def plot_multihead(mse_dict, loss_dict, resids_dict, save=False, dirname=None, a
 def plot_3D(grid, pred_dict, view=[35, -55], dims=None, save=False, dirname=None):
     """ 3D plotting function for PDEs """
 
-    plt.rc('axes', titlesize=16, labelsize=16)
-    plt.rc('xtick', labelsize=14)
-    plt.rc('ytick', labelsize=14)
+    plt.rc('axes', titlesize=18, labelsize=18)
+    plt.rc('xtick', labelsize=18)
+    plt.rc('ytick', labelsize=18)
     plt.rcParams['text.usetex'] = True
 
     fig = plt.figure(figsize=(14,9))
@@ -324,12 +324,12 @@ def plot_reps_results(arrs_dict,
     pctiles = (2.5, 97.5), window=10, fname=None):
 
     plt.rc('axes', titlesize=24, labelsize=24)
-    plt.rc('legend', fontsize=22)
+    plt.rc('legend', fontsize=20)
     plt.rc('xtick', labelsize=24)
     plt.rc('ytick', labelsize=24)
     plt.rcParams['text.usetex'] = True
 
-    linestyles = ['solid', 'dashed', 'dashed', 'dashed']
+    linestyles = ['solid', 'solid', 'solid', 'solid']
     colors = ['crimson', 'blue', 'skyblue', 'limegreen',
         'aquamarine', 'violet', 'black', 'brown', 'pink', 'gold']
 
@@ -354,7 +354,7 @@ def plot_reps_results(arrs_dict,
     plt.ylabel('Mean squared error')
 
     if fname:
-        plt.savefig(fname, dpi=300)
+        plt.savefig(fname, dpi=300, bbox_inches='tight')
     else:
         plt.show()
 
