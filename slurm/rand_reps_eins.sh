@@ -13,7 +13,7 @@ module load gcc/10.2.0-fasrc01
 module load Anaconda3/2020.11
 source activate denn
 cd ../denn
-python rand_reps.py --pkey eins --loss MSELoss --nreps 5 --fname eins_rand_reps_L2
-python rand_reps.py --pkey eins --loss L1Loss --nreps 5 --fname eins_rand_reps_L1
+# python rand_reps.py --pkey eins --loss MSELoss --nreps 5 --fname eins_rand_reps_L2
+# python rand_reps.py --pkey eins --loss L1Loss --nreps 5 --fname eins_rand_reps_L1
 python rand_reps.py --pkey eins --loss SmoothL1Loss --nreps 5 --fname eins_rand_reps_huber
 # python rand_reps.py --pkey eins --gan --nreps 5 --fname eins_rand_reps_gan

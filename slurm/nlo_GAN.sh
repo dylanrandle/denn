@@ -1,11 +1,16 @@
 #!/bin/bash
 #SBATCH -J nlo_gan
-#SBATCH -p shared
-#SBATCH -n 1
-#SBATCH --mem 2000 # Memory request (in MB)
-#SBATCH -t 0-12:00 # Maximum execution time (D-HH:MM)
+#SBATCH -p test
+#SBATCH -n 48
+#SBATCH -N 1
+#SBATCH --mem 96000 # Memory request (in MB)
+#SBATCH -t 0-06:00 # Maximum execution time (D-HH:MM)
 #SBATCH -o logs.out # Standard output
 #SBATCH -e logs.err # Standard error
-module load Anaconda3/5.0.1-fasrc01
+#SBATCH --mail-type=END
+#SBATCH --mail-user=jbullwinkel@fas.harvard.edu
+module load gcc/10.2.0-fasrc01
+module load Anaconda3/2020.11
 source activate denn
-python experiments.py --pkey nlo --gan --fname gan_nlo_paper.png
+cd ../denn
+echo "y" | python experiments.py --gan --pkey nlo

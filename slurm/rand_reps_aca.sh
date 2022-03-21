@@ -14,6 +14,6 @@ module load Anaconda3/2020.11
 source activate denn
 cd ../denn
 # python rand_reps.py --pkey aca --nreps 10 --fname aca_rand_reps_gan
-python rand_reps.py --pkey aca --loss MSELoss --nreps 10 --fname aca_rand_reps_L2
-python rand_reps.py --pkey aca --loss L1Loss --nreps 10 --fname aca_rand_reps_L1
-python rand_reps.py --pkey aca --loss SmoothL1Loss --nreps 10 --fname aca_rand_reps_huber
+python rand_reps.py --pkey aca --loss MSELoss --nreps 5 --fname aca_rand_reps_L2
+python rand_reps.py --pkey aca --loss L1Loss --nreps 5 --fname aca_rand_reps_L1
+python rand_reps.py --pkey aca --loss SmoothL1Loss --nreps 5 --fname aca_rand_reps_huber

@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J ray_tune_rays
+#SBATCH -J rand_reps_rays
 #SBATCH -p test
 #SBATCH -n 48
 #SBATCH -N 1
@@ -13,7 +13,7 @@ module load gcc/10.2.0-fasrc01
 module load Anaconda3/2020.11
 source activate denn
 cd ../denn
-# python ray_tune.py --pkey rays --loss MSELoss --ncpu 48 --nsample 200
-# python ray_tune.py --pkey rays --loss L1Loss --ncpu 48 --nsample 200
-# python ray_tune.py --pkey rays --loss SmoothL1Loss --ncpu 48 --nsample 200
-python ray_tune.py --pkey rays --ncpu 48 --nsample 1400
+# python rand_reps.py --pkey rays --nreps 10 --fname rays_rand_reps_gan
+# python rand_reps.py --pkey rays --loss MSELoss --nreps 10 --fname rays_rand_reps_L2
+python rand_reps.py --pkey rays --loss L1Loss --nreps 10 --fname rays_rand_reps_L1
+python rand_reps.py --pkey rays --loss SmoothL1Loss --nreps 10 --fname rays_rand_reps_huber
