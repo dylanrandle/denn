@@ -32,7 +32,7 @@ if __name__ == '__main__':
     dirname = os.path.join(this_dir, '../experiments/reps', args.pkey)
 
     # turn off plotting / logging
-    params['training']['log'] = False
+    #params['training']['log'] = False
     params['training']['plot'] = False
     # turn off saving
     params['training']['save'] = False
