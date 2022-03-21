@@ -269,16 +269,16 @@ def get_pretrained(pkey, save=False, pretrained=False):
                 param.requires_grad = False 
 
         # add new heads #TODO: don't use randomly initialized heads, add based on closest IC
-        n_hidden_units = params['generator']['n_hidden_units']
-        n_head_units = params['generator']['n_head_units']
-        n_heads = params['generator']['n_heads']
-        model.heads = nn.ModuleList([nn.Linear(n_hidden_units, n_head_units)]) 
-        model.heads.extend([nn.Linear(n_hidden_units, n_head_units) for l in range(n_heads-1)])
+        # n_hidden_units = params['generator']['n_hidden_units']
+        # n_head_units = params['generator']['n_head_units']
+        # n_heads = params['generator']['n_heads']
+        # model.heads = nn.ModuleList([nn.Linear(n_hidden_units, n_head_units)]) 
+        # model.heads.extend([nn.Linear(n_hidden_units, n_head_units) for l in range(n_heads-1)])
 
         # output
-        out_dim = params['generator']['out_dim']
-        model.outputs = nn.ModuleList([nn.Linear(n_head_units, out_dim)]) 
-        model.outputs.extend([nn.Linear(n_head_units, out_dim) for l in range(n_heads-1)])
+        # out_dim = params['generator']['out_dim']
+        # model.outputs = nn.ModuleList([nn.Linear(n_head_units, out_dim)]) 
+        # model.outputs.extend([nn.Linear(n_head_units, out_dim) for l in range(n_heads-1)])
 
         return model
     

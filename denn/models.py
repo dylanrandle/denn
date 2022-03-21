@@ -106,16 +106,23 @@ class MultiHeadGen(nn.Module):
         self.outputs.extend([nn.Linear(n_head_units, out_dim) for l in range(self.n_heads-1)])
 
     def forward(self, x):
-        d = {}
-        for i in range(len(self.layers)):
-            x = self.layers[i](x)
-        for j in range(self.n_heads):
-            x1 = self.heads[j](x)
-            # for k in range(len(self.heads[j])):
-            #     x1 = self.heads[j][k](x)
-            x1 = self.outputs[j](x1)
-            d[j] = x1
-        return d
+        if self.n_heads > 1:
+            d = {}
+            for i in range(len(self.layers)):
+                x = self.layers[i](x)
+            for j in range(self.n_heads):
+                x1 = self.heads[j](x)
+                # for k in range(len(self.heads[j])):
+                #     x1 = self.heads[j][k](x)
+                x1 = self.outputs[j](x1)
+                d[j] = x1
+            return d
+        else:
+            for i in range(len(self.layers)):
+                x = self.layers[i](x)
+            x1 = self.heads[0](x)
+            x1 = self.outputs[0](x1)
+            return x1
 
 class Swish(nn.Module):
     """
