@@ -7,7 +7,7 @@ problem:
 training:
   method: 'unsupervised'
   seed: 5
-  niters: 4000
+  niters: 2000
   g_lr: 0.010861668337087982
   d_lr: 0.00195769840854613
   g_betas: [0.2306765, 0.65763986]
