@@ -28,8 +28,10 @@ training:
   train_mse: True
   log: True
   plot: True
+  plot_1d_curves: True
   save: True
   save_for_animation: False
+  view: [35, 50]
   dirname: 'HEA_run'
 
 generator:

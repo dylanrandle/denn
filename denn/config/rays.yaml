@@ -3,7 +3,7 @@ problem:
   sampling: 'fixed'
   t_max: 1
   x0: 0
-  y0: [0.00629415, 0.10790965, 0.16338743, 0.26396311, 0.31055611, 0.42259726, 0.52199343, 0.57089518, 0.61662052, 0.67387798, 0.99927758] # [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+  y0: [0.00886966, 0.04296576, 0.09316687, 0.18101684, 0.2852243, 0.46837413, 0.55431645, 0.65124274, 0.71382456, 0.72525664, 0.74825654, 0.81738525, 0.85181478, 0.89642933, 0.97589607] # [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
   px0: 1
   py0: 0
   sigma: 0.1
@@ -12,14 +12,14 @@ problem:
 training:
   method: 'unsupervised'
   seed: 3
-  niters: 15000
+  niters: 12500
   g_lr: 0.017917625657718865
   d_lr: 0.019599633766955556
   g_betas: [0.2525930878292244, 0.9314419032573533]
   d_betas: [0.10584021847303329, 0.869458590630839]
   lr_schedule: True
   gamma: 0.98551429868250295
-  noise: False
+  noise: True
   step_size: 13
   obs_every: 1
   d1: 1
@@ -45,7 +45,7 @@ generator:
   out_dim: 4
   n_hidden_units: 40
   n_hidden_layers: 5
-  n_heads: 11
+  n_heads: 11 # number of heads for base training
   n_head_units: 20
   activation: 'Tanh'
   residual: True
@@ -57,7 +57,7 @@ discriminator:
   out_dim: 1
   n_hidden_units: 50
   n_hidden_layers: 2
-  n_heads: 11
+  n_heads: 15 # number of heads for transfer learning
   activation: 'Tanh'
   residual: True
   regress: False

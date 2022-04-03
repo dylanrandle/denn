@@ -5,20 +5,20 @@ problem:
   nt_p: 100
   epsilon: 0.001
   sampling: 'perturb'
-  lam: 1.026203561158755
+  lam: 1.20162002019037 #1.026203561158755
 
 training:
   method: 'unsupervised'
-  seed: 8
+  seed: 5
   niters: 10000
-  g_lr: 0.015273297142915698
-  d_lr: 0.01796173909426544
-  g_betas: [0.5230705335849305, 0.8481529983571873]
-  d_betas: [0.5711086968072553, 0.3255598845890711]
+  g_lr: 0.020757792342841308 #0.015273297142915698
+  d_lr: 0.013492958306401161 #0.01796173909426544
+  g_betas: [0.436507502049999, 0.9105101021544877] #[0.5230705335849305, 0.8481529983571873]
+  d_betas: [0.48427734220449525, 0.2975311073653006] #[0.5711086968072553, 0.3255598845890711]
   lr_schedule: True
-  gamma: 0.99194776858595657
-  noise: True
-  step_size: 10
+  gamma: 0.98398755358179246 #0.99194776858595657
+  noise: False
+  step_size: 15 #10
   obs_every: 1
   d1: 1
   d2: 1
@@ -40,8 +40,8 @@ training:
 generator:
   in_dim: 2
   out_dim: 1
-  n_hidden_units: 40
-  n_hidden_layers: 5
+  n_hidden_units: 50 #40
+  n_hidden_layers: 2 #5
   activation: 'Tanh'
   residual: True
   regress: True
@@ -50,8 +50,8 @@ generator:
 discriminator:
   in_dim: 1
   out_dim: 1
-  n_hidden_units: 50
-  n_hidden_layers: 3
+  n_hidden_units: 30 #50
+  n_hidden_layers: 2 #3
   activation: 'Tanh'
   residual: True
   regress: False

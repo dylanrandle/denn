@@ -27,8 +27,10 @@ training:
   conditional: False
   log: True
   plot: True
+  plot_1d_curves: True
   save: True
   save_for_animation: False
+  view: [35, 50]
   dirname: 'WAV_run'
 
 generator:
