@@ -15,5 +15,5 @@ source activate denn
 cd ../denn
 #python ray_tune.py --pkey aca --loss MSELoss --ncpu 48 --nsample 200
 #python ray_tune.py --pkey aca --loss L1Loss --ncpu 48 --nsample 200
-python ray_tune.py --pkey aca --loss SmoothL1Loss --ncpu 48 --nsample 200
-# python ray_tune.py --pkey aca --ncpu 48 --nsample 2000
+#python ray_tune.py --pkey aca --loss SmoothL1Loss --ncpu 48 --nsample 200
+python ray_tune.py --pkey aca --ncpu 48 --pretuned --nsample 2000

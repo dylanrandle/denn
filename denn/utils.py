@@ -40,7 +40,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     dims=None, plot_1d_curves=False):
     """ helpful plotting function """
 
-    plt.rc('axes', titlesize=18, labelsize=18)
+    plt.rc('axes', titlesize=20, labelsize=20)
     plt.rc('legend', fontsize=16)
     plt.rc('xtick', labelsize=18)
     plt.rc('ytick', labelsize=18)
@@ -213,7 +213,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
         print(f'Saving results to {dirname}')
         if not os.path.exists(dirname):
             os.mkdir(dirname)
-        plt.savefig(os.path.join(dirname, 'plot.png'), dpi=300)
+        plt.savefig(os.path.join(dirname, 'plot.png'), bbox_inches='tight', dpi=300)
         np.save(os.path.join(dirname, "grid"), grid)
         for k, v in mse_dict.items():
             np.save(os.path.join(dirname, f"{k}_mse"), v)
@@ -230,7 +230,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
 
 def plot_multihead(mse_dict, loss_dict, resids_dict, save=False, dirname=None, alpha=0.8):
 
-    plt.rc('axes', titlesize=18, labelsize=18)
+    plt.rc('axes', titlesize=20, labelsize=20)
     plt.rc('legend', fontsize=16)
     plt.rc('xtick', labelsize=18)
     plt.rc('ytick', labelsize=18)
@@ -285,7 +285,7 @@ def plot_multihead(mse_dict, loss_dict, resids_dict, save=False, dirname=None, a
         print(f'Saving results to {dirname}')
         if not os.path.exists(dirname):
             os.mkdir(dirname)
-        plt.savefig(os.path.join(dirname, 'plot_multihead.png'), dpi=300)
+        plt.savefig(os.path.join(dirname, 'plot_multihead.png'), bbox_inches='tight', dpi=300)
         for k, v in mse_dict.items():
             np.save(os.path.join(dirname, f"{k}_mse"), v)
     else:
@@ -294,9 +294,7 @@ def plot_multihead(mse_dict, loss_dict, resids_dict, save=False, dirname=None, a
 def plot_3D(grid, pred_dict, view=[35, -55], dims=None, save=False, dirname=None):
     """ 3D plotting function for PDEs """
 
-    plt.rc('axes', titlesize=18, labelsize=18)
-    plt.rc('xtick', labelsize=18)
-    plt.rc('ytick', labelsize=18)
+    plt.rc('axes', titlesize=20, labelsize=20)
     plt.rcParams['text.usetex'] = True
 
     fig = plt.figure(figsize=(14,9))
@@ -309,13 +307,14 @@ def plot_3D(grid, pred_dict, view=[35, -55], dims=None, save=False, dirname=None
         v = v.numpy().reshape((xdim, ydim))
         break
     xlab, ylab = dims.keys()
-    ax.set_xlabel(f'${xlab}$')
-    ax.set_ylabel(f'${ylab}$')
-    ax.set_zlabel('$u$')
+    ax.set_xlabel(f'${xlab}$', labelpad=10, size=18)
+    ax.set_ylabel(f'${ylab}$', labelpad=10, size=18)
+    ax.set_zlabel('$u$', labelpad=12, size=18)
     ax.plot_surface(xx, yy, v, cmap=cm.coolwarm, rcount=500, ccount=500, alpha=0.8)
     ax.view_init(elev=view[0], azim=view[1])
+    ax.tick_params(axis='z', which='major', pad=7)
     if save:
-        plt.savefig(os.path.join(dirname, 'plot3D.png'), dpi=300)
+        plt.savefig(os.path.join(dirname, 'plot3D.png'), bbox_inches='tight', dpi=300)
     else:
         plt.show()
 

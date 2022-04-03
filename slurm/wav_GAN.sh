@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -J rand_reps_eins
+#SBATCH -J wav_gan
 #SBATCH -p test
 #SBATCH -n 48
 #SBATCH -N 1
@@ -13,7 +13,4 @@ module load gcc/10.2.0-fasrc01
 module load Anaconda3/2020.11
 source activate denn
 cd ../denn
-python rand_reps.py --pkey eins --loss MSELoss --nreps 1 --fname eins_rand_reps_L2
-python rand_reps.py --pkey eins --loss L1Loss --nreps 1 --fname eins_rand_reps_L1
-python rand_reps.py --pkey eins --loss SmoothL1Loss --nreps 1 --fname eins_rand_reps_huber
-# python rand_reps.py --pkey eins --nreps 5 --fname eins_rand_reps_gan
+echo "y" | python experiments.py --gan --pkey wav
