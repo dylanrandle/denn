@@ -55,12 +55,12 @@ if __name__ == "__main__":
         g_lr, d_lr = params['training']['g_lr'], params['training']['d_lr']
         g_beta0, g_beta1 = params['training']['g_betas']
         d_beta0, d_beta1 = params['training']['d_betas']
-        g_lr_bound = (0.5*g_lr, 1.5*g_lr)
-        d_lr_bound = (0.5*d_lr, 1.5*d_lr)
-        g_beta0_bound = (0.8*g_beta0, np.min([1.2*g_beta0, 0.999]))
-        g_beta1_bound = (0.8*g_beta1, np.min([1.2*g_beta1, 0.999]))
-        d_beta0_bound = (0.8*d_beta0, np.min([1.2*d_beta0, 0.999]))
-        d_beta1_bound = (0.8*d_beta1, np.min([1.2*d_beta1, 0.999]))
+        g_lr_bound = (0.8*g_lr, 1.2*g_lr)
+        d_lr_bound = (0.8*d_lr, 1.2*d_lr)
+        g_beta0_bound = (0.9*g_beta0, np.min([1.1*g_beta0, 0.999]))
+        g_beta1_bound = (0.9*g_beta1, np.min([1.1*g_beta1, 0.999]))
+        d_beta0_bound = (0.9*d_beta0, np.min([1.1*d_beta0, 0.999]))
+        d_beta1_bound = (0.9*d_beta1, np.min([1.1*d_beta1, 0.999]))
     elif args.sensitivity:
         g_lr_bound, d_lr_bound = (0.01, 0.1), (0.01, 0.1)
     else:
@@ -69,7 +69,7 @@ if __name__ == "__main__":
         g_beta1_bound, d_beta1_bound = (0.666, 0.999), (0.666, 0.999)
     gamma_bound = (0.9, 0.9999) 
     step_size_bound = (2, 21)
-    lam_bound = (1.0, 10.0)
+    lam_bound = (1.0, 1.5)
     n_layers = [2, 3, 4, 5]
     n_nodes = [20, 30, 40, 50]
 
@@ -99,12 +99,12 @@ if __name__ == "__main__":
         search_space['discriminator']['n_hidden_layers'] = tune.sample_from(lambda s: int(np.random.choice(n_layers)))
 
         # Loss
-        # search_space['problem']['lam'] = tune.sample_from(lambda s: np.random.uniform(*lam_bound))
+        search_space['problem']['lam'] = tune.sample_from(lambda s: np.random.uniform(*lam_bound))
 
     # for testing at different seeds
     # note: need to change experiments.py to init models below seed setting
-    nseeds = 10
-    search_space['training']['seed'] = tune.sample_from(lambda s: np.random.choice(nseeds))
+    # nseeds = 10
+    # search_space['training']['seed'] = tune.sample_from(lambda s: np.random.choice(nseeds))
 
     # Uncomment this to enable distributed execution
     # ray.init(address='auto', redis_password='5241590000000000')
@@ -126,7 +126,7 @@ if __name__ == "__main__":
         print('Using GAN method')
         _fn = gan_tuning
         _jobname = f"gan_tuning_{args.pkey}"
-        ext = {args.pkey}
+        ext = args.pkey
         dirname = os.path.join(dirname, 'gan_results')
     else:
         print('Using classical method')

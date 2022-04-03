@@ -7,8 +7,6 @@ from denn.config.config import get_config
 from denn.experiments import gan_experiment, L2_experiment
 from denn.utils import handle_overwrite
 
-import multiprocessing as mp
-
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
     args.add_argument('--pkey', type=str, default='EXP',
@@ -32,7 +30,7 @@ if __name__ == '__main__':
     dirname = os.path.join(this_dir, '../experiments/reps', args.pkey)
 
     # turn off plotting / logging
-    #params['training']['log'] = False
+    params['training']['log'] = False
     params['training']['plot'] = False
     # turn off saving
     params['training']['save'] = False

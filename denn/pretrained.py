@@ -268,17 +268,36 @@ def get_pretrained(pkey, save=False, pretrained=False):
             for param in l.parameters():
                 param.requires_grad = False 
 
-        # add new heads #TODO: don't use randomly initialized heads, add based on closest IC
-        # n_hidden_units = params['generator']['n_hidden_units']
-        # n_head_units = params['generator']['n_head_units']
-        # n_heads = params['generator']['n_heads']
-        # model.heads = nn.ModuleList([nn.Linear(n_hidden_units, n_head_units)]) 
-        # model.heads.extend([nn.Linear(n_hidden_units, n_head_units) for l in range(n_heads-1)])
+        # add new head for each transfer IC based on closest base IC 
+        # heads = []
+        # outputs = []
+        # base_ics = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        # transfer_ics = params['problem']['y0']
+        # for t_ic in transfer_ics:
+        #     closest_id = 0
+        #     min_diff = np.abs(t_ic - base_ics[0])
+        #     for i in range(1, len(base_ics)):
+        #         diff = np.abs(t_ic - base_ics[i])
+        #         if diff < min_diff:
+        #             closest_id = i
+        #             min_diff = diff
+        #     heads.append(model.heads[closest_id])
+        #     outputs.append(model.outputs[closest_id])
+        # model.heads = nn.ModuleList(heads)
+        # model.outputs = nn.ModuleList(outputs)
+
+        # heads
+        n_hidden_units = params['generator']['n_hidden_units']
+        n_head_units = params['generator']['n_head_units']
+        n_heads = len(params['problem']['y0'])
+        model.n_heads = n_heads
+        model.heads = nn.ModuleList([nn.Linear(n_hidden_units, n_head_units)]) 
+        model.heads.extend([nn.Linear(n_hidden_units, n_head_units) for l in range(n_heads-1)])
 
         # output
-        # out_dim = params['generator']['out_dim']
-        # model.outputs = nn.ModuleList([nn.Linear(n_head_units, out_dim)]) 
-        # model.outputs.extend([nn.Linear(n_head_units, out_dim) for l in range(n_heads-1)])
+        out_dim = params['generator']['out_dim']
+        model.outputs = nn.ModuleList([nn.Linear(n_head_units, out_dim)]) 
+        model.outputs.extend([nn.Linear(n_head_units, out_dim) for l in range(n_heads-1)])
 
         return model
     

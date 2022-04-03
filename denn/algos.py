@@ -215,13 +215,12 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         val_mse = mse(val_pred_adj, soln).item()
         mses['val'].append(val_mse)
 
-        # save preds for animation
-        preds['pred'].append(val_pred_adj.detach())
-        preds['soln'].append(soln.detach())
-
-        # save residuals for animation
-        resids['grid'].append(grid_samp.detach())
-        resids['resid'].append(np.abs(residuals.detach()))
+        # save preds and resids for animation
+        if save_for_animation or multihead:
+            preds['pred'].append(val_pred_adj.detach())
+            preds['soln'].append(soln.detach())
+            resids['grid'].append(grid_samp.detach())
+            resids['resid'].append(np.abs(residuals.detach()))
 
         try:
             if (epoch+1) % 10 == 0:
@@ -240,13 +239,15 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             else:
                 print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Val MSE {val_mse:.4e}')
 
+    # get pred and diff dicts
+    plot_soln = problem.get_plot_solution(grid)
+    pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
+    
     if plot:
         if multihead:
             plot_multihead(mses, losses, resids, save=save, dirname=dirname, alpha=0.7)
         else:
             plot_grid = problem.get_plot_grid()
-            plot_soln = problem.get_plot_solution(grid)
-            pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
             plot_results(mses, losses, plot_grid.detach(), pred_dict, diff_dict=diff_dict,
                 save=save, dirname=dirname, logloss=False, alpha=0.7, plot_sep_curves=plot_sep_curves)
 
@@ -254,8 +255,6 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         write_config(config, os.path.join(dirname, 'config.yaml'))
         np.save(os.path.join(dirname, "mses"), mses)
         if multihead:
-            plot_soln = problem.get_plot_solution(grid)
-            pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
             np.save(os.path.join(dirname, "pred_dict"), pred_dict)
             np.save(os.path.join(dirname, "diff_dict"), diff_dict)
 
@@ -280,7 +279,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
             v = np.hstack(v)
             np.save(os.path.join(anim_dir, f"{k}_resid"), v)
 
-    return {'mses': mses, 'model': G, 'losses': losses}
+    return {'mses': mses, 'model': G, 'losses': losses, 'preds': pred_dict}
 
 def train_L2(model, problem, method='unsupervised', niters=100,
     lr=1e-3, betas=(0, 0.9), lr_schedule=True, gamma=0.999, step_size=15,
@@ -428,7 +427,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
     step_size=15, obs_every=1, d1=1., d2=1., G_iters=1, D_iters=1, 
     wgan=True, gp=0.1, conditional=True, train_mse=True, log=True, 
     plot=True, plot_1d_curves=False, save=False, dirname='train_GAN', 
-    config=None, save_for_animation=False, view=(35, -55), **kwargs):
+    config=None, save_for_animation=False, view=[35, -55], **kwargs):
     """
     Train/test GAN method: supervised/semisupervised/unsupervised
     """
@@ -621,7 +620,6 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
-        # torch.save(G.state_dict(), f"config/pretrained_nets/{pkey}_gen.pth") TODO: add option for this
 
     if save_for_animation:
         if not os.path.exists(dirname):
