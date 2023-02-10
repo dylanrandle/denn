@@ -1,7 +1,5 @@
 # Unsupervised Neural Networks for Solving Differential Equations
 
-See [here](https://dylanrandle.github.io/projects/denn/deqgan.html) for more detailed information.
-
 ## Minimal Installation
 
 Using Anaconda 4.8.3:
