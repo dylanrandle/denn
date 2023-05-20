@@ -52,7 +52,7 @@ def L2_experiment(pkey, params):
 
     # model
     if params['generator']['pretrained']:
-        model = get_pretrained(pkey)
+        model = get_pretrained(pkey, params)
     elif pkey.lower().strip() in ["rays"]:
         model = MultiHeadGen(**params['generator'])
     else:
@@ -78,7 +78,7 @@ def gan_experiment(pkey, params):
 
     # models
     if params['generator']['pretrained']:
-        gen = get_pretrained(pkey)
+        gen = get_pretrained(pkey, params)
     elif pkey.lower().strip() in ["rays"]:
         gen = MultiHeadGen(**params['generator'])
     else:

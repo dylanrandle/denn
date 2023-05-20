@@ -328,7 +328,7 @@ def plot_reps_results(arrs_dict,
     plt.rc('ytick', labelsize=24)
     plt.rcParams['text.usetex'] = True
 
-    linestyles = ['solid', 'solid', 'solid', 'solid']
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
     colors = ['crimson', 'blue', 'skyblue', 'limegreen',
         'aquamarine', 'violet', 'black', 'brown', 'pink', 'gold']
 

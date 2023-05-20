@@ -2,7 +2,7 @@ problem:
   n: 400
   sampling: 'perturb'
   t_max: 12.56
-  dx_dt0: 0.5
+  dx_dt0: 0.7
 
 training:
   method: 'unsupervised'

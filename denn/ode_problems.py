@@ -280,7 +280,7 @@ class NonlinearOscillator(Problem):
         """ return appropriate pred_dict and diff_dict used for plotting """
         adj = self.adjust(x, t)
         xadj, dx, d2x = adj['pred'], adj['dx'], adj['d2x']
-        pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach()}
+        pred_dict = {'$\hat{x}$': xadj.detach(), '$x$': y.detach(), '$\dot{x}$': dx.detach()}
         residual = self._nlo_eqn(xadj, dx, d2x)
         diff_dict = {'$|\hat{F}|$': np.abs(residual.detach())}
         return pred_dict, diff_dict
@@ -772,7 +772,7 @@ class EinsteinEquations(Problem):
                      '$\hat{y}$': y_adj.detach(), '$y$': y_true.detach(),
                      '$\hat{v}$': v_adj.detach(), '$v$': v_true.detach(),
                      '$\hat{\Omega}$': Om_adj.detach(), '$\Omega$': Om_true.detach(),
-                     "$\hat{r'}$": r_adj.detach(), "$r'$": r_true.detach()}
+                     "$\hat{r}$": r_adj.detach(), "$r$": r_true.detach()}
         residuals = self.get_equation(u, z_prime)
         r1, r2, r3, r4, r5 = residuals[:,0], residuals[:,1], residuals[:,2], residuals[:,3], residuals[:,4]
         diff_dict = {'$|\hat{F_1}|$': np.abs(r1.detach()),
@@ -784,7 +784,7 @@ class EinsteinEquations(Problem):
 
 class RaysEquations(Problem):
     def __init__(self, t_min=0, t_max=1, x0=0, y0=[0.3], px0=1, py0=0, 
-    sigma=0.1, A=0.1, **kwargs):
+    means=None, sigma=0.1, A=0.1, **kwargs):
 
         super().__init__(**kwargs)
         self.means = [[0.74507886, 0.3602802 ],
@@ -796,7 +796,7 @@ class RaysEquations(Problem):
             [0.24929806, 0.60499613],
             [0.11377013, 0.42598647],
             [0.85163671, 0.26495608],
-            [0.18439795, 0.31438099]]
+            [0.18439795, 0.31438099]] if means is None else means
         self.sigma = sigma
         self.A = A
         self.t_min = t_min

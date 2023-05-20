@@ -1,8 +1,8 @@
-from re import A
 import numpy as np
 import torch
 import torch.nn as nn
 import os
+import time
 
 from denn.utils import plot_results, plot_multihead, calc_gradient_penalty, handle_overwrite, plot_3D
 from denn.config.config import write_config
@@ -79,6 +79,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
     preds = {'pred': [], 'soln': []}
     resids = {'grid': [], 'resid': []}
 
+    start_time = time.time()
     for epoch in range(niters):
         
         # Train Generator
@@ -240,6 +241,8 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
                 print(f'Step {epoch}: G Loss: {g_loss.item():.4e} | D Loss: {d_loss.item():.4e} | Val MSE {val_mse:.4e}')
 
     # get pred and diff dicts
+    end_time = time.time() - start_time
+    print(f"Run completed in {end_time:.8f} seconds.")
     plot_soln = problem.get_plot_solution(grid)
     pred_dict, diff_dict = problem.get_plot_dicts(G(grid), grid, plot_soln)
     
@@ -255,8 +258,7 @@ def train_GAN(G, D, problem, method='unsupervised', niters=100,
         write_config(config, os.path.join(dirname, 'config.yaml'))
         np.save(os.path.join(dirname, "mses"), mses)
         if multihead:
-            np.save(os.path.join(dirname, "pred_dict"), pred_dict)
-            np.save(os.path.join(dirname, "diff_dict"), diff_dict)
+            np.save(os.path.join(dirname, "resid_dict"), resids)
 
     if save_G:
         torch.save(G.state_dict(), f"config/pretrained_nets/{pkey}_gen.pth")
@@ -620,6 +622,7 @@ def train_GAN_2D(G, D, problem, method='unsupervised', niters=100,
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
+        np.save(os.path.join(dirname, "pred_dict"), pred_dict)
 
     if save_for_animation:
         if not os.path.exists(dirname):

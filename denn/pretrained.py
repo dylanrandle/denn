@@ -11,9 +11,10 @@ from functools import partial
 from scipy import constants
 import matplotlib.pyplot as plt
 
-def get_pretrained(pkey, save=False, pretrained=False):
+def get_pretrained(pkey, params=None, save=False, pretrained=False):
 
-    params = get_config(pkey)
+    if params is None:
+        params = get_config(pkey)
 
     if pkey.lower().strip() == "eins":
 
@@ -261,7 +262,7 @@ def get_pretrained(pkey, save=False, pretrained=False):
 
         # instantiate multi-head generator and load weights
         model = BaseGenerator()
-        model.load_state_dict(torch.load('/n/home01/bbullwinkel/denn/denn/config/pretrained_nets/rays_gen.pth'))
+        model.load_state_dict(torch.load('C:/Users/Blake Bullwinkel/Documents/Harvard/denn/denn/config/pretrained_nets/rays_gen.pth')) # /n/home01/bbullwinkel/denn/denn/config/pretrained_nets/rays_gen.pth
 
         # freeze base generator weights
         for l in model.layers:
@@ -269,35 +270,37 @@ def get_pretrained(pkey, save=False, pretrained=False):
                 param.requires_grad = False 
 
         # add new head for each transfer IC based on closest base IC 
-        # heads = []
-        # outputs = []
-        # base_ics = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
-        # transfer_ics = params['problem']['y0']
-        # for t_ic in transfer_ics:
-        #     closest_id = 0
-        #     min_diff = np.abs(t_ic - base_ics[0])
-        #     for i in range(1, len(base_ics)):
-        #         diff = np.abs(t_ic - base_ics[i])
-        #         if diff < min_diff:
-        #             closest_id = i
-        #             min_diff = diff
-        #     heads.append(model.heads[closest_id])
-        #     outputs.append(model.outputs[closest_id])
-        # model.heads = nn.ModuleList(heads)
-        # model.outputs = nn.ModuleList(outputs)
+        heads = []
+        outputs = []
+        base_ics = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
+        transfer_ics = params['problem']['y0']
+        n_transfer_ics = len(transfer_ics)
+        for t_ic in transfer_ics:
+            closest_id = 0
+            min_diff = np.abs(t_ic - base_ics[0])
+            for i in range(1, len(base_ics)):
+                diff = np.abs(t_ic - base_ics[i])
+                if diff < min_diff:
+                    closest_id = i
+                    min_diff = diff
+            heads.append(model.heads[closest_id])
+            outputs.append(model.outputs[closest_id])
+        model.heads = nn.ModuleList(heads)
+        model.outputs = nn.ModuleList(outputs)
+        model.n_heads = n_transfer_ics
 
-        # heads
-        n_hidden_units = params['generator']['n_hidden_units']
-        n_head_units = params['generator']['n_head_units']
-        n_heads = len(params['problem']['y0'])
-        model.n_heads = n_heads
-        model.heads = nn.ModuleList([nn.Linear(n_hidden_units, n_head_units)]) 
-        model.heads.extend([nn.Linear(n_hidden_units, n_head_units) for l in range(n_heads-1)])
+        # heads (randomly initialized weights)
+        # n_hidden_units = params['generator']['n_hidden_units']
+        # n_head_units = params['generator']['n_head_units']
+        # n_heads = len(params['problem']['y0'])
+        # model.n_heads = n_heads
+        # model.heads = nn.ModuleList([nn.Linear(n_hidden_units, n_head_units)]) 
+        # model.heads.extend([nn.Linear(n_hidden_units, n_head_units) for l in range(n_heads-1)])
 
-        # output
-        out_dim = params['generator']['out_dim']
-        model.outputs = nn.ModuleList([nn.Linear(n_head_units, out_dim)]) 
-        model.outputs.extend([nn.Linear(n_head_units, out_dim) for l in range(n_heads-1)])
+        # output (randomly initialized weights)
+        # out_dim = params['generator']['out_dim']
+        # model.outputs = nn.ModuleList([nn.Linear(n_head_units, out_dim)]) 
+        # model.outputs.extend([nn.Linear(n_head_units, out_dim) for l in range(n_heads-1)])
 
         return model
     
