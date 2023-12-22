@@ -15,7 +15,7 @@ plt.rc('axes', titlesize=18, labelsize=18)
 plt.rc('legend', fontsize=16)
 plt.rc('xtick', labelsize=18)
 plt.rc('ytick', labelsize=18)
-#plt.rcParams['text.usetex'] = True
+# plt.rcParams['text.usetex'] = True
 
 def diff(x, t, order=1):
     """The derivative of a variable with respect to another.
@@ -44,7 +44,7 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     plt.rc('legend', fontsize=16)
     plt.rc('xtick', labelsize=18)
     plt.rc('ytick', labelsize=18)
-    plt.rcParams['text.usetex'] = True
+    # plt.rcParams['text.usetex'] = True
 
     if clear:
       clear_output(True)
@@ -234,7 +234,7 @@ def plot_multihead(mse_dict, loss_dict, resids_dict, save=False, dirname=None, a
     plt.rc('legend', fontsize=16)
     plt.rc('xtick', labelsize=18)
     plt.rc('ytick', labelsize=18)
-    plt.rcParams['text.usetex'] = True
+    # plt.rcParams['text.usetex'] = True
 
     if save and not dirname:
         raise RuntimeError('Please provide a directory name `dirname` when `save=True`.')
@@ -295,7 +295,7 @@ def plot_3D(grid, pred_dict, view=[35, -55], dims=None, save=False, dirname=None
     """ 3D plotting function for PDEs """
 
     plt.rc('axes', titlesize=20, labelsize=20)
-    plt.rcParams['text.usetex'] = True
+    # plt.rcParams['text.usetex'] = True
 
     fig = plt.figure(figsize=(14,9))
     ax = fig.add_subplot(projection='3d')
@@ -326,7 +326,7 @@ def plot_reps_results(arrs_dict,
     plt.rc('legend', fontsize=20)
     plt.rc('xtick', labelsize=24)
     plt.rc('ytick', labelsize=24)
-    plt.rcParams['text.usetex'] = True
+    # plt.rcParams['text.usetex'] = True
 
     linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
     colors = ['crimson', 'blue', 'skyblue', 'limegreen',
