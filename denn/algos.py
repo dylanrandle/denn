@@ -732,12 +732,13 @@ def train_L2_2D(model, problem, method='unsupervised', niters=100,
             loss_dict['$L_U$'] = [l[1] for l in loss_trace]
         else:
             loss_dict['$L_U$'] = loss_trace
+        dims = problem.get_plot_dims()
 
         save_to = os.path.join(this_dir, '../experiments/runs', dirname)
 
         pred_dict, diff_dict = problem.get_plot_dicts(model(grid), x, y, sol)
         plot_results(mses, loss_dict, grid.detach(), pred_dict, diff_dict=diff_dict,
-            save=save, dirname=dirname, logloss=True, alpha=0.7)
+            save=save, dirname=dirname, logloss=True, alpha=0.7, dims=dims)
 
     if save:
         write_config(config, os.path.join(dirname, 'config.yaml'))
