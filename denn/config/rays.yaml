@@ -1,0 +1,74 @@
+problem:
+  n: 400
+  sampling: 'fixed'
+  t_max: 1
+  x0: 0
+  y0: [0.55] #[0.00886966, 0.04296576, 0.09316687, 0.18101684, 0.2852243, 0.46837413, 0.55431645, 0.65124274, 0.71382456, 0.72525664, 0.74825654, 0.81738525, 0.85181478, 0.89642933, 0.97589607]
+  px0: 1
+  py0: 0
+  means: [[0.74507886, 0.3602802 ],
+          [0.40147605, 0.06139579],
+          [0.94162198, 0.46722697],
+          [0.79110703, 0.8973808 ],
+          [0.64732527, 0.07095655],
+          [0.10083943, 0.31935057],
+          [0.24929806, 0.60499613],
+          [0.11377013, 0.42598647],
+          [0.85163671, 0.26495608],
+          [0.18439795, 0.31438099]]
+  sigma: 0.1
+  A: 0.1
+
+training:
+  method: 'unsupervised'
+  seed: 3
+  niters: 12500
+  g_lr: 0.017917625657718865
+  d_lr: 0.019599633766955556
+  g_betas: [0.2525930878292244, 0.9314419032573533]
+  d_betas: [0.10584021847303329, 0.869458590630839]
+  lr_schedule: True
+  gamma: 0.98551429868250295
+  noise: True
+  step_size: 13
+  obs_every: 1
+  d1: 1
+  d2: 1
+  G_iters: 1
+  D_iters: 1
+  loss_fn: MSELoss
+  wgan: False
+  gp: 0.1
+  conditional: False
+  train_mse: False
+  log: True
+  plot: True
+  multihead: True
+  plot_sep_curves: True
+  save: True
+  save_G: False
+  save_for_animation: False
+  dirname: 'RAYS_run'
+
+generator:
+  in_dim: 1
+  out_dim: 4
+  n_hidden_units: 40
+  n_hidden_layers: 5
+  n_heads: 11
+  n_head_units: 20
+  activation: 'Tanh'
+  residual: True
+  regress: True
+  pretrained: True
+
+discriminator:
+  in_dim: 4
+  out_dim: 1
+  n_hidden_units: 50
+  n_hidden_layers: 2
+  n_heads: 1
+  activation: 'Tanh'
+  residual: True
+  regress: False
+  spectral_norm: True

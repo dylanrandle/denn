@@ -1,0 +1,57 @@
+problem:
+  nx: 64
+  nt: 64
+  nx_p: 1000
+  nt_p: 100
+  nu: 0.001
+  sampling: 'perturb'
+
+training:
+  method: 'unsupervised'
+  seed: 0
+  niters: 3000
+  g_lr: 0.012742949817104081
+  d_lr: 0.0054264631919862987
+  g_betas: [0.18525066902093706, 0.5941217838175823]
+  d_betas: [0.09374523602184848, 0.18467156506542667]
+  lr_schedule: True
+  gamma: 0.95484413617848396
+  noise: True
+  step_size: 20
+  obs_every: 1
+  d1: 1
+  d2: 1
+  G_iters: 1
+  D_iters: 1
+  loss_fn: MSELoss
+  wgan: False
+  gp: 0.1
+  conditional: False
+  train_mse: False
+  log: True
+  plot: True
+  plot_1d_curves: True
+  save: True
+  save_for_animation: False
+  view: [35, -55]
+  dirname: 'BURV_run'
+
+generator:
+  in_dim: 2
+  out_dim: 1
+  n_hidden_units: 50
+  n_hidden_layers: 3
+  activation: 'Tanh'
+  residual: True
+  regress: True
+  pretrained: False
+
+discriminator:
+  in_dim: 1
+  out_dim: 1
+  n_hidden_units: 20
+  n_hidden_layers: 5
+  activation: 'Tanh'
+  residual: True
+  regress: False
+  spectral_norm: True

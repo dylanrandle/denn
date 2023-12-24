@@ -3,9 +3,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.integrate import solve_bvp
 
+def make_strictly_increasing(x):
+    """
+    Given an array, returns a strictly increasing numpy array
+    as required by solve_bvp from scipy.integrate
+    """
+    return np.sort(np.array(list(set(x))))
+
 def solve_rans_scipy_solve_bvp(y, k=0.41/4, nu=0.0055555555, rho=1,
     dpdx=-1, max_nodes=1000, tol=1e-3, delta=1):
     """ use scipy solve_bvp to solve RANS equation """
+
+    y = make_strictly_increasing(y) # Blake edit: make y strictly increasing
 
     def fun(y, u):
         """ solves the equation as system

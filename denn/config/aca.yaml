@@ -1,0 +1,58 @@
+problem:
+  nx: 64
+  nt: 64
+  nx_p: 1000
+  nt_p: 100
+  epsilon: 0.001
+  sampling: 'perturb'
+  lam: 1.20162002019037
+
+training:
+  method: 'unsupervised'
+  seed: 5
+  niters: 10000
+  g_lr: 0.020757792342841308
+  d_lr: 0.013492958306401161
+  g_betas: [0.436507502049999, 0.9105101021544877]
+  d_betas: [0.48427734220449525, 0.2975311073653006]
+  lr_schedule: True
+  gamma: 0.98398755358179246
+  noise: False
+  step_size: 15
+  obs_every: 1
+  d1: 1
+  d2: 1
+  G_iters: 1
+  D_iters: 1
+  loss_fn: MSELoss
+  wgan: False
+  gp: 0.1
+  conditional: False
+  train_mse: False
+  log: True
+  plot: True
+  plot_1d_curves: True
+  save: True
+  save_for_animation: False
+  view: [35, -135]
+  dirname: 'ACA_run'
+
+generator:
+  in_dim: 2
+  out_dim: 1
+  n_hidden_units: 50
+  n_hidden_layers: 2
+  activation: 'Tanh'
+  residual: True
+  regress: True
+  pretrained: False
+
+discriminator:
+  in_dim: 1
+  out_dim: 1
+  n_hidden_units: 30
+  n_hidden_layers: 2
+  activation: 'Tanh'
+  residual: True
+  regress: False
+  spectral_norm: True

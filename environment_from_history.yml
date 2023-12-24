@@ -3,16 +3,21 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - python=3.7
-  - torchvision
+  - python=3.8
   - pytorch
   - tqdm
   - pandas
   - jupyterlab
   - matplotlib
   - scipy
-  - fenics
   - pyyaml
   - boto3
   - plotly
   - plotly-orca
+  - pip
+  - pip:
+    - torchvision
+    - fenics
+    - ray==1.2.0
+    - ray[tune]
+    - neurodiffeq

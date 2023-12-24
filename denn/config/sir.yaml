@@ -1,6 +1,6 @@
 problem:
   n: 800
-  perturb: True
+  sampling: 'perturb'
   t_max: 10
   S0: 0.99
   I0: 0.01
@@ -10,14 +10,16 @@ problem:
 
 training:
   method: 'unsupervised'
-  seed: 0
-  niters: 30000
-  g_lr: 0.009949364998471707
-  d_lr: 0.002177634209548115
-  g_betas: [0.20705222, 0.16897627]
-  d_betas: [0.19268249, 0.61740443]
+  seed: 5
+  niters: 20000
+  g_lr: 0.006293157602284126
+  d_lr: 0.012396174571056308
+  g_betas: [0.2785497685505799, 0.7776686674038639]
+  d_betas: [0.018643297490487157, 0.9088778489569095]
   lr_schedule: True
-  gamma: 0.9996
+  gamma: 0.99275622498881266
+  noise: True
+  step_size: 11
   obs_every: 1
   d1: 1
   d2: 1
@@ -36,16 +38,18 @@ training:
 generator:
   in_dim: 1
   out_dim: 3
-  n_hidden_units: 40
-  n_hidden_layers: 2
+  n_hidden_units: 50
+  n_hidden_layers: 4
+  activation: 'Tanh'
   residual: True
   regress: True
+  pretrained: False
 
 discriminator:
   in_dim: 3
   out_dim: 1
-  n_hidden_units: 20
-  n_hidden_layers: 3
+  n_hidden_units: 50
+  n_hidden_layers: 4
   activation: 'Tanh'
   residual: True
   regress: False

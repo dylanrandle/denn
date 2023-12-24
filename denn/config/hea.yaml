@@ -1,0 +1,55 @@
+problem:
+  nx: 32
+  nt: 32
+  c: 1
+  sampling: 'perturb'
+
+training:
+  method: 'unsupervised'
+  seed: 5
+  niters: 2000
+  g_lr: 0.010861668337087982
+  d_lr: 0.00195769840854613
+  g_betas: [0.2306765, 0.65763986]
+  d_betas: [0.12032453, 0.25102168]
+  lr_schedule: True
+  gamma: 0.95003910549481241
+  noise: True
+  step_size: 10
+  obs_every: 1
+  d1: 1
+  d2: 1
+  G_iters: 1
+  D_iters: 1
+  loss_fn: MSELoss
+  wgan: False
+  gp: 0.1
+  conditional: False
+  train_mse: True
+  log: True
+  plot: True
+  plot_1d_curves: True
+  save: True
+  save_for_animation: False
+  view: [35, 50]
+  dirname: 'HEA_run'
+
+generator:
+  in_dim: 2
+  out_dim: 1
+  n_hidden_units: 40
+  n_hidden_layers: 4
+  activation: 'Tanh'
+  residual: True
+  regress: True
+  pretrained: False
+
+discriminator:
+  in_dim: 1
+  out_dim: 1
+  n_hidden_units: 30
+  n_hidden_layers: 2
+  activation: 'Tanh'
+  residual: True
+  regress: False
+  spectral_norm: True

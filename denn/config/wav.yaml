@@ -1,0 +1,54 @@
+problem:
+  nx: 32
+  nt: 32
+  c: 1
+  sampling: 'perturb'
+
+training:
+  method: 'unsupervised'
+  seed: 0
+  niters: 5000
+  g_lr: 0.012124383626117501
+  d_lr: 0.088441066074259264
+  g_betas: [0.29551987, 0.35822444]
+  d_betas: [0.5751795, 0.13306347]
+  lr_schedule: True
+  gamma: 0.95336880203327612
+  noise: True
+  step_size: 18
+  obs_every: 1
+  d1: 1
+  d2: 1
+  G_iters: 1
+  D_iters: 1
+  loss_fn: MSELoss
+  wgan: False
+  gp: 0.1
+  conditional: False
+  log: True
+  plot: True
+  plot_1d_curves: True
+  save: True
+  save_for_animation: False
+  view: [35, 50]
+  dirname: 'WAV_run'
+
+generator:
+  in_dim: 2
+  out_dim: 1
+  n_hidden_units: 50
+  n_hidden_layers: 4
+  activation: 'Tanh'
+  residual: True
+  regress: True
+  pretrained: False
+
+discriminator:
+  in_dim: 1
+  out_dim: 1
+  n_hidden_units: 50
+  n_hidden_layers: 2
+  activation: 'Tanh'
+  residual: True
+  regress: False
+  spectral_norm: True

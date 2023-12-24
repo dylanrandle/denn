@@ -1,0 +1,54 @@
+problem:
+  nx: 32
+  nt: 32
+  a: 1
+  b: 1
+  perturb: True
+
+training:
+  method: 'unsupervised'
+  seed: 0
+  niters: 3000
+  g_lr: 0.0098782335251924609
+  d_lr: 0.018668908624606427
+  g_betas: [0.35992336, 0.29183631]
+  d_betas: [0.82707993, 0.80996696]
+  lr_schedule: True
+  gamma: 0.96069422018795247
+  noise: False
+  step_size: 12
+  obs_every: 1
+  d1: 1
+  d2: 1
+  G_iters: 1
+  D_iters: 1
+  loss_fn: MSELoss
+  wgan: False
+  gp: 0.1
+  conditional: False
+  train_mse: True
+  log: True
+  plot: True
+  save: True
+  save_for_animation: False
+  dirname: 'BUR_run'
+
+generator:
+  in_dim: 2
+  out_dim: 1
+  n_hidden_units: 30
+  n_hidden_layers: 3
+  activation: 'Tanh'
+  residual: True
+  regress: True
+  pretrained: False
+
+discriminator:
+  in_dim: 1
+  out_dim: 1
+  n_hidden_units: 20
+  n_hidden_layers: 3
+  activation: 'Tanh'
+  residual: True
+  regress: False
+  spectral_norm: True

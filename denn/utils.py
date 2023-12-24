@@ -1,17 +1,21 @@
 import os
+from matplotlib import lines
 import torch
 from torch import autograd
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib import cm
 from IPython.display import clear_output
-import pandas as pd
+import pandas as pd 
 
 # global plot params
-plt.rc('axes', titlesize=15, labelsize=15)
-plt.rc('legend', fontsize=15)
-plt.rc('xtick', labelsize=13)
-plt.rc('ytick', labelsize=13)
+plt.rc('axes', titlesize=18, labelsize=18)
+plt.rc('legend', fontsize=16)
+plt.rc('xtick', labelsize=18)
+plt.rc('ytick', labelsize=18)
+# plt.rcParams['text.usetex'] = True
 
 def diff(x, t, order=1):
     """The derivative of a variable with respect to another.
@@ -32,13 +36,15 @@ def diff(x, t, order=1):
     return der
 
 def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=False,
-    save=False, dirname=None, logloss=False, alpha=0.8):
+    save=False, dirname=None, logloss=False, alpha=0.8, plot_sep_curves=False, 
+    dims=None, plot_1d_curves=False):
     """ helpful plotting function """
 
-    plt.rc('axes', titlesize=15, labelsize=15)
-    plt.rc('legend', fontsize=15)
-    plt.rc('xtick', labelsize=13)
-    plt.rc('ytick', labelsize=13)
+    plt.rc('axes', titlesize=20, labelsize=20)
+    plt.rc('legend', fontsize=16)
+    plt.rc('xtick', labelsize=18)
+    plt.rc('ytick', labelsize=18)
+    # plt.rcParams['text.usetex'] = True
 
     if clear:
       clear_output(True)
@@ -46,16 +52,200 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
     if save and not dirname:
         raise RuntimeError('Please provide a directory name `dirname` when `save=True`.')
 
-    if diff_dict:   # add derivatives plot
-        fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+    if plot_sep_curves:
+        n_curves = int(len(pred_dict.keys())/2)
+        fig, ax = plt.subplots(2, n_curves+1, figsize=(4*(n_curves+1), 8))
+    elif plot_1d_curves:
+        fig, ax = plt.subplots(2, 4, figsize=(16, 8))
+        ax = ax.ravel()
     else:
-        fig, ax = plt.subplots(1, 3, figsize=(12, 4))
+        if diff_dict:   # add derivatives plot
+            fig, ax = plt.subplots(1, 4, figsize=(16, 4))
+        else:
+            fig, ax = plt.subplots(1, 3, figsize=(12, 4))
 
-    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*2
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*3
     linewidth = 2
     alphas = [alpha]*10
     colors = ['crimson', 'blue', 'skyblue', 'limegreen',
-        'aquamarine', 'violet', 'black']
+        'aquamarine', 'violet', 'black', 'brown', 'pink', 'gold']
+
+    # MSEs (Pred vs Actual)
+    for i, (k, v) in enumerate(mse_dict.items()):
+        if plot_sep_curves:
+            ax[0][0].plot(np.arange(len(v)), v, label=k,
+                alpha=alphas[i], linewidth=linewidth, color=colors[i],
+                linestyle=linestyles[i])
+        else:
+            ax[0].plot(np.arange(len(v)), v, label=k,
+                alpha=alphas[i], linewidth=linewidth, color=colors[i],
+                linestyle=linestyles[i])
+
+    if plot_sep_curves:
+        if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
+            ax[0][0].legend(loc='upper right')
+        ax[0][0].set_ylabel('Mean Squared Error')
+        ax[0][0].set_xlabel('Iteration')
+        ax[0][0].set_yscale('log')
+    else:
+        if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
+            ax[0].legend(loc='upper right')
+        ax[0].set_ylabel('Mean Squared Error')
+        ax[0].set_xlabel('Iteration')
+        ax[0].set_yscale('log')
+
+    # Losses
+    for i, (k, v) in enumerate(loss_dict.items()):
+        if plot_sep_curves:
+            ax[1][0].plot(np.arange(len(v)), v, label=k,
+                alpha=alphas[i], linewidth=linewidth, color=colors[i],
+                linestyle=linestyles[i])
+        else:
+            ax[1].plot(np.arange(len(v)), v, label=k,
+                alpha=alphas[i], linewidth=linewidth, color=colors[i],
+                linestyle=linestyles[i])
+
+    if plot_sep_curves:
+        if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
+            ax[1][0].legend(loc='upper right')
+        ax[1][0].set_xlabel('Iteration')
+        ax[1][0].set_ylabel('Loss')
+        if logloss:
+            ax[1][0].set_yscale('log')
+    else:
+        if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
+            ax[1].legend(loc='upper right')
+        ax[1].set_xlabel('Iteration')
+        ax[1].set_ylabel('Loss')
+        if logloss:
+            ax[1].set_yscale('log')
+
+    # Predictions
+    if grid.shape[1] == 2: # PDE
+        x, y = grid[:, 0], grid[:, 1]
+        xdim, ydim = dims.values()
+        xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
+        for i, (k, v) in enumerate(pred_dict.items()):
+            v = v.reshape((xdim, ydim))
+            cf = ax[2].contourf(xx, yy, v, cmap='Reds')
+            cb = fig.colorbar(cf, format='%.0e', ax=ax[2])
+            break
+        xlab, ylab = dims.keys()
+        ax[2].set_xlabel(f'${xlab}$')
+        ax[2].set_ylabel(f'${ylab}$')
+    else: # ODE
+        if plot_sep_curves:
+            for i, (k, v) in enumerate(pred_dict.items()):
+                if i%2 == 0:
+                    plot_id = int((i/2)+1)
+                    style_id = 0
+                else:
+                    style_id = 1
+                ax[0][plot_id].plot(grid, v, label=k, 
+                alpha=alphas[style_id], linestyle=linestyles[style_id], 
+                linewidth=linewidth, color=colors[style_id])
+                ax[0][plot_id].set_xlabel('$t$')
+                ax[0][plot_id].set_ylabel(k)
+                ax[0][plot_id].legend()
+        else:
+            for i, (k, v) in enumerate(pred_dict.items()):
+                ax[2].plot(grid, v, label=k,
+                    alpha=alphas[i], linestyle=linestyles[i],
+                    linewidth=linewidth, color=colors[i])
+            ax[2].set_xlabel('$t$')
+            ax[2].set_ylabel('$x$')
+            if len(pred_dict.keys()) > 1:
+                ax[2].legend(loc='upper right')
+
+    # 1-dimensional curves for PDE
+    if plot_1d_curves:
+        xvals = grid[:, 0].reshape((xdim, ydim))
+        tvals = grid[:, 1].reshape((xdim, ydim))
+        t_ids = [0, int(ydim/3), int(2*ydim/3), ydim-1]
+        for i in range(4, 8):
+            for j, (k, v) in enumerate(pred_dict.items()):
+                v = v.reshape((xdim, ydim))
+                ax[i].plot(xvals[:, 0], v[:, t_ids[i-4]], label=k, 
+                        alpha=alphas[j], linestyle=linestyles[j], 
+                        linewidth=linewidth, color=colors[j])
+            ax[i].set_xlabel(f'${xlab}$')
+            ax[i].set_ylabel('$u$')
+            t = float(tvals[0, :][t_ids][i-4])
+            ax[i].set_title(f'$t={t:.3f}$')
+            if len(pred_dict.keys()) > 1:
+                ax[i].legend()
+
+    # Derivatives
+    if diff_dict:
+        if grid.shape[1] == 2: # PDE
+            x, y = grid[:, 0], grid[:, 1]
+            xdim, ydim = dims.values()
+            xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
+            for i, (k, v) in enumerate(diff_dict.items()):
+                v = v.reshape((xdim, ydim))
+                cf = ax[3].contourf(xx, yy, v, cmap='Reds')
+                cb = fig.colorbar(cf, format='%.0e', ax=ax[3])
+            ax[3].set_xlabel(f'${xlab}$')
+            ax[3].set_ylabel(f'${ylab}$')
+        else:
+            if plot_sep_curves:
+                for i, (k, v) in enumerate(diff_dict.items()):
+                    plot_id = i+1
+                    ax[1][plot_id].plot(grid, v, label=k, 
+                    alpha=alphas[i], linestyle=linestyles[0], 
+                    linewidth=linewidth, color=colors[0])
+                    ax[1][plot_id].legend(loc='upper right')
+                    ax[1][plot_id].set_xlabel('$t$')
+                    ax[1][plot_id].set_ylabel('$F$')
+                    ax[1][plot_id].set_yscale('log')
+            else:
+                for i, (k, v) in enumerate(diff_dict.items()):
+                    ax[3].plot(grid, v, label=k,
+                        alpha=alphas[i], linestyle=linestyles[i],
+                        linewidth=linewidth, color=colors[i])
+                ax[3].legend(loc='upper right')
+                ax[3].set_xlabel('$t$')
+                ax[3].set_ylabel('$F$')
+                ax[3].set_yscale('log')
+    plt.tight_layout()
+
+    if save:
+        print(f'Saving results to {dirname}')
+        if not os.path.exists(dirname):
+            os.mkdir(dirname)
+        plt.savefig(os.path.join(dirname, 'plot.png'), bbox_inches='tight', dpi=300)
+        np.save(os.path.join(dirname, "grid"), grid)
+        for k, v in mse_dict.items():
+            np.save(os.path.join(dirname, f"{k}_mse"), v)
+        for k, v in loss_dict.items():
+            np.save(os.path.join(dirname, f"{k}_loss"), v)
+        # commented out because saving pred_dict and diff_dict currently throw errors
+        #for k, v in pred_dict.items():
+        #    np.save(os.path.join(dirname, f"{k}_pred"), v)
+        #if diff_dict:
+        #    for k, v in diff_dict.items():
+        #        np.save(os.path.join(dirname, f"{k}_diff"), v)
+    else:
+        plt.show()
+
+def plot_multihead(mse_dict, loss_dict, resids_dict, save=False, dirname=None, alpha=0.8):
+
+    plt.rc('axes', titlesize=20, labelsize=20)
+    plt.rc('legend', fontsize=16)
+    plt.rc('xtick', labelsize=18)
+    plt.rc('ytick', labelsize=18)
+    # plt.rcParams['text.usetex'] = True
+
+    if save and not dirname:
+        raise RuntimeError('Please provide a directory name `dirname` when `save=True`.')
+
+    fig, ax = plt.subplots(1, 3, figsize=(12, 4))
+
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*3
+    linewidth = 2
+    alphas = [alpha]*10
+    colors = ['crimson', 'blue', 'skyblue', 'limegreen',
+        'aquamarine', 'violet', 'black', 'brown', 'pink', 'gold']
 
     # MSEs (Pred vs Actual)
     for i, (k, v) in enumerate(mse_dict.items()):
@@ -63,85 +253,68 @@ def plot_results(mse_dict, loss_dict, grid, pred_dict, diff_dict=None, clear=Fal
             alpha=alphas[i], linewidth=linewidth, color=colors[i],
             linestyle=linestyles[i])
 
-    if len(mse_dict.keys()) > 1: # only add legend if > 1 curves
+    if len(mse_dict.keys()) > 1:
         ax[0].legend(loc='upper right')
     ax[0].set_ylabel('Mean Squared Error')
-    ax[0].set_xlabel('Step')
+    ax[0].set_xlabel('Iteration')
     ax[0].set_yscale('log')
 
-    # Losses
+    # GAN Losses
     for i, (k, v) in enumerate(loss_dict.items()):
-        ax[1].plot(np.arange(len(v)), v, label=k,
+        if k != 'LHS':
+            ax[1].plot(np.arange(len(v)), v, label=k,
             alpha=alphas[i], linewidth=linewidth, color=colors[i],
             linestyle=linestyles[i])
-
-    if len(loss_dict.keys()) > 1: # only add legend if > 1 curves
+    if len(loss_dict.keys()) > 1: 
         ax[1].legend(loc='upper right')
-    ax[1].set_xlabel('Step')
+    ax[1].set_xlabel('Iteration')
     ax[1].set_ylabel('Loss')
-    if logloss:
-        ax[1].set_yscale('log')
 
-    # Predictions
-    if grid.shape[1] == 2: # PDE
-        x, y = grid[:, 0], grid[:, 1]
-        xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
-        xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
-        for i, (k, v) in enumerate(pred_dict.items()):
-            v = v.reshape((xdim, ydim))
-            cf = ax[2].contourf(xx, yy, v, cmap='Reds')
-            cb = fig.colorbar(cf, format='%.0e', ax=ax[2])
-        ax[2].set_xlabel('$x$')
-        ax[2].set_ylabel('$y$')
-    else: # ODE
-        for i, (k, v) in enumerate(pred_dict.items()):
-            ax[2].plot(grid, v, label=k,
-                alpha=alphas[i], linestyle=linestyles[i],
-                linewidth=linewidth, color=colors[i])
-        ax[2].set_xlabel('$t$')
-        ax[2].set_ylabel('$x$')
-    if len(pred_dict.keys()) > 1:
-        ax[2].legend(loc='upper right')
-
-    # Derivatives
-    if diff_dict:
-        if grid.shape[1] == 2: # PDE
-            x, y = grid[:, 0], grid[:, 1]
-            xdim, ydim = int(np.sqrt(len(x))), int(np.sqrt(len(y)))
-            xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
-            for i, (k, v) in enumerate(diff_dict.items()):
-                v = v.reshape((xdim, ydim))
-                cf = ax[3].contourf(xx, yy, v, cmap='Reds')
-                cb = fig.colorbar(cf, format='%.0e', ax=ax[3])
-            ax[3].set_xlabel('$x$')
-            ax[3].set_ylabel('$y$')
-        else:
-            for i, (k, v) in enumerate(diff_dict.items()):
-                ax[3].plot(grid, v, label=k,
-                    alpha=alphas[i], linestyle=linestyles[i],
-                    linewidth=linewidth, color=colors[i])
-            ax[3].legend(loc='upper right')
-            ax[3].set_xlabel('$t$')
-            # ax[3].set_ylabel('$x$')
-            ax[3].set_ylabel('$F$')
-            ax[3].set_yscale('log')
+    # L2 Residuals
+    resid_vectors = resids_dict['resid']
+    resid_l2s = [np.square(r_vec).mean() for r_vec in resid_vectors]
+    ax[2].plot(np.arange(len(resid_l2s)), resid_l2s, alpha=alphas[0], 
+        linewidth=linewidth, color=colors[0], linestyle=linestyles[0])
+    ax[2].set_ylabel('Residuals ($L_2$ norm)')
+    ax[2].set_xlabel('Iteration')
+    ax[2].set_yscale('log')
 
     plt.tight_layout()
+
     if save:
         print(f'Saving results to {dirname}')
         if not os.path.exists(dirname):
             os.mkdir(dirname)
-        plt.savefig(os.path.join(dirname, 'plot.png'))
-        np.save(os.path.join(dirname, "grid"), grid)
+        plt.savefig(os.path.join(dirname, 'plot_multihead.png'), bbox_inches='tight', dpi=300)
         for k, v in mse_dict.items():
             np.save(os.path.join(dirname, f"{k}_mse"), v)
-        for k, v in loss_dict.items():
-            np.save(os.path.join(dirname, f"{k}_loss"), v)
-        for k, v in pred_dict.items():
-            np.save(os.path.join(dirname, f"{k}_pred"), v)
-        if diff_dict:
-            for k, v in diff_dict.items():
-                np.save(os.path.join(dirname, f"{k}_diff"), v)
+    else:
+        plt.show()
+
+def plot_3D(grid, pred_dict, view=[35, -55], dims=None, save=False, dirname=None):
+    """ 3D plotting function for PDEs """
+
+    plt.rc('axes', titlesize=20, labelsize=20)
+    # plt.rcParams['text.usetex'] = True
+
+    fig = plt.figure(figsize=(14,9))
+    ax = fig.add_subplot(projection='3d')
+    grid = grid.numpy()
+    x, y = grid[:, 0], grid[:, 1]
+    xdim, ydim = dims.values()
+    xx, yy = x.reshape((xdim, ydim)), y.reshape((xdim, ydim))
+    for v in pred_dict.values():
+        v = v.numpy().reshape((xdim, ydim))
+        break
+    xlab, ylab = dims.keys()
+    ax.set_xlabel(f'${xlab}$', labelpad=10, size=18)
+    ax.set_ylabel(f'${ylab}$', labelpad=10, size=18)
+    ax.set_zlabel('$u$', labelpad=12, size=18)
+    ax.plot_surface(xx, yy, v, cmap=cm.coolwarm, rcount=500, ccount=500, alpha=0.8)
+    ax.view_init(elev=view[0], azim=view[1])
+    ax.tick_params(axis='z', which='major', pad=7)
+    if save:
+        plt.savefig(os.path.join(dirname, 'plot3D.png'), bbox_inches='tight', dpi=300)
     else:
         plt.show()
 
@@ -149,14 +322,15 @@ def plot_reps_results(arrs_dict,
     linewidth=2, alpha_line=0.8, alpha_shade=0.4, figsize=(12,8),
     pctiles = (2.5, 97.5), window=10, fname=None):
 
-    plt.rc('axes', titlesize=20, labelsize=20)
+    plt.rc('axes', titlesize=24, labelsize=24)
     plt.rc('legend', fontsize=20)
-    plt.rc('xtick', labelsize=20)
-    plt.rc('ytick', labelsize=20)
+    plt.rc('xtick', labelsize=24)
+    plt.rc('ytick', labelsize=24)
+    # plt.rcParams['text.usetex'] = True
 
-    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']*2
+    linestyles = ['solid', 'dashed', 'dashdot', 'dotted']
     colors = ['crimson', 'blue', 'skyblue', 'limegreen',
-        'aquamarine', 'violet', 'black']
+        'aquamarine', 'violet', 'black', 'brown', 'pink', 'gold']
 
     plt.figure(figsize=figsize)
     plt.yscale('log')
@@ -177,10 +351,9 @@ def plot_reps_results(arrs_dict,
     # plt.xticks([0, 5000, 10000, 15000, 20000])
     plt.xlabel('Iteration')
     plt.ylabel('Mean squared error')
-    plt.grid()
 
     if fname:
-        plt.savefig(fname)
+        plt.savefig(fname, dpi=300, bbox_inches='tight')
     else:
         plt.show()
 
@@ -314,3 +487,47 @@ def draw_neural_net(ax, left, right, bottom, top, layer_sizes):
                 line = plt.Line2D([n*h_spacing + left, (n + 1)*h_spacing + left],
                                   [layer_top_a - m*v_spacing, layer_top_b - o*v_spacing], c='k')
                 ax.add_artist(line)
+
+def shake_weights(m, std=1):
+    '''
+    Adds normal noise to the weights of a model m
+    '''
+    with torch.no_grad():
+        for p in m.parameters():
+            p.add_(torch.randn(p.size()) * std)
+
+def plot_grads(params, ax, logscale=False):
+    '''
+    Plots the gradients in the layers of a network given
+    its named parameters and a matplotlib axis object.
+    '''
+    ave_grads = []
+    max_grads = []
+    layers = []
+    for n, p in params:
+        if(p.requires_grad) and ("bias" not in n):
+            layers.append(n)
+            ave_grads.append(p.grad.abs().mean())
+            max_grads.append(p.grad.abs().max())
+    ax[0].plot(ave_grads, alpha=0.3, color="b")
+    ax[0].hlines(0, 0, len(ave_grads)+1, linewidth=1, color="k" )
+    ax[0].set_xticks(range(0,len(ave_grads), 1))
+    ax[0].set_xticklabels(layers, rotation="vertical")
+    ax[0].set_xlim(xmin=0, xmax=len(ave_grads))
+    if logscale:
+        ax[0].set_yscale("log")
+    ax[0].set_xlabel("Layers")
+    ax[0].set_ylabel("Gradient")
+    ax[0].grid(True)
+    ax[1].bar(np.arange(0.5, len(max_grads)+0.5), max_grads, alpha=0.1, lw=1, color="c")
+    ax[1].bar(np.arange(0.5, len(max_grads)+0.5), ave_grads, alpha=0.1, lw=1, color="b")
+    ax[1].hlines(0, 0, len(ave_grads)+1, lw=2, color="k")
+    ax[1].set_xticks(np.arange(0.5, len(ave_grads)+0.5))
+    ax[1].set_xticklabels(layers, rotation="vertical")
+    ax[1].set_xlim(left=0, right=len(ave_grads))
+    ax[1].set_ylim(bottom = -0.001, top=0.02)
+    ax[1].set_xlabel("Layers")
+    ax[1].grid(True)
+    ax[1].legend([Line2D([0], [0], color="c", lw=4),
+                Line2D([0], [0], color="b", lw=4),
+                Line2D([0], [0], color="k", lw=4)], ['max-gradient', 'mean-gradient', 'zero-gradient'], loc='upper center')   
