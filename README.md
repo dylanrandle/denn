@@ -55,6 +55,14 @@ This table details the currently available differential equations and correspond
 If you would like to reference our work, please use the following BibTeX citation!
 
 ```
+@misc{randle2020unsupervisedlearningsolutionsdifferential,
+      title={Unsupervised Learning of Solutions to Differential Equations with Generative Adversarial Networks}, 
+      author={Dylan Randle and Pavlos Protopapas and David Sondak},
+      year={2020},
+      eprint={2007.11133},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
 @misc{bullwinkel2022deqgan,
       title={DEQGAN: Learning the Loss Function for PINNs with Generative Adversarial Networks}, 
       author={Blake Bullwinkel and Dylan Randle and Pavlos Protopapas and David Sondak},
